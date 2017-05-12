@@ -35,11 +35,12 @@
 #endif
 
 #include <gst/gst.h>
-#include <gst/base/gstbasesrc.h>
+#include <gst/base/gstpushsrc.h>
 #include "gstcef.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_cef_debug_category);
 #define GST_CAT_DEFAULT gst_cef_debug_category
+#define DEFAULT_IS_LIVE            TRUE
 
 /* prototypes */
 
@@ -63,9 +64,9 @@ static void gst_cef_get_times (GstBaseSrc * src, GstBuffer * buffer,
     GstClockTime * start, GstClockTime * end);
 static gboolean gst_cef_get_size (GstBaseSrc * src, guint64 * size);
 static gboolean gst_cef_is_seekable (GstBaseSrc * src);
-static gboolean gst_cef_prepare_seek_segment (GstBaseSrc * src,
-    GstEvent * seek, GstSegment * segment);
-static gboolean gst_cef_do_seek (GstBaseSrc * src, GstSegment * segment);
+/* static gboolean gst_cef_prepare_seek_segment (GstBaseSrc * src, */
+    /* GstEvent * seek, GstSegment * segment); */
+/* static gboolean gst_cef_do_seek (GstBaseSrc * src, GstSegment * segment); */
 static gboolean gst_cef_unlock (GstBaseSrc * src);
 static gboolean gst_cef_unlock_stop (GstBaseSrc * src);
 static gboolean gst_cef_query (GstBaseSrc * src, GstQuery * query);
@@ -79,22 +80,25 @@ static GstFlowReturn gst_cef_fill (GstBaseSrc * src, guint64 offset,
 
 enum
 {
-  PROP_0
+  PROP_0,
+  PROP_VERBOSE,
+  PROP_URL
 };
 
 /* pad templates */
+#define VTS_VIDEO_CAPS GST_VIDEO_CAPS_MAKE ("BGRA")
 
 static GstStaticPadTemplate gst_cef_src_template =
 GST_STATIC_PAD_TEMPLATE ("src",
     GST_PAD_SRC,
     GST_PAD_ALWAYS,
-    GST_STATIC_CAPS ("application/unknown")
+    GST_STATIC_CAPS (VTS_VIDEO_CAPS)
     );
 
 
 /* class initialization */
 
-G_DEFINE_TYPE_WITH_CODE (GstCef, gst_cef, GST_TYPE_BASE_SRC,
+G_DEFINE_TYPE_WITH_CODE (GstCef, gst_cef, GST_TYPE_PUSH_SRC,
   GST_DEBUG_CATEGORY_INIT (gst_cef_debug_category, "cef", 0,
   "debug category for cef element"));
 
@@ -104,38 +108,47 @@ gst_cef_class_init (GstCefClass * klass)
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
   GstBaseSrcClass *base_src_class = GST_BASE_SRC_CLASS (klass);
 
-  /* Setting up pads and setting metadata should be moved to
-     base_class_init if you intend to subclass this class. */
   gst_element_class_add_static_pad_template (GST_ELEMENT_CLASS(klass),
       &gst_cef_src_template);
 
   gst_element_class_set_static_metadata (GST_ELEMENT_CLASS(klass),
-      "FIXME Long name", "Generic", "FIXME Description",
-      "FIXME <fixme@example.com>");
+      "Gstreamer chromium embedded (cef)", "Generic", "FIXME Description",
+      "Florian P. Nierhaus <fpn@bebo.com>");
 
   gobject_class->set_property = gst_cef_set_property;
   gobject_class->get_property = gst_cef_get_property;
+
+  base_src_class->fixate = GST_DEBUG_FUNCPTR (gst_cef_fixate);
+  base_src_class->set_caps = GST_DEBUG_FUNCPTR (gst_cef_set_caps);
+
   gobject_class->dispose = gst_cef_dispose;
   gobject_class->finalize = gst_cef_finalize;
   base_src_class->get_caps = GST_DEBUG_FUNCPTR (gst_cef_get_caps);
   base_src_class->negotiate = GST_DEBUG_FUNCPTR (gst_cef_negotiate);
-  base_src_class->fixate = GST_DEBUG_FUNCPTR (gst_cef_fixate);
-  base_src_class->set_caps = GST_DEBUG_FUNCPTR (gst_cef_set_caps);
-  base_src_class->decide_allocation = GST_DEBUG_FUNCPTR (gst_cef_decide_allocation);
-  base_src_class->start = GST_DEBUG_FUNCPTR (gst_cef_start);
-  base_src_class->stop = GST_DEBUG_FUNCPTR (gst_cef_stop);
-  base_src_class->get_times = GST_DEBUG_FUNCPTR (gst_cef_get_times);
-  base_src_class->get_size = GST_DEBUG_FUNCPTR (gst_cef_get_size);
   base_src_class->is_seekable = GST_DEBUG_FUNCPTR (gst_cef_is_seekable);
-  base_src_class->prepare_seek_segment = GST_DEBUG_FUNCPTR (gst_cef_prepare_seek_segment);
-  base_src_class->do_seek = GST_DEBUG_FUNCPTR (gst_cef_do_seek);
-  base_src_class->unlock = GST_DEBUG_FUNCPTR (gst_cef_unlock);
-  base_src_class->unlock_stop = GST_DEBUG_FUNCPTR (gst_cef_unlock_stop);
-  base_src_class->query = GST_DEBUG_FUNCPTR (gst_cef_query);
-  base_src_class->event = GST_DEBUG_FUNCPTR (gst_cef_event);
-  base_src_class->create = GST_DEBUG_FUNCPTR (gst_cef_create);
-  base_src_class->alloc = GST_DEBUG_FUNCPTR (gst_cef_alloc);
   base_src_class->fill = GST_DEBUG_FUNCPTR (gst_cef_fill);
+
+  /* base_src_class->decide_allocation = GST_DEBUG_FUNCPTR (gst_cef_decide_allocation); */
+  /* base_src_class->start = GST_DEBUG_FUNCPTR (gst_cef_start); */
+  /* base_src_class->stop = GST_DEBUG_FUNCPTR (gst_cef_stop); */
+  /* base_src_class->get_times = GST_DEBUG_FUNCPTR (gst_cef_get_times); */
+  /* base_src_class->get_size = GST_DEBUG_FUNCPTR (gst_cef_get_size); */
+  /* /1* base_src_class->prepare_seek_segment = GST_DEBUG_FUNCPTR (gst_cef_prepare_seek_segment); *1/ */
+  /* /1* base_src_class->do_seek = GST_DEBUG_FUNCPTR (gst_cef_do_seek); *1/ */
+  /* base_src_class->unlock = GST_DEBUG_FUNCPTR (gst_cef_unlock); */
+  /* base_src_class->unlock_stop = GST_DEBUG_FUNCPTR (gst_cef_unlock_stop); */
+  /* base_src_class->query = GST_DEBUG_FUNCPTR (gst_cef_query); */
+  /* base_src_class->event = GST_DEBUG_FUNCPTR (gst_cef_event); */
+  /* base_src_class->create = GST_DEBUG_FUNCPTR (gst_cef_create); */
+  /* base_src_class->alloc = GST_DEBUG_FUNCPTR (gst_cef_alloc); */
+
+  g_object_class_install_property (gobject_class, PROP_VERBOSE,
+      g_param_spec_boolean ("verbose", "Verbose", "Produce verbose output",
+          FALSE, G_PARAM_READWRITE));
+
+    g_object_class_install_property (gobject_class, PROP_URL,
+      g_param_spec_string ("url", "URL", "website to render into video",
+          "https://bebo.com/", G_PARAM_READWRITE));
 
 }
 
@@ -153,6 +166,13 @@ gst_cef_set_property (GObject * object, guint property_id,
   GST_DEBUG_OBJECT (cef, "set_property");
 
   switch (property_id) {
+    case PROP_VERBOSE:
+      cef->verbose = g_value_get_boolean (value);
+      break;
+    case PROP_URL:
+      cef->url = g_value_get_string (value);
+      // FIXME tell chromium to change url?
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
       break;
@@ -301,36 +321,32 @@ gst_cef_get_size (GstBaseSrc * src, guint64 * size)
 static gboolean
 gst_cef_is_seekable (GstBaseSrc * src)
 {
-  GstCef *cef = GST_CEF (src);
-
-  GST_DEBUG_OBJECT (cef, "is_seekable");
-
-  return TRUE;
+  return FALSE;
 }
 
-/* Prepare the segment on which to perform do_seek(), converting to the
- * current basesrc format. */
-static gboolean
-gst_cef_prepare_seek_segment (GstBaseSrc * src, GstEvent * seek,
-    GstSegment * segment)
-{
-  GstCef *cef = GST_CEF (src);
+/* /1* Prepare the segment on which to perform do_seek(), converting to the */
+/*  * current basesrc format. *1/ */
+/* static gboolean */
+/* gst_cef_prepare_seek_segment (GstBaseSrc * src, GstEvent * seek, */
+/*     GstSegment * segment) */
+/* { */
+/*   GstCef *cef = GST_CEF (src); */
 
-  GST_DEBUG_OBJECT (cef, "prepare_seek_segment");
+/*   GST_DEBUG_OBJECT (cef, "prepare_seek_segment"); */
 
-  return TRUE;
-}
+/*   return TRUE; */
+/* } */
 
-/* notify subclasses of a seek */
-static gboolean
-gst_cef_do_seek (GstBaseSrc * src, GstSegment * segment)
-{
-  GstCef *cef = GST_CEF (src);
+/* /1* notify subclasses of a seek *1/ */
+/* static gboolean */
+/* gst_cef_do_seek (GstBaseSrc * src, GstSegment * segment) */
+/* { */
+/*   GstCef *cef = GST_CEF (src); */
 
-  GST_DEBUG_OBJECT (cef, "do_seek");
+/*   GST_DEBUG_OBJECT (cef, "do_seek"); */
 
-  return TRUE;
-}
+/*   return TRUE; */
+/* } */
 
 /* unlock any pending access to the resource. subclasses should unlock
  * any function ASAP. */
@@ -429,21 +445,21 @@ plugin_init (GstPlugin * plugin)
    remove these, as they're always defined.  Otherwise, edit as
    appropriate for your external plugin package. */
 #ifndef VERSION
-#define VERSION "0.0.FIXME"
+#define VERSION "0.0.1"
 #endif
 #ifndef PACKAGE
-#define PACKAGE "FIXME_package"
+#define PACKAGE "cef"
 #endif
 #ifndef PACKAGE_NAME
-#define PACKAGE_NAME "FIXME_package_name"
+#define PACKAGE_NAME "gst_cef"
 #endif
 #ifndef GST_PACKAGE_ORIGIN
-#define GST_PACKAGE_ORIGIN "http://FIXME.org/"
+#define GST_PACKAGE_ORIGIN "http://github.com/bebo/gst-cef/"
 #endif
 
 GST_PLUGIN_DEFINE (GST_VERSION_MAJOR,
     GST_VERSION_MINOR,
     cef,
-    "FIXME plugin description",
+    "Chromium Embedded src plugin",
     plugin_init, VERSION, "LGPL", PACKAGE_NAME, GST_PACKAGE_ORIGIN)
 

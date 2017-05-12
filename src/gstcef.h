@@ -20,7 +20,10 @@
 #ifndef _GST_CEF_H_
 #define _GST_CEF_H_
 
-#include <gst/base/gstbasesrc.h>
+#include <gst/gst.h>
+#include <gst/base/gstpushsrc.h>
+#include <gst/video/gstvideometa.h>
+#include <gst/video/video.h>
 
 G_BEGIN_DECLS
 
@@ -35,13 +38,14 @@ typedef struct _GstCefClass GstCefClass;
 
 struct _GstCef
 {
-  GstBaseSrc base_cef;
-
+  GstPushSrc src;
+  gboolean verbose;
+  const char *url;
 };
 
 struct _GstCefClass
 {
-  GstBaseSrcClass base_cef_class;
+  GstPushSrcClass base_cef_class;
 };
 
 GType gst_cef_get_type (void);
