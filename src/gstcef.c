@@ -34,9 +34,18 @@
 #include "config.h"
 #endif
 
+#include <pthread.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <ctype.h>
+#include <pthread.h>
 #include <gst/gst.h>
 #include <gst/base/gstpushsrc.h>
 #include "gstcef.h"
+#include "cef.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_cef_debug_category);
 #define GST_CAT_DEFAULT gst_cef_debug_category
@@ -106,6 +115,7 @@ static void
 gst_cef_class_init (GstCefClass * klass)
 {
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
+  printf("gst_cef_class_init\n");
   GstBaseSrcClass *base_src_class = GST_BASE_SRC_CLASS (klass);
 
   gst_element_class_add_static_pad_template (GST_ELEMENT_CLASS(klass),
@@ -152,9 +162,18 @@ gst_cef_class_init (GstCefClass * klass)
 
 }
 
+void * browser = NULL;
+
 static void
 gst_cef_init (GstCef *cef)
 {
+    printf("gst_cef_init\n");
+    /* if (browser == NULL) { */
+    /*     /1* new_browser(&browser, cef->url, 1280, 720, 30, NULL); *1/ */
+        pthread_t browserMessageLoop;
+        pthread_create(&browserMessageLoop, NULL, (void *) browser_loop, NULL);
+    /* } */
+    
 }
 
 void
