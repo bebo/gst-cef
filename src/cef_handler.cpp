@@ -4,7 +4,7 @@
 
 #include "cef_handler.h"
 
-#include <sstream>
+#include <iostream>
 #include <string>
 
 #include "include/base/cef_bind.h"
@@ -13,6 +13,7 @@
 #include "include/views/cef_window.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_helpers.h"
+#include <sys/time.h>
 
 namespace {
 
@@ -20,14 +21,45 @@ SimpleHandler* g_instance = NULL;
 
 }  // namespace
 
-SimpleHandler::SimpleHandler(bool use_views)
-    : use_views_(use_views), is_closing_(false) {
+RenderHandler::RenderHandler(int width, int height) {
+    this->width = width;
+    this->height = height;
+    gettimeofday(&this->last_tv, NULL);
+  }
+
+bool RenderHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) {
+    std::cout << "GetViewRect" << std::endl;
+    rect = CefRect(0, 0, width, height);
+    return true;
+}
+
+void RenderHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType paintType, const RectList &rects, 
+               const void *buffer, int width, int height) {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    unsigned long long millisecondsSinceEpoch = 
+         ((unsigned long long)(tv.tv_sec) - (unsigned long long)(this->last_tv.tv_sec)) * 1000000 
+         + (unsigned long long)(tv.tv_usec) - (unsigned long long)(this->last_tv.tv_usec);
+    last_tv.tv_sec = tv.tv_sec;
+    last_tv.tv_usec = tv.tv_usec;
+
+
+    std::cout << "OnPaint() for size: " << width << " x " << height << " " << millisecondsSinceEpoch <<std::endl;
+    /* memcpy(frame_buffer, buffer, width * height * 4 * 1); */
+}
+
+SimpleHandler::SimpleHandler(RenderHandler* renderHandler)
+    : use_views_(false), is_closing_(false), renderHandler(renderHandler) {
   DCHECK(!g_instance);
   g_instance = this;
 }
 
 SimpleHandler::~SimpleHandler() {
   g_instance = NULL;
+}
+
+CefRefPtr<CefRenderHandler> SimpleHandler::GetRenderHandler() {
+    return renderHandler;
 }
 
 // static

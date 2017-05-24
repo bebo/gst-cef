@@ -285,7 +285,7 @@ void browser_loop(void * args) {
   while(1) {
     /* CefRunMessageLoop(); */
     /* CefDoMessageLoopWork(); */
-    usleep(10000);
+    usleep(5000);
     g_idle_add((GSourceFunc) doWork, NULL);
   }
   std::cout << "MessageLoop Ended" << std::endl;

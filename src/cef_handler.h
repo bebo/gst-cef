@@ -6,19 +6,39 @@
 #define CEF_TESTS_CEFSIMPLE_SIMPLE_HANDLER_H_
 
 #include "include/cef_client.h"
-
+#include <sys/time.h>
 #include <list>
+
+class RenderHandler : public CefRenderHandler
+{
+private:
+  int width;
+  int height;
+  uint8_t *frame_buffer;
+  struct timeval last_tv;
+  unsigned long long start_sec;
+
+public:
+
+  RenderHandler(int width, int height);
+  bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect);
+  void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType paintType, const RectList &rects,
+               const void *buffer, int width, int height) OVERRIDE;
+  IMPLEMENT_REFCOUNTING(RenderHandler);
+};
 
 class SimpleHandler : public CefClient,
                       public CefDisplayHandler,
                       public CefLifeSpanHandler,
                       public CefLoadHandler {
  public:
-  explicit SimpleHandler(bool use_views);
+  explicit SimpleHandler(RenderHandler* renderHandler);
   ~SimpleHandler();
 
   // Provide access to the single global instance of this object.
   static SimpleHandler* GetInstance();
+
+  CefRefPtr<CefRenderHandler> GetRenderHandler() OVERRIDE;
 
   // CefClient methods:
   virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() OVERRIDE {
@@ -63,6 +83,8 @@ class SimpleHandler : public CefClient,
   BrowserList browser_list_;
 
   bool is_closing_;
+
+  CefRefPtr<CefRenderHandler> renderHandler;
 
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(SimpleHandler);
