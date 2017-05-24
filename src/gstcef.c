@@ -170,8 +170,9 @@ gst_cef_init (GstCef *cef)
     printf("gst_cef_init\n");
     /* if (browser == NULL) { */
     /*     /1* new_browser(&browser, cef->url, 1280, 720, 30, NULL); *1/ */
-        pthread_t browserMessageLoop;
-        pthread_create(&browserMessageLoop, NULL, (void *) browser_loop, NULL);
+        /* pthread_t browserMessageLoop; */
+        /* pthread_create(&browserMessageLoop, NULL, (void *) browser_loop, NULL); */
+    browser_loop(NULL);
     /* } */
     
 }

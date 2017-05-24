@@ -3,7 +3,7 @@
 plugin_LTLIBRARIES = libgstcef.la
 
 # sources used to compile this plug-in
-libgstcef_la_SOURCES = gstcef.c cef.cpp cef.h gstcef.h
+libgstcef_la_SOURCES = gstcef.c cef.cpp cef.h gstcef.h cef_app.cpp cef_app.h cef_handler.cpp cef_handler_linux.cpp cef_handler.h
 
 # compiler and linker flags used to compile this plugin, set in configure.ac
 libgstcef_la_CFLAGS = $(GST_CFLAGS)
@@ -13,7 +13,7 @@ libgstcef_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS) -lcef -lcef_dll_wrapper
 libgstcef_la_LIBTOOLFLAGS = --tag=disable-static
 
 # headers we need but don't want installed
-noinst_HEADERS = gstcef.h cef.h
+noinst_HEADERS = gstcef.h cef.h cef_app.h
 
 bin_PROGRAMS = subprocess
 subprocess_SOURCES = subprocess.cpp

@@ -7,10 +7,16 @@
 extern "C" {
 #endif
 
-void new_browser(void ** browser, const char * url, uint32_t width, uint32_t height, uint32_t fps, void * new_frame_callback);
 void browser_loop(void * args);
-void quit_browser();
 
+#ifdef __cplusplus
+}
+#endif
+
+
+#if 0
+void new_browser(void ** browser, const char * url, uint32_t width, uint32_t height, uint32_t fps, void * new_frame_callback);
+void quit_browser();
 #ifdef __cplusplus
 class RenderHandler : public CefRenderHandler
 {
@@ -55,9 +61,6 @@ class Browser : public CefApp {
         CefRefPtr<CefBrowser> browser_;
 };
 #endif
-
-#ifdef __cplusplus
-}
+#endif
 #endif
 
-#endif

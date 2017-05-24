@@ -10,6 +10,7 @@
 #include <include/wrapper/cef_helpers.h>
 
 #include "cef.h"
+#include "cef_app.h"
 
 #include "include/base/cef_logging.h"
 #include <X11/Xlib.h>
@@ -32,7 +33,7 @@ int XIOErrorHandlerImpl(Display *display) {
 
 }  // namespace
 
-
+#if 0
 RenderHandler::RenderHandler(int width, int height) {
     this->width = width;
     this->height = height;
@@ -232,4 +233,47 @@ void browser_loop(void * args) {
 
 void quit_browser() {
     CefQuitMessageLoop();
+}
+#endif
+
+void browser_loop(void * args) {
+    /* CefMainArgs* cefMainArgs = new CefMainArgs(0, nullptr); */
+  // Provide CEF with command-line arguments.
+  CefMainArgs main_args(0, nullptr);
+
+  // CEF applications have multiple sub-processes (render, plugin, GPU, etc)
+  // that share the same executable. This function checks the command-line and,
+  // if this is a sub-process, executes the appropriate logic.
+  /* int exit_code = CefExecuteProcess(main_args, NULL, NULL); */
+  /* if (exit_code >= 0) { */
+  /*   // The sub-process has completed so return here. */
+  /*   /1* return exit_code; *1/ */
+  /*   return ; */
+  /* } */
+
+  // Install xlib error handlers so that the application won't be terminated
+  // on non-fatal errors.
+  XSetErrorHandler(XErrorHandlerImpl);
+  XSetIOErrorHandler(XIOErrorHandlerImpl);
+
+  // Specify CEF global settings here.
+  CefSettings settings;
+  CefString(&settings.browser_subprocess_path).FromASCII("/home/fpn/gst-cef/src/subprocess");
+
+  // SimpleApp implements application-level callbacks for the browser process.
+  // It will create the first browser instance in OnContextInitialized() after
+  // CEF has initialized.
+  CefRefPtr<SimpleApp> app(new SimpleApp);
+
+  // Initialize CEF for the browser process.
+  CefInitialize(main_args, settings, app.get(), NULL);
+
+  // Run the CEF message loop. This will block until CefQuitMessageLoop() is
+  // called.
+  CefRunMessageLoop();
+
+  // Shut down CEF.
+  CefShutdown();
+
+  /* return 0; */
 }
