@@ -40,6 +40,7 @@ struct _GstCef
 {
   GstPushSrc src;
   gboolean verbose;
+  GThread *browserLoop;
   const char *url;
 };
 

@@ -29,6 +29,7 @@
  * FIXME Describe what the pipeline does.
  * </refsect2>
  */
+/* #define _GNU_SOURCE     /1* To get pthread_getattr_np() declaration *1/ */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -110,6 +111,8 @@ GST_STATIC_PAD_TEMPLATE ("src",
 G_DEFINE_TYPE_WITH_CODE (GstCef, gst_cef, GST_TYPE_PUSH_SRC,
   GST_DEBUG_CATEGORY_INIT (gst_cef_debug_category, "cef", 0,
   "debug category for cef element"));
+void * browser = NULL;
+pthread_t browserMessageLoop = 0;
 
 static void
 gst_cef_class_init (GstCefClass * klass)
@@ -162,18 +165,28 @@ gst_cef_class_init (GstCefClass * klass)
 
 }
 
-void * browser = NULL;
 
 static void
 gst_cef_init (GstCef *cef)
 {
     printf("gst_cef_init\n");
-    /* if (browser == NULL) { */
-    /*     /1* new_browser(&browser, cef->url, 1280, 720, 30, NULL); *1/ */
-        /* pthread_t browserMessageLoop; */
-        /* pthread_create(&browserMessageLoop, NULL, (void *) browser_loop, NULL); */
-    browser_loop(NULL);
-    /* } */
+    if (cef->browserLoop == 0) {
+        /*     /1* new_browser(&browser, cef->url, 1280, 720, 30, NULL); *1/ */
+        /* pthread_attr_t attr; */
+        /* /1* Initialize and set thread detached attribute *1/ */
+        /* pthread_attr_init(&attr); */
+        /* pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE); */
+        /* pthread_create(&browserMessageLoop, &attr, (void *) browser_loop, NULL); */
+        /* /1* browser_loop(NULL); *1/ */
+        /* pthread_join(browserMessageLoop, NULL); */
+        /* GThread * */
+        cef->browserLoop = g_thread_ref(g_thread_new("browser_loop", (GThreadFunc)browser_loop, NULL));
+
+
+              /* GThreadFunc func, */
+              /* gpointer data); */
+
+    }
     
 }
 

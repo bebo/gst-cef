@@ -3,6 +3,7 @@
 #include <ctime>
 #include <iostream>
 #include <list>
+#include <glib.h>
 #include <unistd.h>
 #include <include/cef_app.h>
 #include <include/cef_client.h>
@@ -235,8 +236,7 @@ void quit_browser() {
     CefQuitMessageLoop();
 }
 #endif
-
-void browser_loop(void * args) {
+static void doStart(gpointer data) {
     /* CefMainArgs* cefMainArgs = new CefMainArgs(0, nullptr); */
   // Provide CEF with command-line arguments.
   CefMainArgs main_args(0, nullptr);
@@ -253,6 +253,7 @@ void browser_loop(void * args) {
 
   // Install xlib error handlers so that the application won't be terminated
   // on non-fatal errors.
+  XInitThreads();
   XSetErrorHandler(XErrorHandlerImpl);
   XSetIOErrorHandler(XIOErrorHandlerImpl);
 
@@ -266,14 +267,31 @@ void browser_loop(void * args) {
   CefRefPtr<SimpleApp> app(new SimpleApp);
 
   // Initialize CEF for the browser process.
+  std::cout << "CefInitialize" << std::endl;
   CefInitialize(main_args, settings, app.get(), NULL);
+}
 
+static void doWork(gpointer data) {
+    CefDoMessageLoopWork();
+}
+
+
+void browser_loop(void * args) {
+  std::cout << "starting browser_loop" << std::endl;
+
+  g_idle_add((GSourceFunc) doStart, NULL);
   // Run the CEF message loop. This will block until CefQuitMessageLoop() is
-  // called.
-  CefRunMessageLoop();
+  usleep(100000);
+  while(1) {
+    /* CefRunMessageLoop(); */
+    /* CefDoMessageLoopWork(); */
+    usleep(10000);
+    g_idle_add((GSourceFunc) doWork, NULL);
+  }
+  std::cout << "MessageLoop Ended" << std::endl;
 
-  // Shut down CEF.
-  CefShutdown();
+  /* CefShutdown(); */
+  /* CefShutdown(); */
 
   /* return 0; */
 }
