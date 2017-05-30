@@ -21,7 +21,10 @@ SimpleHandler* g_instance = NULL;
 
 }  // namespace
 
-RenderHandler::RenderHandler(int width, int height) {
+RenderHandler::RenderHandler(void * gstCef, void * push_frame, int width, int height) {
+    this->push_frame = (void(*)(void *gstCef, const void *buffer, int width, int height))push_frame;
+    /* this->push_frame = void (*p)() =  (void(*)(void *gstCef, const void *buffer, int width, int height))push_frame; */
+    this->gstCef = gstCef;
     this->width = width;
     this->height = height;
     gettimeofday(&this->last_tv, NULL);
@@ -45,6 +48,7 @@ void RenderHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType pain
 
 
     std::cout << "OnPaint() for size: " << width << " x " << height << " " << millisecondsSinceEpoch <<std::endl;
+    this->push_frame(this->gstCef, buffer, width, height);
     /* memcpy(frame_buffer, buffer, width * height * 4 * 1); */
 }
 

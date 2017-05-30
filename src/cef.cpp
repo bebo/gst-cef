@@ -239,6 +239,7 @@ void quit_browser() {
 static void doStart(gpointer data) {
     /* CefMainArgs* cefMainArgs = new CefMainArgs(0, nullptr); */
   // Provide CEF with command-line arguments.
+  struct gstCb *cb = (struct gstCb*) data;
   CefMainArgs main_args(0, nullptr);
 
   // CEF applications have multiple sub-processes (render, plugin, GPU, etc)
@@ -264,7 +265,7 @@ static void doStart(gpointer data) {
   // SimpleApp implements application-level callbacks for the browser process.
   // It will create the first browser instance in OnContextInitialized() after
   // CEF has initialized.
-  CefRefPtr<SimpleApp> app(new SimpleApp);
+  CefRefPtr<SimpleApp> app(new SimpleApp(cb->gstCef, cb->push_frame));
 
   // Initialize CEF for the browser process.
   std::cout << "CefInitialize" << std::endl;
@@ -279,7 +280,7 @@ static void doWork(gpointer data) {
 void browser_loop(void * args) {
   std::cout << "starting browser_loop" << std::endl;
 
-  g_idle_add((GSourceFunc) doStart, NULL);
+  g_idle_add((GSourceFunc) doStart, args);
   // Run the CEF message loop. This will block until CefQuitMessageLoop() is
   usleep(100000);
   while(1) {

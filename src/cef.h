@@ -7,6 +7,11 @@
 extern "C" {
 #endif
 
+struct gstCb {
+    void * gstCef;
+    void * push_frame;
+};
+
 void browser_loop(void * args);
 
 #ifdef __cplusplus

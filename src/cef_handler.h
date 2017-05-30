@@ -17,10 +17,12 @@ private:
   uint8_t *frame_buffer;
   struct timeval last_tv;
   unsigned long long start_sec;
+  void * gstCef;
+  void (* push_frame)(void *gstCef, const void *buffer, int width, int height);
 
 public:
 
-  RenderHandler(int width, int height);
+  RenderHandler(void *gstCef, void *push_frame, int width, int height);
   bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect);
   void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType paintType, const RectList &rects,
                const void *buffer, int width, int height) OVERRIDE;

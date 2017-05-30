@@ -98,6 +98,13 @@ enum
 /* pad templates */
 #define VTS_VIDEO_CAPS GST_VIDEO_CAPS_MAKE ("BGRA")
 
+
+    /* GST_STATIC_CAPS ("video/x-raw, " */
+    /*     "format = (string) RGBA, " */
+    /*     "width = (int) 1280, " */
+    /*     "height = (int) 720, " */
+    /*     "framerate = (fraction) 1/30") */
+
 static GstStaticPadTemplate gst_cef_src_template =
 GST_STATIC_PAD_TEMPLATE ("src",
     GST_PAD_SRC,
@@ -131,29 +138,31 @@ gst_cef_class_init (GstCefClass * klass)
   gobject_class->set_property = gst_cef_set_property;
   gobject_class->get_property = gst_cef_get_property;
 
-  base_src_class->fixate = GST_DEBUG_FUNCPTR (gst_cef_fixate);
-  base_src_class->set_caps = GST_DEBUG_FUNCPTR (gst_cef_set_caps);
+  /* base_src_class->fixate = GST_DEBUG_FUNCPTR (gst_cef_fixate); */
+  /* base_src_class->set_caps = GST_DEBUG_FUNCPTR (gst_cef_set_caps); */
 
-  gobject_class->dispose = gst_cef_dispose;
+  /* gobject_class->dispose = gst_cef_dispose; */
   gobject_class->finalize = gst_cef_finalize;
   base_src_class->get_caps = GST_DEBUG_FUNCPTR (gst_cef_get_caps);
-  base_src_class->negotiate = GST_DEBUG_FUNCPTR (gst_cef_negotiate);
+  /* base_src_class->negotiate = GST_DEBUG_FUNCPTR (gst_cef_negotiate); */
   base_src_class->is_seekable = GST_DEBUG_FUNCPTR (gst_cef_is_seekable);
-  base_src_class->fill = GST_DEBUG_FUNCPTR (gst_cef_fill);
+  /* base_src_class->fill = GST_DEBUG_FUNCPTR (gst_cef_fill); */
 
   /* base_src_class->decide_allocation = GST_DEBUG_FUNCPTR (gst_cef_decide_allocation); */
   /* base_src_class->start = GST_DEBUG_FUNCPTR (gst_cef_start); */
   /* base_src_class->stop = GST_DEBUG_FUNCPTR (gst_cef_stop); */
   /* base_src_class->get_times = GST_DEBUG_FUNCPTR (gst_cef_get_times); */
-  /* base_src_class->get_size = GST_DEBUG_FUNCPTR (gst_cef_get_size); */
+  base_src_class->get_size = GST_DEBUG_FUNCPTR (gst_cef_get_size);
   /* /1* base_src_class->prepare_seek_segment = GST_DEBUG_FUNCPTR (gst_cef_prepare_seek_segment); *1/ */
   /* /1* base_src_class->do_seek = GST_DEBUG_FUNCPTR (gst_cef_do_seek); *1/ */
   /* base_src_class->unlock = GST_DEBUG_FUNCPTR (gst_cef_unlock); */
   /* base_src_class->unlock_stop = GST_DEBUG_FUNCPTR (gst_cef_unlock_stop); */
   /* base_src_class->query = GST_DEBUG_FUNCPTR (gst_cef_query); */
   /* base_src_class->event = GST_DEBUG_FUNCPTR (gst_cef_event); */
-  /* base_src_class->create = GST_DEBUG_FUNCPTR (gst_cef_create); */
+  base_src_class->create = GST_DEBUG_FUNCPTR (gst_cef_create);
   /* base_src_class->alloc = GST_DEBUG_FUNCPTR (gst_cef_alloc); */
+  /* base_src_class->alloc = NULL; */
+  /* base_src_class->fill = NULL; */
 
   g_object_class_install_property (gobject_class, PROP_VERBOSE,
       g_param_spec_boolean ("verbose", "Verbose", "Produce verbose output",
@@ -165,11 +174,51 @@ gst_cef_class_init (GstCefClass * klass)
 
 }
 
+static void push_frame(void *gstCef, const void *buffer, int width, int height) {
+  GstCef *cef = (GstCef *) gstCef;
+  int size = width * height * 4 * 1;
+  GstBuffer *buf;
+  buf = gst_buffer_new_allocate (NULL, size, NULL);
+  if (G_UNLIKELY (buf == NULL)) {
+    /* FIXME GST_ERROR_OBJECT (src, "Failed to allocate %u bytes", size); */
+    return;
+  }
+  GstClock *clock = gst_system_clock_obtain();
 
-static void
-gst_cef_init (GstCef *cef)
+  guint8 *data;
+  GstMapInfo map;
+  gst_buffer_map(buf, &map, GST_MAP_WRITE);
+  memcpy(map.data, buffer, size);
+  gst_buffer_unmap (buf, &map);
+  /* GST_BUFFER_TIMESTAMP (buf) = cef->last_timestamp; */
+  GST_BUFFER_TIMESTAMP (buf) = gst_clock_get_time(clock);
+  /* GST_BUFFER_OFFSET (buf) = cef->cur_offset; */
+  gst_buffer_resize (buf, 0, size);
+  g_mutex_lock(&cef->frame_mutex);
+  // TODO free if  not NULL?
+  cef->current_frame = buf;
+  g_cond_signal (&cef->frame_cond);
+  g_mutex_unlock (&cef->frame_mutex);
+}
+
+gpointer pop_frame(GstCef *cef)
+{
+  gpointer frame;
+  g_mutex_lock (&cef->frame_mutex);
+  while (!cef->current_frame) {
+    g_cond_wait (&cef->frame_cond, &cef->frame_mutex);
+  }
+  frame = cef->current_frame;
+  cef->current_frame= NULL;
+  g_mutex_unlock (&cef->frame_mutex);
+
+  return frame;
+}
+
+void gst_cef_init(GstCef *cef)
 {
     printf("gst_cef_init\n");
+
     if (cef->browserLoop == 0) {
         /*     /1* new_browser(&browser, cef->url, 1280, 720, 30, NULL); *1/ */
         /* pthread_attr_t attr; */
@@ -180,7 +229,11 @@ gst_cef_init (GstCef *cef)
         /* /1* browser_loop(NULL); *1/ */
         /* pthread_join(browserMessageLoop, NULL); */
         /* GThread * */
-        cef->browserLoop = g_thread_ref(g_thread_new("browser_loop", (GThreadFunc)browser_loop, NULL));
+        struct gstCb *cb = g_malloc(sizeof(struct gstCb));
+        cb->gstCef = cef;
+        cb->push_frame = push_frame;
+
+        cef->browserLoop = g_thread_ref(g_thread_new("browser_loop", (GThreadFunc)browser_loop, cb));
 
 
               /* GThreadFunc func, */
@@ -259,7 +312,42 @@ gst_cef_get_caps (GstBaseSrc * src, GstCaps * filter)
 
   GST_DEBUG_OBJECT (cef, "get_caps");
 
-  return NULL;
+  /* GstCaps *caps = NULL, *temp = NULL; */
+  /* GstPadTemplate *pad_template; */
+  /* GstBaseSrcClass *bclass = GST_BASE_SRC_GET_CLASS (cef); */
+  /* guint i; */
+  /* gint width, height; */
+
+/* /1*   if (qt_src->window) { *1/ */
+/* /1*     qt_src->window->getGeometry (&width, &height); *1/ */
+/* /1*   } *1/ */
+
+  /* pad_template = gst_element_class_get_pad_template (GST_ELEMENT_CLASS (cef), "src"); */
+  /* if (pad_template != NULL) */
+  /*   caps = gst_pad_template_get_caps (pad_template); */
+
+
+  /* guint n_caps = gst_caps_get_size (caps); */
+  /*   for (i = 0; i < n_caps; i++) { */
+  /*     GstStructure *s = gst_caps_get_structure (caps, i); */
+  /*     gst_structure_set (s, "width", G_TYPE_INT, 1280, NULL); */
+  /*     gst_structure_set (s, "height", G_TYPE_INT, 720, NULL); */
+  /*     /1* because the framerate is unknown *1/ */
+  /*     gst_structure_set (s, "framerate", GST_TYPE_FRACTION, 0, 1, NULL); */
+  /*     gst_structure_set (s, "pixel-aspect-ratio", */
+  /*         GST_TYPE_FRACTION, 1, 1, NULL); */
+  /*   } */
+
+GstCaps *caps = gst_caps_new_simple ("video/x-raw",
+   "format", G_TYPE_STRING, "BGRA",
+   "framerate", GST_TYPE_FRACTION, 30, 1,
+   "pixel-aspect-ratio", GST_TYPE_FRACTION, 1, 1,
+   "width", G_TYPE_INT, 1280,
+   "height", G_TYPE_INT, 720,
+   NULL);
+
+  return caps;
+
 }
 
 /* decide on caps */
@@ -345,6 +433,7 @@ gst_cef_get_size (GstBaseSrc * src, guint64 * size)
 {
   GstCef *cef = GST_CEF (src);
 
+  size = 1280 * 720 * 4;
   GST_DEBUG_OBJECT (cef, "get_size");
 
   return TRUE;
@@ -433,6 +522,11 @@ gst_cef_create (GstBaseSrc * src, guint64 offset, guint size,
     GstBuffer ** buf)
 {
   GstCef *cef = GST_CEF (src);
+
+  *buf = (GstBuffer*) pop_frame(cef);
+  GST_LOG_OBJECT (src, "Created buffer of size %u at %" G_GINT64_FORMAT
+      " with timestamp %" GST_TIME_FORMAT, size, GST_BUFFER_OFFSET (buf),
+      GST_TIME_ARGS (GST_BUFFER_TIMESTAMP (buf)));
 
   GST_DEBUG_OBJECT (cef, "create");
 

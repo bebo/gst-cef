@@ -53,7 +53,7 @@ class SimpleWindowDelegate : public CefWindowDelegate {
 
 }  // namespace
 
-SimpleApp::SimpleApp() {}
+SimpleApp::SimpleApp(void *gstCef, void *push_data): gstCef(gstCef), push_data(push_data) {};
 
 void SimpleApp::OnContextInitialized() {
   CEF_REQUIRE_UI_THREAD();
@@ -62,7 +62,7 @@ void SimpleApp::OnContextInitialized() {
       CefCommandLine::GetGlobalCommandLine();
 
   // SimpleHandler implements browser-level callbacks.
-  CefRefPtr<RenderHandler> render_handler = new RenderHandler(1280, 720);
+  CefRefPtr<RenderHandler> render_handler = new RenderHandler(gstCef, push_data, 1280, 720);
   CefRefPtr<SimpleHandler> handler = new SimpleHandler(render_handler);
 
   // Specify CEF browser settings here.
