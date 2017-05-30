@@ -47,7 +47,7 @@ void RenderHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType pain
     last_tv.tv_usec = tv.tv_usec;
 
 
-    std::cout << "OnPaint() for size: " << width << " x " << height << " " << millisecondsSinceEpoch <<std::endl;
+    std::cout << "OnPaint() for size: " << width << " x " << height << " ms:" << millisecondsSinceEpoch <<std::endl;
     this->push_frame(this->gstCef, buffer, width, height);
     /* memcpy(frame_buffer, buffer, width * height * 4 * 1); */
 }
