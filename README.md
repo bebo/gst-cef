@@ -3,7 +3,7 @@
 # CEF 
 
 
-sudo apt install build-essential libgtk2.0-dev libgtkglext1-dev
+sudo apt  -t jessie-backports install build-essential libgtk2.0-dev libgtkglext1-dev
 
 http://opensource.spotify.com/cefbuilds/index.html
 http://opensource.spotify.com/cefbuilds/cef_binary_3.3029.1619.geeeb5d7_linux64.tar.bz2
