@@ -8,11 +8,12 @@ sudo apt  -t jessie-backports install build-essential libgtk2.0-dev libgtkglext1
 http://opensource.spotify.com/cefbuilds/index.html
 http://opensource.spotify.com/cefbuilds/cef_binary_3.3029.1619.geeeb5d7_linux64.tar.bz2
 tar xvjf cef_binary_3.3029.1619.geeeb5d7_linux64.tar.bz2
- cd cef_binary_3.3029.1619.geeeb5d7_linux64
- mkdir build
- cd build
+cd cef_binary_3.3029.1619.geeeb5d7_linux64
+mkdir build
+cd build
 
- cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=/usr/local/cef ..
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=/usr/local/cef ..
+make
 
 sudo mkdir -p /usr/local/cef/lib
 sudo mkdir -p /usr/local/cef/include
@@ -29,7 +30,6 @@ sudo chmod 4711 /usr/local/cef/lib/chrome-sandbox
 
 cd gst-cef/src
 sudo cp -a /usr/local/cef/lib/* src/
-
 
 
 
