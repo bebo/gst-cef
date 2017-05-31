@@ -180,7 +180,7 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
   GstBuffer *buf;
   buf = gst_buffer_new_allocate (NULL, size, NULL);
   if (G_UNLIKELY (buf == NULL)) {
-    /* FIXME GST_ERROR_OBJECT (src, "Failed to allocate %u bytes", size); */
+    GST_ERROR_OBJECT (cef, "Failed to allocate %u bytes", size);
     return;
   }
   GstClock *clock = gst_system_clock_obtain();
@@ -190,10 +190,8 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
   gst_buffer_map(buf, &map, GST_MAP_WRITE);
   memcpy(map.data, buffer, size);
   gst_buffer_unmap (buf, &map);
-  /* GST_BUFFER_TIMESTAMP (buf) = cef->last_timestamp; */
   GST_BUFFER_TIMESTAMP (buf) = gst_clock_get_time(clock);
-  /* GST_BUFFER_OFFSET (buf) = cef->cur_offset; */
-  gst_buffer_resize (buf, 0, size);
+  GST_BUFFER_OFFSET (buf) = 0;
   g_mutex_lock(&cef->frame_mutex);
   // TODO free if  not NULL?
   cef->current_frame = buf;
@@ -211,13 +209,15 @@ gpointer pop_frame(GstCef *cef)
   frame = cef->current_frame;
   cef->current_frame= NULL;
   g_mutex_unlock (&cef->frame_mutex);
-
   return frame;
 }
 
 void gst_cef_init(GstCef *cef)
 {
-    printf("gst_cef_init\n");
+  printf("gst_cef_init\n");
+
+  gst_base_src_set_format (GST_BASE_SRC (cef), GST_FORMAT_TIME);
+  gst_base_src_set_live (GST_BASE_SRC (cef), DEFAULT_IS_LIVE);
 
     if (cef->browserLoop == 0) {
         /*     /1* new_browser(&browser, cef->url, 1280, 720, 30, NULL); *1/ */
@@ -234,13 +234,7 @@ void gst_cef_init(GstCef *cef)
         cb->push_frame = push_frame;
 
         cef->browserLoop = g_thread_ref(g_thread_new("browser_loop", (GThreadFunc)browser_loop, cb));
-
-
-              /* GThreadFunc func, */
-              /* gpointer data); */
-
     }
-    
 }
 
 void
@@ -525,8 +519,8 @@ gst_cef_create (GstBaseSrc * src, guint64 offset, guint size,
 
   *buf = (GstBuffer*) pop_frame(cef);
   GST_LOG_OBJECT (src, "Created buffer of size %u at %" G_GINT64_FORMAT
-      " with timestamp %" GST_TIME_FORMAT, size, GST_BUFFER_OFFSET (buf),
-      GST_TIME_ARGS (GST_BUFFER_TIMESTAMP (buf)));
+      " with timestamp %" GST_TIME_FORMAT, gst_buffer_get_size(*buf), GST_BUFFER_OFFSET (*buf),
+      GST_TIME_ARGS (GST_BUFFER_TIMESTAMP (*buf)));
 
   GST_DEBUG_OBJECT (cef, "create");
 
