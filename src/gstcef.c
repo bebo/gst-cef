@@ -98,13 +98,6 @@ enum
 /* pad templates */
 #define VTS_VIDEO_CAPS GST_VIDEO_CAPS_MAKE ("BGRA")
 
-
-    /* GST_STATIC_CAPS ("video/x-raw, " */
-    /*     "format = (string) RGBA, " */
-    /*     "width = (int) 1280, " */
-    /*     "height = (int) 720, " */
-    /*     "framerate = (fraction) 1/30") */
-
 static GstStaticPadTemplate gst_cef_src_template =
 GST_STATIC_PAD_TEMPLATE ("src",
     GST_PAD_SRC,
@@ -201,7 +194,9 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
     GST_BUFFER_FLAG_SET (buf, GST_BUFFER_FLAG_DISCONT);
   }
   g_mutex_lock(&cef->frame_mutex);
-  // TODO free if  not NULL?
+  if (cef->current_frame != NULL) {
+    gst_buffer_unref(cef->current_frame);
+  }
   cef->current_frame = buf;
   g_cond_signal (&cef->frame_cond);
   g_mutex_unlock (&cef->frame_mutex);
