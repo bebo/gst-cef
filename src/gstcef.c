@@ -175,6 +175,9 @@ gst_cef_class_init (GstCefClass * klass)
 }
 
 static void push_frame(void *gstCef, const void *buffer, int width, int height) {
+  GstClock *clock = gst_system_clock_obtain();
+  GstClockTime now = gst_clock_get_time(clock);
+
   GstCef *cef = (GstCef *) gstCef;
   int size = width * height * 4 * 1;
   GstBuffer *buf;
@@ -183,15 +186,20 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
     GST_ERROR_OBJECT (cef, "Failed to allocate %u bytes", size);
     return;
   }
-  GstClock *clock = gst_system_clock_obtain();
+  if (cef->startTime == 0) {
+    cef->startTime = now;
+  }
 
   guint8 *data;
   GstMapInfo map;
   gst_buffer_map(buf, &map, GST_MAP_WRITE);
   memcpy(map.data, buffer, size);
   gst_buffer_unmap (buf, &map);
-  GST_BUFFER_TIMESTAMP (buf) = gst_clock_get_time(clock);
+  GST_BUFFER_TIMESTAMP (buf) = now - cef->startTime; // live sources should start at 0
   GST_BUFFER_OFFSET (buf) = 0;
+  if (now == cef->startTime) {
+    GST_BUFFER_FLAG_SET (buf, GST_BUFFER_FLAG_DISCONT);
+  }
   g_mutex_lock(&cef->frame_mutex);
   // TODO free if  not NULL?
   cef->current_frame = buf;
@@ -266,8 +274,13 @@ gst_cef_get_property (GObject * object, guint property_id,
   GstCef *cef = GST_CEF (object);
 
   GST_DEBUG_OBJECT (cef, "get_property");
-
   switch (property_id) {
+    case PROP_VERBOSE:
+      g_value_set_boolean(value, cef->verbose);
+      break;
+    case PROP_URL:
+      g_value_set_string(value, cef->url);
+      break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
       break;
