@@ -10,7 +10,7 @@
 // Implement application-level callbacks for the browser process.
 class Browser: public CefApp, public CefBrowserProcessHandler {
  public:
-  Browser(void * gstCef, void * push_data);
+  Browser(void * gstCef, void * push_data, char* url, int width, int height);
 
   // CefApp methods:
   virtual CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler()
@@ -21,9 +21,12 @@ class Browser: public CefApp, public CefBrowserProcessHandler {
   // CefBrowserProcessHandler methods:
   virtual void OnContextInitialized() OVERRIDE;
 
- private:
   void * gstCef;
   void * push_data;
+  int height;
+  int width;
+  char * url;
+
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(Browser);
 };

@@ -53,7 +53,7 @@ class BrowserWindowDelegate : public CefWindowDelegate {
 
 }  // namespace
 
-Browser::Browser(void *gstCef, void *push_data): gstCef(gstCef), push_data(push_data) {};
+Browser::Browser(void *gstCef, void *push_data, char* url, int width, int height): gstCef(gstCef), push_data(push_data), url(url), width(width), height(height) {};
 
 void Browser::OnContextInitialized() {
   CEF_REQUIRE_UI_THREAD();
@@ -62,7 +62,7 @@ void Browser::OnContextInitialized() {
       CefCommandLine::GetGlobalCommandLine();
 
   // BrowserClient implements browser-level callbacks.
-  CefRefPtr<RenderHandler> render_handler = new RenderHandler(gstCef, push_data, 1280, 720);
+  CefRefPtr<RenderHandler> render_handler = new RenderHandler(gstCef, push_data, this->width, this->height);
   CefRefPtr<BrowserClient> browserClient = new BrowserClient(render_handler);
 
   // Specify CEF browser settings here.
@@ -73,18 +73,13 @@ void Browser::OnContextInitialized() {
 
   // Check if a "--url=" value was provided via the command-line. If so, use
   // that instead of the default URL.
-  url = command_line->GetSwitchValue("url");
-  if (url.empty()) {
-    /* url = "http://acid3.acidtests.org/"; */
-    url = "https://bebo-dev.com/fpntest3/popup/9c2c522db4564d51a051ad1b90431e18";
-  }
+  url = this-> url;
 
-    // Information used when creating the native window.
-    CefWindowInfo window_info;
-    window_info.SetAsWindowless(0, true);
+  // Information used when creating the native window.
+  CefWindowInfo window_info;
+  window_info.SetAsWindowless(0, true);
 
-
-    // Create the first browser window.
-    CefBrowserHost::CreateBrowser(window_info, browserClient, url, browser_settings,
+  // Create the first browser window.
+  CefBrowserHost::CreateBrowser(window_info, browserClient, url, browser_settings,
                                   NULL);
 }

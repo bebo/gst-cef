@@ -1,3 +1,4 @@
+// Copyright (c) 2017 Bebo
 // Copyright (c) 2013 The Chromium Embedded Framework Authors. All rights
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
@@ -50,7 +51,6 @@ void RenderHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType pain
 
     std::cout << "OnPaint() for size: " << width << " x " << height << " ms:" << millisecondsSinceEpoch <<std::endl;
     this->push_frame(this->gstCef, buffer, width, height);
-    /* memcpy(frame_buffer, buffer, width * height * 4 * 1); */
 }
 
 BrowserClient::BrowserClient(RenderHandler* renderHandler)

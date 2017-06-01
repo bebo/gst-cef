@@ -272,8 +272,8 @@ static void doStart(gpointer data) {
   // Browser implements application-level callbacks for the browser process.
   // It will create the first browser instance in OnContextInitialized() after
   // CEF has initialized.
-  CefRefPtr<Browser> app(new Browser(cb->gstCef, cb->push_frame));
-  g_free(cb->url);
+  CefRefPtr<Browser> app(new Browser(cb->gstCef, cb->push_frame, cb->url, 1280, 720));
+  cb->url = NULL;
   g_free(cb);
 
   // Initialize CEF for the browser process.

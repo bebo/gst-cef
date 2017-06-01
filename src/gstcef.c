@@ -214,13 +214,7 @@ gpointer pop_frame(GstCef *cef)
   return frame;
 }
 
-void gst_cef_init(GstCef *cef)
-{
-  printf("gst_cef_init\n");
-
-  gst_base_src_set_format (GST_BASE_SRC (cef), GST_FORMAT_TIME);
-  gst_base_src_set_live (GST_BASE_SRC (cef), DEFAULT_IS_LIVE);
-
+void new_browser(GstCef *cef) {
     if (cef->browserLoop == 0) {
         /*     /1* new_browser(&browser, cef->url, 1280, 720, 30, NULL); *1/ */
         /* pthread_attr_t attr; */
@@ -239,6 +233,24 @@ void gst_cef_init(GstCef *cef)
     }
 }
 
+void gst_cef_init(GstCef *cef)
+{
+  printf("gst_cef_init\n");
+
+  gst_base_src_set_format (GST_BASE_SRC (cef), GST_FORMAT_TIME);
+  gst_base_src_set_live (GST_BASE_SRC (cef), DEFAULT_IS_LIVE);
+
+}
+
+void set_url(GstCef *cef, char * url) {
+  cef->url = url;
+  if (cef->browserLoop == 0) {
+      new_browser(cef);
+  } else {
+    // FIXME tell chromium to change url
+  }
+}
+
 void
 gst_cef_set_property (GObject * object, guint property_id,
     const GValue * value, GParamSpec * pspec)
@@ -252,8 +264,7 @@ gst_cef_set_property (GObject * object, guint property_id,
       cef->verbose = g_value_get_boolean (value);
       break;
     case PROP_URL:
-      cef->url = g_value_get_string (value);
-      // FIXME tell chromium to change url?
+      set_url(cef, g_value_get_string (value));
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
