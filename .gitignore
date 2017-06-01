@@ -1,3 +1,4 @@
+src/subprocess
 aclocal.m4
 autom4te.cache
 autoregen.sh
