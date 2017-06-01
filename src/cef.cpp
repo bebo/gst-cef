@@ -1,4 +1,5 @@
 
+#include <sys/auxv.h>
 
 #include <ctime>
 #include <iostream>
@@ -260,12 +261,22 @@ static void doStart(gpointer data) {
 
   // Specify CEF global settings here.
   CefSettings settings;
-  CefString(&settings.browser_subprocess_path).FromASCII("/home/fpn/gst-cef/src/subprocess");
+
+  gchar * dirname = (char *) getauxval(AT_EXECFN);
+  dirname  = g_path_get_dirname(dirname);
+  std::cout << "dir: " << dirname << std::endl;
+
+  //CefString(&settings.browser_subprocess_path).FromASCII("/home/fpn/gst-cef/src/subprocess");
+  dirname  = g_strconcat(dirname, "/subprocess", NULL);
+
+  CefString(&settings.browser_subprocess_path).FromASCII(dirname);
 
   // SimpleApp implements application-level callbacks for the browser process.
   // It will create the first browser instance in OnContextInitialized() after
   // CEF has initialized.
   CefRefPtr<SimpleApp> app(new SimpleApp(cb->gstCef, cb->push_frame));
+  //FIXME g_free(cb->url);
+  g_free(cb);
 
   // Initialize CEF for the browser process.
   std::cout << "CefInitialize" << std::endl;
