@@ -2,8 +2,8 @@
 
 # CEF 
 
-
-sudo apt -t jessie-backports install build-essential libgtk2.0-dev libgtkglext1-dev
+```
+sudo apt -t jessie-backports install build-essential libgtk2.0-dev libgtkglext1-dev cmake
 sudo apt -t jessie-backports install gconf-service libasound2 libatk1.0-0 libc6 libcairo2 libcups2 libdbus-1-3 libexpat1 libfontconfig1 libfreetype6 libgcc1 libgconf-2-4 libgdk-pixbuf2.0-0 libglib2.0-0 libgtk-3-0 libnspr4 libnss3 libpango-1.0-0 libpangocairo-1.0-0 libstdc++6 libx11-6 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 libxdamage1 libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 ca-certificates fonts-liberation libappindicator1 lsb-base xdg-utils wget dpkg
 sudo apt install xvfb
 
@@ -49,3 +49,4 @@ Xvfb :0 -screen 0 1280x720x16 &
 GST_DEBUG=cef:7 GST_PLUGIN_PATH=${HOME}/gst-cef/src/.libs src/gst-launch-1.0 cef ! videoconvert ! x264enc ! matroskamux ! filesink location=foo.mkv
 GST_DEBUG=cef:7 GST_PLUGIN_PATH=${HOME}/gst-cef/src/.libs src/gst-launch-1.0 cef url="https://bebo.com" ! videoconvert ! x264enc ! matroskamux ! filesink location=foo.mkv
 
+```
