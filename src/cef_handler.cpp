@@ -15,13 +15,10 @@
 #include "include/wrapper/cef_helpers.h"
 #include <sys/time.h>
 
-namespace {
 
-CefHandler* g_instance = NULL;
-
-}  // namespace
-
-RenderHandler::RenderHandler(void * gstCef, void * push_frame, int width, int height) {
+RenderHandler::RenderHandler(void * gstCef, void * push_frame, int width, int height):
+    ready(0)
+{
     this->push_frame = (void(*)(void *gstCef, const void *buffer, int width, int height))push_frame;
     /* this->push_frame = void (*p)() =  (void(*)(void *gstCef, const void *buffer, int width, int height))push_frame; */
     this->gstCef = gstCef;
@@ -38,6 +35,10 @@ bool RenderHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) {
 
 void RenderHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType paintType, const RectList &rects, 
                const void *buffer, int width, int height) {
+    if (! this->ready) {
+        std::cout << "Not ready yet" <<std::endl;
+        return;
+    }
     struct timeval tv;
     gettimeofday(&tv, NULL);
     unsigned long long millisecondsSinceEpoch = 
@@ -52,26 +53,19 @@ void RenderHandler::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType pain
     /* memcpy(frame_buffer, buffer, width * height * 4 * 1); */
 }
 
-CefHandler::CefHandler(RenderHandler* renderHandler)
+BrowserClient::BrowserClient(RenderHandler* renderHandler)
     : use_views_(false), is_closing_(false), renderHandler(renderHandler) {
-  DCHECK(!g_instance);
-  g_instance = this;
 }
 
-CefHandler::~CefHandler() {
-  g_instance = NULL;
+BrowserClient::~BrowserClient() {
 }
 
-CefRefPtr<CefRenderHandler> CefHandler::GetRenderHandler() {
+CefRefPtr<CefRenderHandler> BrowserClient::GetRenderHandler() {
     return renderHandler;
 }
 
-// static
-CefHandler* CefHandler::GetInstance() {
-  return g_instance;
-}
 
-void CefHandler::OnTitleChange(CefRefPtr<CefBrowser> browser,
+void BrowserClient::OnTitleChange(CefRefPtr<CefBrowser> browser,
                                   const CefString& title) {
   CEF_REQUIRE_UI_THREAD();
 
@@ -90,14 +84,14 @@ void CefHandler::OnTitleChange(CefRefPtr<CefBrowser> browser,
   }
 }
 
-void CefHandler::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
+void BrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
 
   // Add to the list of existing browsers.
   browser_list_.push_back(browser);
 }
 
-bool CefHandler::DoClose(CefRefPtr<CefBrowser> browser) {
+bool BrowserClient::DoClose(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
 
   // Closing the main window requires special handling. See the DoClose()
@@ -113,7 +107,7 @@ bool CefHandler::DoClose(CefRefPtr<CefBrowser> browser) {
   return false;
 }
 
-void CefHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
+void BrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
 
   // Remove from the list of existing browsers.
@@ -131,7 +125,7 @@ void CefHandler::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   }
 }
 
-void CefHandler::OnLoadError(CefRefPtr<CefBrowser> browser,
+void BrowserClient::OnLoadError(CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 ErrorCode errorCode,
                                 const CefString& errorText,
@@ -144,17 +138,34 @@ void CefHandler::OnLoadError(CefRefPtr<CefBrowser> browser,
 
   // Display a load error message.
   std::stringstream ss;
-  ss << "<html><body bgcolor=\"white\">"
+  ss << "<html><body bgcolor=\"transparent\">"
         "<h2>Failed to load URL "
      << std::string(failedUrl) << " with error " << std::string(errorText)
      << " (" << errorCode << ").</h2></body></html>";
   frame->LoadString(ss.str(), failedUrl);
 }
+void BrowserClient::OnLoadingStateChange(CefRefPtr< CefBrowser > browser,
+  bool isLoading,
+  bool canGoBack,
+  bool canGoForward) {
+  CEF_REQUIRE_UI_THREAD();
+  std::cout << "OnLoadingStateChange: " << isLoading << std::endl;
+}
 
-void CefHandler::CloseAllBrowsers(bool force_close) {
+void BrowserClient::OnLoadEnd(CefRefPtr< CefBrowser > browser,
+  CefRefPtr< CefFrame > frame,
+  int httpStatusCode) {
+  CEF_REQUIRE_UI_THREAD();
+  std::cout << "OnLoadEnd - isMain: " << frame->IsMain() << " status code: " << httpStatusCode << std::endl;
+  if (frame->IsMain() && httpStatusCode == 200) {
+      this->renderHandler->SetReady(true);
+  }
+}
+
+void BrowserClient::CloseAllBrowsers(bool force_close) {
   if (!CefCurrentlyOn(TID_UI)) {
     // Execute on the UI thread.
-    CefPostTask(TID_UI, base::Bind(&CefHandler::CloseAllBrowsers, this,
+    CefPostTask(TID_UI, base::Bind(&BrowserClient::CloseAllBrowsers, this,
                                    force_close));
     return;
   }

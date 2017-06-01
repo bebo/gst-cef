@@ -61,9 +61,9 @@ void Browser::OnContextInitialized() {
   CefRefPtr<CefCommandLine> command_line =
       CefCommandLine::GetGlobalCommandLine();
 
-  // CefHandler implements browser-level callbacks.
+  // BrowserClient implements browser-level callbacks.
   CefRefPtr<RenderHandler> render_handler = new RenderHandler(gstCef, push_data, 1280, 720);
-  CefRefPtr<CefHandler> handler = new CefHandler(render_handler);
+  CefRefPtr<BrowserClient> browserClient = new BrowserClient(render_handler);
 
   // Specify CEF browser settings here.
   CefBrowserSettings browser_settings;
@@ -85,6 +85,6 @@ void Browser::OnContextInitialized() {
 
 
     // Create the first browser window.
-    CefBrowserHost::CreateBrowser(window_info, handler, url, browser_settings,
+    CefBrowserHost::CreateBrowser(window_info, browserClient, url, browser_settings,
                                   NULL);
 }

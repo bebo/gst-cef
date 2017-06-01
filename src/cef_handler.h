@@ -12,6 +12,7 @@
 class RenderHandler : public CefRenderHandler
 {
 private:
+  bool ready;
   int width;
   int height;
   uint8_t *frame_buffer;
@@ -26,19 +27,20 @@ public:
   bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect);
   void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType paintType, const RectList &rects,
                const void *buffer, int width, int height) OVERRIDE;
+  void SetReady(bool ready) { this->ready = ready ;};
   IMPLEMENT_REFCOUNTING(RenderHandler);
 };
 
-class CefHandler : public CefClient,
+class BrowserClient : public CefClient,
                       public CefDisplayHandler,
                       public CefLifeSpanHandler,
                       public CefLoadHandler {
  public:
-  explicit CefHandler(RenderHandler* renderHandler);
-  ~CefHandler();
+  explicit BrowserClient(RenderHandler* renderHandler);
+  ~BrowserClient();
 
   // Provide access to the single global instance of this object.
-  static CefHandler* GetInstance();
+  /* static BrowserClient* GetInstance(); */
 
   CefRefPtr<CefRenderHandler> GetRenderHandler() OVERRIDE;
 
@@ -67,6 +69,16 @@ class CefHandler : public CefClient,
                            const CefString& errorText,
                            const CefString& failedUrl) OVERRIDE;
 
+  virtual void OnLoadingStateChange(CefRefPtr< CefBrowser > browser,
+          bool isLoading,
+          bool canGoBack,
+          bool canGoForward) OVERRIDE;
+
+  virtual void OnLoadEnd(CefRefPtr< CefBrowser > browser,
+          CefRefPtr< CefFrame > frame,
+          int httpStatusCode) OVERRIDE;
+
+
   // Request that all existing browser windows close.
   void CloseAllBrowsers(bool force_close);
 
@@ -86,10 +98,10 @@ class CefHandler : public CefClient,
 
   bool is_closing_;
 
-  CefRefPtr<CefRenderHandler> renderHandler;
+  CefRefPtr<RenderHandler> renderHandler;
 
   // Include the default reference counting implementation.
-  IMPLEMENT_REFCOUNTING(CefHandler);
+  IMPLEMENT_REFCOUNTING(BrowserClient);
 };
 
 #endif  // CEF_TESTS_CEFSIMPLE_SIMPLE_HANDLER_H_
