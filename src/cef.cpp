@@ -262,14 +262,12 @@ static void doStart(gpointer data) {
   // Specify CEF global settings here.
   CefSettings settings;
 
-  gchar * dirname = (char *) getauxval(AT_EXECFN);
-  dirname  = g_path_get_dirname(dirname);
-  std::cout << "dir: " << dirname << std::endl;
-
-  //CefString(&settings.browser_subprocess_path).FromASCII("/home/fpn/gst-cef/src/subprocess");
-  dirname  = g_strconcat(dirname, "/subprocess", NULL);
-
-  CefString(&settings.browser_subprocess_path).FromASCII(dirname);
+  char * exe = (char *) getauxval(AT_EXECFN);
+  gchar * dirname = g_path_get_dirname(exe);
+  gchar * subprocess_exe = g_strconcat(dirname, "/subprocess", NULL);
+  g_free (dirname);
+  CefString(&settings.browser_subprocess_path).FromASCII(subprocess_exe);
+  g_free(subprocess_exe);
 
   // SimpleApp implements application-level callbacks for the browser process.
   // It will create the first browser instance in OnContextInitialized() after
