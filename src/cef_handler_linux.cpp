@@ -11,7 +11,7 @@
 #include "include/base/cef_logging.h"
 #include "include/cef_browser.h"
 
-void SimpleHandler::PlatformTitleChange(CefRefPtr<CefBrowser> browser,
+void CefHandler::PlatformTitleChange(CefRefPtr<CefBrowser> browser,
                                         const CefString& title) {
   /* std::string titleStr(title); */
 

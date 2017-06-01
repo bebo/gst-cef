@@ -18,9 +18,9 @@ namespace {
 
 // When using the Views framework this object provides the delegate
 // implementation for the CefWindow that hosts the Views-based browser.
-class SimpleWindowDelegate : public CefWindowDelegate {
+class BrowserWindowDelegate : public CefWindowDelegate {
  public:
-  explicit SimpleWindowDelegate(CefRefPtr<CefBrowserView> browser_view)
+  explicit BrowserWindowDelegate(CefRefPtr<CefBrowserView> browser_view)
       : browser_view_(browser_view) {}
 
   void OnWindowCreated(CefRefPtr<CefWindow> window) OVERRIDE {
@@ -47,23 +47,23 @@ class SimpleWindowDelegate : public CefWindowDelegate {
  private:
   CefRefPtr<CefBrowserView> browser_view_;
 
-  IMPLEMENT_REFCOUNTING(SimpleWindowDelegate);
-  DISALLOW_COPY_AND_ASSIGN(SimpleWindowDelegate);
+  IMPLEMENT_REFCOUNTING(BrowserWindowDelegate);
+  DISALLOW_COPY_AND_ASSIGN(BrowserWindowDelegate);
 };
 
 }  // namespace
 
-SimpleApp::SimpleApp(void *gstCef, void *push_data): gstCef(gstCef), push_data(push_data) {};
+Browser::Browser(void *gstCef, void *push_data): gstCef(gstCef), push_data(push_data) {};
 
-void SimpleApp::OnContextInitialized() {
+void Browser::OnContextInitialized() {
   CEF_REQUIRE_UI_THREAD();
 
   CefRefPtr<CefCommandLine> command_line =
       CefCommandLine::GetGlobalCommandLine();
 
-  // SimpleHandler implements browser-level callbacks.
+  // CefHandler implements browser-level callbacks.
   CefRefPtr<RenderHandler> render_handler = new RenderHandler(gstCef, push_data, 1280, 720);
-  CefRefPtr<SimpleHandler> handler = new SimpleHandler(render_handler);
+  CefRefPtr<CefHandler> handler = new CefHandler(render_handler);
 
   // Specify CEF browser settings here.
   CefBrowserSettings browser_settings;
@@ -75,6 +75,7 @@ void SimpleApp::OnContextInitialized() {
   // that instead of the default URL.
   url = command_line->GetSwitchValue("url");
   if (url.empty()) {
+    /* url = "http://acid3.acidtests.org/"; */
     url = "https://bebo-dev.com/fpntest3/popup/9c2c522db4564d51a051ad1b90431e18";
   }
 

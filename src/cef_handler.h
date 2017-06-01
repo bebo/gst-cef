@@ -29,16 +29,16 @@ public:
   IMPLEMENT_REFCOUNTING(RenderHandler);
 };
 
-class SimpleHandler : public CefClient,
+class CefHandler : public CefClient,
                       public CefDisplayHandler,
                       public CefLifeSpanHandler,
                       public CefLoadHandler {
  public:
-  explicit SimpleHandler(RenderHandler* renderHandler);
-  ~SimpleHandler();
+  explicit CefHandler(RenderHandler* renderHandler);
+  ~CefHandler();
 
   // Provide access to the single global instance of this object.
-  static SimpleHandler* GetInstance();
+  static CefHandler* GetInstance();
 
   CefRefPtr<CefRenderHandler> GetRenderHandler() OVERRIDE;
 
@@ -89,7 +89,7 @@ class SimpleHandler : public CefClient,
   CefRefPtr<CefRenderHandler> renderHandler;
 
   // Include the default reference counting implementation.
-  IMPLEMENT_REFCOUNTING(SimpleHandler);
+  IMPLEMENT_REFCOUNTING(CefHandler);
 };
 
 #endif  // CEF_TESTS_CEFSIMPLE_SIMPLE_HANDLER_H_

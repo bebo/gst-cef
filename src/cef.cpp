@@ -269,10 +269,10 @@ static void doStart(gpointer data) {
   CefString(&settings.browser_subprocess_path).FromASCII(subprocess_exe);
   g_free(subprocess_exe);
 
-  // SimpleApp implements application-level callbacks for the browser process.
+  // Browser implements application-level callbacks for the browser process.
   // It will create the first browser instance in OnContextInitialized() after
   // CEF has initialized.
-  CefRefPtr<SimpleApp> app(new SimpleApp(cb->gstCef, cb->push_frame));
+  CefRefPtr<Browser> app(new Browser(cb->gstCef, cb->push_frame));
   g_free(cb->url);
   g_free(cb);
 

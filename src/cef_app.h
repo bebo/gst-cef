@@ -8,9 +8,9 @@
 #include "include/cef_app.h"
 
 // Implement application-level callbacks for the browser process.
-class SimpleApp : public CefApp, public CefBrowserProcessHandler {
+class Browser: public CefApp, public CefBrowserProcessHandler {
  public:
-  SimpleApp(void * gstCef, void * push_data);
+  Browser(void * gstCef, void * push_data);
 
   // CefApp methods:
   virtual CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler()
@@ -25,7 +25,7 @@ class SimpleApp : public CefApp, public CefBrowserProcessHandler {
   void * gstCef;
   void * push_data;
   // Include the default reference counting implementation.
-  IMPLEMENT_REFCOUNTING(SimpleApp);
+  IMPLEMENT_REFCOUNTING(Browser);
 };
 
 #endif  // CEF_TESTS_CEFSIMPLE_SIMPLE_APP_H_
