@@ -74,14 +74,6 @@ void Browser::OnContextInitialized() {
   CefWindowInfo window_info;
   window_info.SetAsWindowless(0, true);
 
-  // Check if a "--url=" value was provided via the command-line. If so, use
-  // that instead of the default URL.
-  url = this-> url;
-
-  // Information used when creating the native window.
-  CefWindowInfo window_info;
-  window_info.SetAsWindowless(0, true);
-
   // Create the first browser window.
   CefBrowserHost::CreateBrowser(window_info, browserClient, url, browser_settings,
                                   NULL);
