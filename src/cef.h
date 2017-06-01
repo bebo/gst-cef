@@ -10,6 +10,7 @@ extern "C" {
 struct gstCb {
     void * gstCef;
     void * push_frame;
+    char * url;
 };
 
 void browser_loop(void * args);

@@ -273,7 +273,7 @@ static void doStart(gpointer data) {
   // It will create the first browser instance in OnContextInitialized() after
   // CEF has initialized.
   CefRefPtr<SimpleApp> app(new SimpleApp(cb->gstCef, cb->push_frame));
-  //FIXME g_free(cb->url);
+  g_free(cb->url);
   g_free(cb);
 
   // Initialize CEF for the browser process.

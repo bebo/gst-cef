@@ -164,7 +164,6 @@ gst_cef_class_init (GstCefClass * klass)
     g_object_class_install_property (gobject_class, PROP_URL,
       g_param_spec_string ("url", "URL", "website to render into video",
           "https://bebo.com/", G_PARAM_READWRITE));
-
 }
 
 static void push_frame(void *gstCef, const void *buffer, int width, int height) {
@@ -235,7 +234,7 @@ void gst_cef_init(GstCef *cef)
         struct gstCb *cb = g_malloc(sizeof(struct gstCb));
         cb->gstCef = cef;
         cb->push_frame = push_frame;
-
+        cb->url = g_strdup(cef->url);
         cef->browserLoop = g_thread_ref(g_thread_new("browser_loop", (GThreadFunc)browser_loop, cb));
     }
 }
