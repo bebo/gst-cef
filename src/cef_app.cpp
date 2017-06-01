@@ -6,6 +6,7 @@
 
 #include <string>
 #include <sstream>
+#include <iostream>
 
 #include "include/cef_browser.h"
 #include "include/cef_command_line.h"
@@ -59,7 +60,7 @@ void Browser::OnContextInitialized() {
   CEF_REQUIRE_UI_THREAD();
 
   CefRefPtr<CefCommandLine> command_line =
-      CefCommandLine::GetGlobalCommandLine();
+    CefCommandLine::GetGlobalCommandLine();
 
   // BrowserClient implements browser-level callbacks.
   CefRefPtr<RenderHandler> render_handler = new RenderHandler(gstCef, push_data, this->width, this->height);
@@ -69,7 +70,9 @@ void Browser::OnContextInitialized() {
   CefBrowserSettings browser_settings;
   browser_settings.windowless_frame_rate = 30;
 
-  std::string url;
+  // Information used when creating the native window.
+  CefWindowInfo window_info;
+  window_info.SetAsWindowless(0, true);
 
   // Check if a "--url=" value was provided via the command-line. If so, use
   // that instead of the default URL.

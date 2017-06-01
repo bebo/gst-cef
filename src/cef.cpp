@@ -265,7 +265,8 @@ static void doStart(gpointer data) {
   char * exe = (char *) getauxval(AT_EXECFN);
   gchar * dirname = g_path_get_dirname(exe);
   gchar * subprocess_exe = g_strconcat(dirname, "/subprocess", NULL);
-  g_free (dirname);
+  g_free(dirname);
+
   CefString(&settings.browser_subprocess_path).FromASCII(subprocess_exe);
   g_free(subprocess_exe);
 
@@ -285,9 +286,11 @@ static void doWork(gpointer data) {
     CefDoMessageLoopWork();
 }
 
-
-void browser_loop(void * args) {
+void browser_loop(gpointer args) {
   std::cout << "starting browser_loop" << std::endl;
+
+  gstCb *cb = (gstCb*) args;
+  std::cout << "Browserloop URL: " << &(cb->url) << std::endl;
 
   g_idle_add((GSourceFunc) doStart, args);
   // Run the CEF message loop. This will block until CefQuitMessageLoop() is

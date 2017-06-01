@@ -161,9 +161,9 @@ gst_cef_class_init (GstCefClass * klass)
       g_param_spec_boolean ("verbose", "Verbose", "Produce verbose output",
           FALSE, G_PARAM_READWRITE));
 
-    g_object_class_install_property (gobject_class, PROP_URL,
+  g_object_class_install_property (gobject_class, PROP_URL,
       g_param_spec_string ("url", "URL", "website to render into video",
-          "https://bebo.com/", G_PARAM_READWRITE));
+        "https://bebo.com/", G_PARAM_READWRITE));
 }
 
 static void push_frame(void *gstCef, const void *buffer, int width, int height) {
