@@ -33,6 +33,8 @@ int XIOErrorHandlerImpl(Display *display) {
   return 0;
 }
 
+static gint loop_live = 0;
+
 }  // namespace
 
 #if 0
@@ -233,9 +235,6 @@ void browser_loop(void * args) {
 }
 
 
-void quit_browser() {
-    CefQuitMessageLoop();
-}
 #endif
 static void doStart(gpointer data) {
     /* CefMainArgs* cefMainArgs = new CefMainArgs(0, nullptr); */
@@ -269,6 +268,9 @@ static void doStart(gpointer data) {
 
   CefString(&settings.browser_subprocess_path).FromASCII(subprocess_exe);
   g_free(subprocess_exe);
+  settings.windowless_rendering_enabled = true;
+  settings.no_sandbox = false;
+  settings.multi_threaded_message_loop = false;
 
   // Browser implements application-level callbacks for the browser process.
   // It will create the first browser instance in OnContextInitialized() after
@@ -282,12 +284,27 @@ static void doStart(gpointer data) {
   CefInitialize(main_args, settings, app.get(), NULL);
 }
 
-static void doWork(gpointer data) {
-    CefDoMessageLoopWork();
+static bool doWork(gpointer data) {
+  std::cout << "doWork" << std::endl;
+  if (g_atomic_int_get(&loop_live)) {
+      std::cout << "Calling CefDoMessageLoopWork" << std::endl;
+      CefDoMessageLoopWork();
+  }
+  return false;
+}
+
+static bool doShutdown(gpointer data) {
+  std::cout << "Calling CefShutdown" << std::endl;
+  CefShutdown();
+  std::cout << "Called CefShutdown" << std::endl;
+  return false;
 }
 
 void browser_loop(gpointer args) {
+
   std::cout << "starting browser_loop" << std::endl;
+  g_atomic_int_set(&loop_live, 1);
+
 
   gstCb *cb = (gstCb*) args;
   std::cout << "Browserloop URL: " << &(cb->url) << std::endl;
@@ -295,16 +312,18 @@ void browser_loop(gpointer args) {
   g_idle_add((GSourceFunc) doStart, args);
   // Run the CEF message loop. This will block until CefQuitMessageLoop() is
   usleep(100000);
-  while(1) {
-    /* CefRunMessageLoop(); */
-    /* CefDoMessageLoopWork(); */
+  while(g_atomic_int_get(&loop_live)) {
     usleep(5000);
     g_idle_add((GSourceFunc) doWork, NULL);
   }
+  usleep(5000);
   std::cout << "MessageLoop Ended" << std::endl;
+  /* g_idle_add((GSourceFunc) doShutdown, NULL); */
 
-  /* CefShutdown(); */
-  /* CefShutdown(); */
+}
 
-  /* return 0; */
+void shutdown_browser() {
+  g_atomic_int_set(&loop_live, 0);
+  usleep(3000000);
+  g_idle_add((GSourceFunc) doShutdown, NULL);
 }

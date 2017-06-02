@@ -134,7 +134,7 @@ gst_cef_class_init (GstCefClass * klass)
   /* base_src_class->fixate = GST_DEBUG_FUNCPTR (gst_cef_fixate); */
   /* base_src_class->set_caps = GST_DEBUG_FUNCPTR (gst_cef_set_caps); */
 
-  /* gobject_class->dispose = gst_cef_dispose; */
+  gobject_class->dispose = gst_cef_dispose;
   gobject_class->finalize = gst_cef_finalize;
   base_src_class->get_caps = GST_DEBUG_FUNCPTR (gst_cef_get_caps);
   /* base_src_class->negotiate = GST_DEBUG_FUNCPTR (gst_cef_negotiate); */
@@ -142,8 +142,8 @@ gst_cef_class_init (GstCefClass * klass)
   /* base_src_class->fill = GST_DEBUG_FUNCPTR (gst_cef_fill); */
 
   /* base_src_class->decide_allocation = GST_DEBUG_FUNCPTR (gst_cef_decide_allocation); */
-  /* base_src_class->start = GST_DEBUG_FUNCPTR (gst_cef_start); */
-  /* base_src_class->stop = GST_DEBUG_FUNCPTR (gst_cef_stop); */
+  base_src_class->start = GST_DEBUG_FUNCPTR (gst_cef_start);
+  base_src_class->stop = GST_DEBUG_FUNCPTR (gst_cef_stop);
   /* base_src_class->get_times = GST_DEBUG_FUNCPTR (gst_cef_get_times); */
   base_src_class->get_size = GST_DEBUG_FUNCPTR (gst_cef_get_size);
   /* /1* base_src_class->prepare_seek_segment = GST_DEBUG_FUNCPTR (gst_cef_prepare_seek_segment); *1/ */
@@ -423,6 +423,8 @@ gst_cef_stop (GstBaseSrc * src)
   GstCef *cef = GST_CEF (src);
 
   GST_DEBUG_OBJECT (cef, "stop");
+  shutdown_browser();
+  /* close_browser(); */
 
   return TRUE;
 }

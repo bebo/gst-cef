@@ -110,6 +110,7 @@ bool BrowserClient::DoClose(CefRefPtr<CefBrowser> browser) {
 void BrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
 
+  std::cout << "OnBeforeClose" << std::endl;
   // Remove from the list of existing browsers.
   BrowserList::iterator bit = browser_list_.begin();
   for (; bit != browser_list_.end(); ++bit) {
@@ -121,7 +122,7 @@ void BrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
 
   if (browser_list_.empty()) {
     // All browser windows have closed. Quit the application message loop.
-    CefQuitMessageLoop();
+    //CefQuitMessageLoop();
   }
 }
 
