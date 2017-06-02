@@ -21,12 +21,19 @@ RenderHandler::RenderHandler(void * gstCef, void * push_frame, int width, int he
     ready(0)
 {
     this->push_frame = (void(*)(void *gstCef, const void *buffer, int width, int height))push_frame;
-    /* this->push_frame = void (*p)() =  (void(*)(void *gstCef, const void *buffer, int width, int height))push_frame; */
     this->gstCef = gstCef;
     this->width = width;
     this->height = height;
     gettimeofday(&this->last_tv, NULL);
-  }
+}
+
+void RenderHandler::SetUgly(void * gstCef, void * push_frame, int width, int height) {
+    this->push_frame = (void(*)(void *gstCef, const void *buffer, int width, int height))push_frame;
+    this->gstCef = gstCef;
+    this->width = width;
+    this->height = height;
+    gettimeofday(&this->last_tv, NULL);
+}
 
 bool RenderHandler::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) {
     std::cout << "GetViewRect" << std::endl;

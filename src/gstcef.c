@@ -423,8 +423,8 @@ gst_cef_stop (GstBaseSrc * src)
   GstCef *cef = GST_CEF (src);
 
   GST_DEBUG_OBJECT (cef, "stop");
-  shutdown_browser();
-  /* close_browser(); */
+  /* shutdown_browser(); */
+  close_all_browsers();
 
   return TRUE;
 }

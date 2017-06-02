@@ -24,6 +24,7 @@ private:
 public:
 
   RenderHandler(void *gstCef, void *push_frame, int width, int height);
+  void SetUgly(void *gstCef, void *push_frame, int width, int height);
   bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect);
   void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType paintType, const RectList &rects,
                const void *buffer, int width, int height) OVERRIDE;

@@ -6,6 +6,7 @@
 #define CEF_TESTS_CEFSIMPLE_SIMPLE_APP_H_
 
 #include "include/cef_app.h"
+#include "cef_handler.h"
 
 // Implement application-level callbacks for the browser process.
 class Browser: public CefApp, public CefBrowserProcessHandler {
@@ -20,7 +21,13 @@ class Browser: public CefApp, public CefBrowserProcessHandler {
 
   // CefBrowserProcessHandler methods:
   virtual void OnContextInitialized() OVERRIDE;
+  void CloseAllBrowsers(bool force_close);
+  void Open(void *gstCef, void *push_data, char* url);
 
+ private: 
+  // TODO:  this needs to move per tab instances:
+  CefRefPtr<BrowserClient> browserClient;
+  
   void * gstCef;
   void * push_data;
   int height;

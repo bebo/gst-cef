@@ -34,6 +34,7 @@ int XIOErrorHandlerImpl(Display *display) {
 }
 
 static gint loop_live = 0;
+static CefRefPtr<Browser> app;
 
 }  // namespace
 
@@ -275,7 +276,7 @@ static void doStart(gpointer data) {
   // Browser implements application-level callbacks for the browser process.
   // It will create the first browser instance in OnContextInitialized() after
   // CEF has initialized.
-  CefRefPtr<Browser> app(new Browser(cb->gstCef, cb->push_frame, cb->url, 1280, 720));
+  app = new Browser(cb->gstCef, cb->push_frame, cb->url, 1280, 720);
   cb->url = NULL;
   g_free(cb);
 
@@ -284,10 +285,19 @@ static void doStart(gpointer data) {
   CefInitialize(main_args, settings, app.get(), NULL);
 }
 
+static bool doOpen(gpointer data) {
+  struct gstCb *cb = (struct gstCb*) data;
+  std::cout << "doOpen " << cb->url << std::endl;
+  app.get()->Open(cb->gstCef, cb->push_frame, cb->url);
+  cb->url = NULL;
+  /* g_free(cb); */
+  return false;
+}
+
 static bool doWork(gpointer data) {
-  std::cout << "doWork" << std::endl;
+  /* std::cout << "doWork" << std::endl; */
   if (g_atomic_int_get(&loop_live)) {
-      std::cout << "Calling CefDoMessageLoopWork" << std::endl;
+      /* std::cout << "Calling CefDoMessageLoopWork" << std::endl; */
       CefDoMessageLoopWork();
   }
   return false;
@@ -301,6 +311,10 @@ static bool doShutdown(gpointer data) {
 }
 
 void browser_loop(gpointer args) {
+  if (app != NULL) {
+    g_idle_add((GSourceFunc) doOpen, args);
+    return;
+  }
 
   std::cout << "starting browser_loop" << std::endl;
   g_atomic_int_set(&loop_live, 1);
@@ -320,6 +334,19 @@ void browser_loop(gpointer args) {
   std::cout << "MessageLoop Ended" << std::endl;
   /* g_idle_add((GSourceFunc) doShutdown, NULL); */
 
+}
+
+bool doCloseAll(gpointer data) {
+    if(app) {
+        app.get()->CloseAllBrowsers(true);
+    } else {
+        std::cout << "ERROR: no app" << std::endl;
+    }
+    return false;
+}
+
+void close_all_browsers() {
+  g_idle_add((GSourceFunc) doCloseAll, NULL);
 }
 
 void shutdown_browser() {

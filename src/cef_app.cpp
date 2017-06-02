@@ -56,15 +56,41 @@ class BrowserWindowDelegate : public CefWindowDelegate {
 
 Browser::Browser(void *gstCef, void *push_data, char* url, int width, int height): gstCef(gstCef), push_data(push_data), url(url), width(width), height(height) {};
 
+
+void Browser::CloseAllBrowsers(bool force_close) {
+  std::cout << "CloseAllBrowsers" << std::endl;
+  CEF_REQUIRE_UI_THREAD();
+  browserClient->CloseAllBrowsers(force_close);
+}
+
+void Browser::Open(void *gstCef, void *push_data, char* url) {
+  std::cout << "Open Url" << url << std::endl;
+  CEF_REQUIRE_UI_THREAD();
+
+  browserClient->CloseAllBrowsers(true);
+  CefRefPtr<CefRenderHandler> cefRenderHandler = browserClient->GetRenderHandler();
+  RenderHandler *renderHandler = (RenderHandler *) cefRenderHandler.get();
+  renderHandler->SetUgly(gstCef, push_data, this->width, this->height);
+
+  // Specify CEF browser settings here.
+  CefBrowserSettings browser_settings;
+  browser_settings.windowless_frame_rate = 30;
+
+  // Information used when creating the native window.
+  CefWindowInfo window_info;
+  window_info.SetAsWindowless(0, true);
+  CefBrowserHost::CreateBrowser(window_info, browserClient, url, browser_settings, NULL);
+}
+
 void Browser::OnContextInitialized() {
   CEF_REQUIRE_UI_THREAD();
 
-  CefRefPtr<CefCommandLine> command_line =
-    CefCommandLine::GetGlobalCommandLine();
+  /* CefRefPtr<CefCommandLine> command_line = */
+  /*   CefCommandLine::GetGlobalCommandLine(); */
 
   // BrowserClient implements browser-level callbacks.
   CefRefPtr<RenderHandler> render_handler = new RenderHandler(gstCef, push_data, this->width, this->height);
-  CefRefPtr<BrowserClient> browserClient = new BrowserClient(render_handler);
+  browserClient = new BrowserClient(render_handler);
 
   // Specify CEF browser settings here.
   CefBrowserSettings browser_settings;
