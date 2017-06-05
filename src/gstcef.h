@@ -42,11 +42,12 @@ struct _GstCef
   gboolean verbose;
   GThread *browserLoop;
   const char *url;
-  gpointer current_frame;
+  GstBuffer *current_frame;
   GMutex frame_mutex;
   GCond frame_cond;
   /* gint64 cur_offset; */
   GstClockTime startTime;
+  GstClockTime lastFrame;
 };
 
 struct _GstCefClass

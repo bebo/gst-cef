@@ -187,7 +187,7 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
   gst_buffer_map(buf, &map, GST_MAP_WRITE);
   memcpy(map.data, buffer, size);
   gst_buffer_unmap (buf, &map);
-  GST_BUFFER_TIMESTAMP (buf) = now - cef->startTime; // live sources should start at 0
+  GST_BUFFER_PTS(buf) = now - cef->startTime; // live sources should start at 0
   GST_BUFFER_OFFSET (buf) = 0;
   if (now == cef->startTime) {
     GST_BUFFER_FLAG_SET (buf, GST_BUFFER_FLAG_DISCONT);
@@ -201,15 +201,53 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
   g_mutex_unlock (&cef->frame_mutex);
 }
 
-gpointer pop_frame(GstCef *cef)
+GstBuffer * pop_frame(GstCef *cef)
 {
-  gpointer frame;
-  g_mutex_lock (&cef->frame_mutex);
-  while (!cef->current_frame) {
-    g_cond_wait (&cef->frame_cond, &cef->frame_mutex);
+  // can't wait forever as we have the GST_LIVE_LOCK - so the strategy is to
+  // provide duplicate frames
+  
+  GstBuffer * frame;
+  
+  GstClock *clock = gst_system_clock_obtain();
+  GstClockTime now = gst_clock_get_time(clock) - cef->startTime;
+  gint64 end_time;
+
+  if (cef->lastFrame) {
+    end_time = MAX(1, (cef->lastFrame + 2 * GST_SECOND / 30 - now) / 1000);
+  } else {
+    end_time = G_USEC_PER_SEC / 30; // fps
   }
-  frame = cef->current_frame;
-  cef->current_frame= NULL;
+  end_time += g_get_monotonic_time();
+
+  g_mutex_lock (&cef->frame_mutex);
+
+  while(1) {
+    if (g_cond_wait_until (&cef->frame_cond, &cef->frame_mutex, end_time)) {
+        frame = cef->current_frame;
+        if (frame) {
+            // new frame
+            GST_DEBUG_OBJECT(cef, "new frame");
+            break;
+        }
+    } else {
+        // timed out
+        frame = cef->current_frame;
+        if (frame) {
+            GST_DEBUG_OBJECT(cef, "timed out, copying last frame");
+            frame = gst_buffer_copy(cef->current_frame);
+            GST_BUFFER_PTS(frame) = cef->lastFrame + GST_SECOND / 30;
+            gst_buffer_unref(cef->current_frame);
+            cef->current_frame = frame;
+            break;
+        }
+    }
+    end_time = g_get_monotonic_time () +  G_USEC_PER_SEC / 30; // fps
+    // TODO create transparent buffer if we don't have stuff yet...
+  }
+
+  gst_buffer_ref(cef->current_frame);
+  cef->lastFrame = GST_BUFFER_PTS(frame);
+
   g_mutex_unlock (&cef->frame_mutex);
   return frame;
 }
@@ -537,7 +575,7 @@ gst_cef_create (GstBaseSrc * src, guint64 offset, guint size,
 {
   GstCef *cef = GST_CEF (src);
 
-  *buf = (GstBuffer*) pop_frame(cef);
+  *buf = pop_frame(cef);
   GST_LOG_OBJECT (src, "Created buffer of size %u at %" G_GINT64_FORMAT
       " with timestamp %" GST_TIME_FORMAT, gst_buffer_get_size(*buf), GST_BUFFER_OFFSET (*buf),
       GST_TIME_ARGS (GST_BUFFER_TIMESTAMP (*buf)));
