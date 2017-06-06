@@ -135,7 +135,7 @@ gst_cef_class_init (GstCefClass * klass)
   /* base_src_class->set_caps = GST_DEBUG_FUNCPTR (gst_cef_set_caps); */
 
   gobject_class->dispose = gst_cef_dispose;
-  gobject_class->finalize = gst_cef_finalize;
+  /* gobject_class->finalize = gst_cef_finalize; */
   base_src_class->get_caps = GST_DEBUG_FUNCPTR (gst_cef_get_caps);
   /* base_src_class->negotiate = GST_DEBUG_FUNCPTR (gst_cef_negotiate); */
   base_src_class->is_seekable = GST_DEBUG_FUNCPTR (gst_cef_is_seekable);
@@ -579,8 +579,6 @@ gst_cef_create (GstBaseSrc * src, guint64 offset, guint size,
   GST_LOG_OBJECT (src, "Created buffer of size %u at %" G_GINT64_FORMAT
       " with timestamp %" GST_TIME_FORMAT, gst_buffer_get_size(*buf), GST_BUFFER_OFFSET (*buf),
       GST_TIME_ARGS (GST_BUFFER_TIMESTAMP (*buf)));
-
-  GST_DEBUG_OBJECT (cef, "create");
 
   return GST_FLOW_OK;
 }

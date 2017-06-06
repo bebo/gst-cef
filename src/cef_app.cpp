@@ -54,8 +54,8 @@ class BrowserWindowDelegate : public CefWindowDelegate {
 
 }  // namespace
 
-Browser::Browser(void *gstCef, void *push_data, char* url, int width, int height): gstCef(gstCef), push_data(push_data), url(url), width(width), height(height) {};
-
+Browser::Browser(void *gstCef, void *push_data, char* url, int width, int height): 
+  gstCef(gstCef), push_data(push_data), url(url), width(width), height(height) {};
 
 void Browser::CloseAllBrowsers(bool force_close) {
   std::cout << "CloseAllBrowsers" << std::endl;
@@ -67,10 +67,8 @@ void Browser::Open(void *gstCef, void *push_data, char* url) {
   std::cout << "Open Url" << url << std::endl;
   CEF_REQUIRE_UI_THREAD();
 
+  browserClient->setGstCef(gstCef);
   browserClient->CloseAllBrowsers(true);
-  CefRefPtr<CefRenderHandler> cefRenderHandler = browserClient->GetRenderHandler();
-  RenderHandler *renderHandler = (RenderHandler *) cefRenderHandler.get();
-  renderHandler->SetUgly(gstCef, push_data, this->width, this->height);
 
   // Specify CEF browser settings here.
   CefBrowserSettings browser_settings;
@@ -83,14 +81,14 @@ void Browser::Open(void *gstCef, void *push_data, char* url) {
 }
 
 void Browser::OnContextInitialized() {
+  std::cout << "OnContextInitialized" << std::endl;
   CEF_REQUIRE_UI_THREAD();
 
   /* CefRefPtr<CefCommandLine> command_line = */
   /*   CefCommandLine::GetGlobalCommandLine(); */
 
   // BrowserClient implements browser-level callbacks.
-  CefRefPtr<RenderHandler> render_handler = new RenderHandler(gstCef, push_data, this->width, this->height);
-  browserClient = new BrowserClient(render_handler);
+  browserClient = new BrowserClient(gstCef, push_data, this->width, this->height);
 
   // Specify CEF browser settings here.
   CefBrowserSettings browser_settings;
