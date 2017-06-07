@@ -35,11 +35,13 @@ int XIOErrorHandlerImpl(Display *display) {
 
 static gint loop_live = 0;
 static CefRefPtr<Browser> app;
+static GMutex cef_start_mutex;
+static GCond cef_start_cond;
 
 }  // namespace
 
 static void doStart(gpointer data) {
-
+  std::cout << "doStart" << std::endl;
   // Provide CEF with command-line arguments.
   struct gstCb *cb = (struct gstCb*) data;
   CefMainArgs main_args(0, nullptr);
@@ -74,11 +76,13 @@ static void doStart(gpointer data) {
   // Initialize CEF for the browser process.
   std::cout << "CefInitialize" << std::endl;
   CefInitialize(main_args, settings, app.get(), NULL);
+
+  g_cond_signal(&cef_start_cond);
+  g_mutex_unlock(&cef_start_mutex);
 }
 
 static bool doOpen(gpointer data) {
   struct gstCb *cb = (struct gstCb*) data;
-  std::cout << "doOpen " << cb->url << std::endl;
   app.get()->Open(cb->gstCef, cb->push_frame, cb->url);
   cb->url = NULL;
   /* g_free(cb); */
@@ -102,19 +106,22 @@ static bool doShutdown(gpointer data) {
 }
 
 void browser_loop(gpointer args) {
-  if (app != NULL) {
+  // TODO: this wont work
+  if (app) {
     g_idle_add((GSourceFunc) doOpen, args);
     return;
   }
 
   std::cout << "starting browser_loop" << std::endl;
+
   g_atomic_int_set(&loop_live, 1);
 
-
   gstCb *cb = (gstCb*) args;
-  std::cout << "Browserloop URL: " << &(cb->url) << std::endl;
+
+  g_mutex_lock(&cef_start_mutex);
 
   g_idle_add((GSourceFunc) doStart, args);
+
   // Run the CEF message loop. This will block until CefQuitMessageLoop() is
   usleep(100000);
   while(g_atomic_int_get(&loop_live)) {
@@ -125,6 +132,20 @@ void browser_loop(gpointer args) {
   std::cout << "MessageLoop Ended" << std::endl;
   /* g_idle_add((GSourceFunc) doShutdown, NULL); */
 
+}
+
+void doOpenBrowser(gpointer args) {
+  g_mutex_lock(&cef_start_mutex);
+  while(!app) {
+    std::cout << "waiting" << std::endl;
+    g_cond_wait(&cef_start_cond, &cef_start_mutex);
+  }
+  g_mutex_unlock(&cef_start_mutex);
+  g_idle_add((GSourceFunc) doOpen, args);
+}
+
+void open_browser(gpointer args) {
+  g_thread_new("open_browser", (GThreadFunc) doOpenBrowser, args);
 }
 
 bool doCloseAll(gpointer data) {

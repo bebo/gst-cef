@@ -46,7 +46,6 @@ cd src
 export LD_LIBRARY_PATH=/usr/local/cef/lib
 export DISPLAY=:0
 Xvfb :0 -screen 0 1280x720x16 &
-GST_DEBUG=cef:7 GST_PLUGIN_PATH=${HOME}/gst-cef/src/.libs src/gst-launch-1.0 cef ! videoconvert ! x264enc ! matroskamux ! filesink location=foo.mkv
-GST_DEBUG=cef:7 GST_PLUGIN_PATH=${HOME}/gst-cef/src/.libs src/gst-launch-1.0 cef url="https://bebo.com" ! videoconvert ! x264enc ! matroskamux ! filesink location=foo.mkv
+GST_DEBUG=cef:7 GST_PLUGIN_PATH=${HOME}/gst-cef/src/.libs build/dist/gst-launch-1.0 cef url="https://bebo.com" ! videoconvert ! x264enc ! matroskamux ! filesink location=foo.mkv
 
 ```

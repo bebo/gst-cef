@@ -14,6 +14,7 @@ struct gstCb {
 };
 
 void browser_loop(void * args);
+void open_browser(void * args);
 void shutdown_browser();
 void close_all_browsers();
 

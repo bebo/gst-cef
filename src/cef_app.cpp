@@ -64,11 +64,8 @@ void Browser::CloseAllBrowsers(bool force_close) {
 }
 
 void Browser::Open(void *gstCef, void *push_data, char* url) {
-  std::cout << "Open Url" << url << std::endl;
+  std::cout << "Open Url: " << url << std::endl;
   CEF_REQUIRE_UI_THREAD();
-
-  browserClient->setGstCef(gstCef);
-  browserClient->CloseAllBrowsers(true);
 
   // Specify CEF browser settings here.
   CefBrowserSettings browser_settings;
@@ -77,11 +74,13 @@ void Browser::Open(void *gstCef, void *push_data, char* url) {
   // Information used when creating the native window.
   CefWindowInfo window_info;
   window_info.SetAsWindowless(0, true);
-  CefBrowserHost::CreateBrowser(window_info, browserClient, url, browser_settings, NULL);
+
+  CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(window_info, browserClient, url, browser_settings, NULL);
+  browserClient->AddBrowserGstMap(browser, gstCef, push_data);
 }
 
 void Browser::OnContextInitialized() {
-  std::cout << "OnContextInitialized" << std::endl;
+  std::cout << "OnContextInitialized, Url: " << url << std::endl;
   CEF_REQUIRE_UI_THREAD();
 
   /* CefRefPtr<CefCommandLine> command_line = */
@@ -98,7 +97,14 @@ void Browser::OnContextInitialized() {
   CefWindowInfo window_info;
   window_info.SetAsWindowless(0, true);
 
+  // Have to use CreateBrowserSync because there seems to be a bug with browser->GetIdentifier()
+  // in mixing CreateBrowser + CreateBrowserSync. 
+  // scenarios:
+  // CreateBrowser (OnContextInitialized) -> onAfterCreated invoked with browser_id = 1,
+  // CreateBrowserSync (Open) -> returned Browser has browser_id = 1, onAfterCreated invoked with browser_id = 2
+
   // Create the first browser window.
-  CefBrowserHost::CreateBrowser(window_info, browserClient, url, browser_settings,
-                                  NULL);
+  // CefBrowserHost::CreateBrowser(window_info, browserClient, url, browser_settings, NULL);
+  CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(window_info, browserClient, url, browser_settings, NULL);
+  browserClient->AddBrowserGstMap(browser, gstCef, push_data);
 }

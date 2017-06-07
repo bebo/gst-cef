@@ -9,12 +9,12 @@
 #include <sys/time.h>
 #include <list>
 #include <map>
+#include <mutex>
 
 typedef struct GstCefInfo {
   void * gst_cef;
   void (* push_frame)(void *gstCef, const void *buffer, int width, int height);
-  int width;
-  int height;
+  CefRefPtr<CefBrowser> browser;
 
   bool ready;
   struct timeval last_tv;
@@ -69,11 +69,16 @@ class BrowserClient : public CefClient,
 
   // Request that all existing browser windows close.
   void CloseAllBrowsers(bool force_close);
-  void setGstCef(void * gstCef);
+  void AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void * gstCef, void * push_frame);
 
   bool IsClosing() const { return is_closing_; }
 
  private:
+  std::mutex mutex;
+
+  int width;
+  int height;
+
   // Platform-specific implementation.
   void PlatformTitleChange(CefRefPtr<CefBrowser> browser,
                            const CefString& title);
@@ -81,14 +86,13 @@ class BrowserClient : public CefClient,
   // True if the application is using the Views framework.
   const bool use_views_;
 
-  // List of existing browser windows. Only accessed on the CEF UI thread.
-  typedef std::list<CefRefPtr<CefBrowser>> BrowserList;
-  BrowserList browser_list_;
-
   bool is_closing_;
 
-  GstCefInfo_T * gst_cef_info;
+  // List of existing browser windows. Only accessed on the CEF UI thread.
   std::map<int, GstCefInfo_T*> browser_gst_map;
+
+  // gst_cef_info temp object for when we create browser async
+  GstCefInfo_T * gst_cef_info_temp;
 
   GstCefInfo_T * getGstCef(CefRefPtr<CefBrowser> browser);
 

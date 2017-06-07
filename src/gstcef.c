@@ -113,6 +113,7 @@ G_DEFINE_TYPE_WITH_CODE (GstCef, gst_cef, GST_TYPE_PUSH_SRC,
   "debug category for cef element"));
 void * browser = NULL;
 pthread_t browserMessageLoop = 0;
+GThread *browserLoop;
 
 static void
 gst_cef_class_init (GstCefClass * klass)
@@ -279,22 +280,16 @@ GstBuffer * pop_frame(GstCef *cef)
 }
 
 void new_browser(GstCef *cef) {
-    if (cef->browserLoop == 0) {
-        /*     /1* new_browser(&browser, cef->url, 1280, 720, 30, NULL); *1/ */
-        /* pthread_attr_t attr; */
-        /* /1* Initialize and set thread detached attribute *1/ */
-        /* pthread_attr_init(&attr); */
-        /* pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE); */
-        /* pthread_create(&browserMessageLoop, &attr, (void *) browser_loop, NULL); */
-        /* /1* browser_loop(NULL); *1/ */
-        /* pthread_join(browserMessageLoop, NULL); */
-        /* GThread * */
-        struct gstCb *cb = g_malloc(sizeof(struct gstCb));
-        cb->gstCef = cef;
-        cb->push_frame = push_frame;
-        cb->url = g_strdup(cef->url);
-        cef->browserLoop = g_thread_ref(g_thread_new("browser_loop", (GThreadFunc)browser_loop, cb));
-    }
+  struct gstCb *cb = g_malloc(sizeof(struct gstCb));
+  cb->gstCef = cef;
+  cb->push_frame = push_frame;
+  cb->url = g_strdup(cef->url);
+
+  if (browserLoop == 0) {
+    browserLoop = g_thread_ref(g_thread_new("browser_loop", (GThreadFunc)browser_loop, cb));
+  } else {
+    open_browser(cb);
+  }
 }
 
 void gst_cef_init(GstCef *cef)
@@ -303,16 +298,11 @@ void gst_cef_init(GstCef *cef)
 
   gst_base_src_set_format (GST_BASE_SRC (cef), GST_FORMAT_TIME);
   gst_base_src_set_live (GST_BASE_SRC (cef), DEFAULT_IS_LIVE);
-
 }
 
 void set_url(GstCef *cef, char * url) {
   cef->url = url;
-  if (cef->browserLoop == 0) {
-      new_browser(cef);
-  } else {
-    // FIXME tell chromium to change url
-  }
+  new_browser(cef);
 }
 
 void
