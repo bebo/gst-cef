@@ -2,6 +2,7 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
+#include "cef.h"
 #include "cef_app.h"
 
 #include <string>
@@ -58,14 +59,15 @@ Browser::Browser(void *gstCef, void *push_data, char* url, int width, int height
   gstCef(gstCef), push_data(push_data), url(url), width(width), height(height) {};
 
 void Browser::CloseAllBrowsers(bool force_close) {
-  std::cout << "CloseAllBrowsers" << std::endl;
   CEF_REQUIRE_UI_THREAD();
+  GST_LOG("CloseAllBrowsers");
+
   browserClient->CloseAllBrowsers(force_close);
 }
 
 void Browser::Open(void *gstCef, void *push_data, char* url) {
-  std::cout << "Open Url: " << url << std::endl;
   CEF_REQUIRE_UI_THREAD();
+  GST_INFO("Open Url: %s", url);
 
   // Specify CEF browser settings here.
   CefBrowserSettings browser_settings;
@@ -80,8 +82,8 @@ void Browser::Open(void *gstCef, void *push_data, char* url) {
 }
 
 void Browser::OnContextInitialized() {
-  std::cout << "OnContextInitialized " << std::endl;
   CEF_REQUIRE_UI_THREAD();
+  GST_LOG("OnContextInitialized");
 
   // BrowserClient implements browser-level callbacks.
   browserClient = new BrowserClient();

@@ -25,7 +25,6 @@ class Browser: public CefApp, public CefBrowserProcessHandler {
   void Open(void *gstCef, void *push_data, char* url);
 
  private: 
-  // TODO:  this needs to move per tab instances:
   CefRefPtr<BrowserClient> browserClient;
   
   void * gstCef;

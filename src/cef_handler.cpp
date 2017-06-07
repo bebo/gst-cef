@@ -4,6 +4,7 @@
 // can be found in the LICENSE file.
 
 #include "cef_handler.h"
+#include "cef.h"
 
 #include <iostream>
 #include <string>
@@ -28,30 +29,31 @@ BrowserClient::~BrowserClient() {
 }
 
 bool BrowserClient::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) {
-    std::cout << "GetViewRect: browser id: " << browser->GetIdentifier() << ", length: " << browser_gst_map.size() << std::endl;
 
-    // TODO: getGstCef may returns NULL because GetViewRect is called before 
-    // the CreateBrowserSync return. We add the browser to the map after 
-    // CreateBrowserSync return. Should figure a better dynamic alternative
-    // for the width and height
-    auto cef = getGstCef(browser);
+  GST_DEBUG("GetViewRect: browser id: %d, lenght: %lu", browser->GetIdentifier(), browser_gst_map.size());
 
-    if (cef == 0) {
-      rect = CefRect(0, 0, 1280, 720); // FIXME: value should not be hardcoded
-      return true;
-    }
+  // TODO: getGstCef may returns NULL because GetViewRect is called before 
+  // the CreateBrowserSync return. We add the browser to the map after 
+  // CreateBrowserSync return. Should figure a better dynamic alternative
+  // for the width and height
+  auto cef = getGstCef(browser);
 
-    rect = CefRect(0, 0, cef->width, cef->height);
+  if (cef == 0) {
+    rect = CefRect(0, 0, 1280, 720); // FIXME: value should not be hardcoded
     return true;
+  }
+
+  rect = CefRect(0, 0, cef->width, cef->height);
+  return true;
 }
 
 void BrowserClient::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType paintType, const RectList &rects, 
                const void *buffer, int width, int height) {
-    std::cout << "OnPaint: browser id: " << browser->GetIdentifier() << ", length: " << browser_gst_map.size() << std::endl;
+    GST_ERROR("OnPaint: browser id: %d, lenght: %lu", browser->GetIdentifier(), browser_gst_map.size());
 
     auto cef = getGstCef(browser);
-    if (! cef->ready) {
-        std::cout << "Not ready yet" << std::endl;
+    if (!cef->ready) {
+        GST_DEBUG("Not ready yet");
         return;
     }
 
@@ -63,7 +65,7 @@ void BrowserClient::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType pain
     cef->last_tv.tv_sec = tv.tv_sec;
     cef->last_tv.tv_usec = tv.tv_usec;
 
-    /* std::cout << "OnPaint() for size: " << width << " x " << height << " ms:" << millisecondsSinceEpoch <<std::endl; */
+    GST_DEBUG("OnPaint() for size: %d x %d ms:%llu", width, height, millisecondsSinceEpoch);
     cef->push_frame(cef->gst_cef, buffer, cef->width, cef->height);
 }
 
@@ -88,7 +90,7 @@ void BrowserClient::OnTitleChange(CefRefPtr<CefBrowser> browser,
 
 void BrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
-  std::cout << "OnAfterCreated: " << browser->GetIdentifier() << std::endl;
+  GST_DEBUG("OnAfterCreated: %d", browser->GetIdentifier());
 }
 
 void BrowserClient::AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void * gstCef, void * push_frame, int width, int height) {
@@ -104,7 +106,7 @@ void BrowserClient::AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void * gstCe
   gettimeofday(&gst_cef_info->last_tv, NULL);
 
   int id = browser->GetIdentifier();
-  std::cout << "Adding browser to gst map browser id: " << id << std::endl;
+  GST_INFO("Adding browser to gst map browser id: %d", id);
 
   browser_gst_map[id] = gst_cef_info;
 }
@@ -118,7 +120,7 @@ GstCefInfo_T* BrowserClient::getGstCef(CefRefPtr<CefBrowser> browser) {
   auto it_end = browser_gst_map.end();
 
   if (info_it == it_end) {
-    std::cout << "Browser not found in the map, browser id: " << id << std::endl;
+    GST_INFO("Browser not found in the map, browser id: %d", id);
     return NULL;
   }
 
@@ -126,9 +128,8 @@ GstCefInfo_T* BrowserClient::getGstCef(CefRefPtr<CefBrowser> browser) {
 }
 
 bool BrowserClient::DoClose(CefRefPtr<CefBrowser> browser) {
-  std::cout << "DoClose" << std::endl;
-
   CEF_REQUIRE_UI_THREAD();
+  GST_LOG("DoClose");
 
   // Closing the main window requires special handling. See the DoClose()
   // documentation in the CEF header for a detailed destription of this
@@ -145,8 +146,7 @@ bool BrowserClient::DoClose(CefRefPtr<CefBrowser> browser) {
 
 void BrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
-
-  std::cout << "OnBeforeClose" << std::endl;
+  GST_LOG("OnBeforeClose");
 
   // Remove from the browser from the map.
   for (auto it = browser_gst_map.begin(); it != browser_gst_map.end(); ++it) {
@@ -182,7 +182,7 @@ void BrowserClient::OnLoadingStateChange(CefRefPtr< CefBrowser > browser,
   bool canGoBack,
   bool canGoForward) {
   CEF_REQUIRE_UI_THREAD();
-  std::cout << "OnLoadingStateChange: " << isLoading << std::endl;
+  GST_INFO("OnLoadingStateChange: %d", isLoading);
 }
 
 void BrowserClient::OnLoadEnd(CefRefPtr< CefBrowser > browser,
@@ -190,9 +190,15 @@ void BrowserClient::OnLoadEnd(CefRefPtr< CefBrowser > browser,
   int httpStatusCode) {
   CEF_REQUIRE_UI_THREAD();
 
-  std::cout << "OnLoadEnd - window id: " << browser->GetIdentifier() << " isMain: " << frame->IsMain() << " status code: " << httpStatusCode << std::endl;
-
   auto cef = getGstCef(browser);
+
+
+  // TODO: @jake - log URL
+  if ( httpStatusCode < 400 && httpStatusCode >= 200) {
+      GST_INFO("OnLoadEnd - window id: %d isMain: %d status code: %d", browser->GetIdentifier(), frame->IsMain(), httpStatusCode);
+  } else {
+      GST_ERROR("OnLoadEnd - window id: %d isMain: %d status code: %d", browser->GetIdentifier(), frame->IsMain(), httpStatusCode);
+  }
 
   if (frame->IsMain() && httpStatusCode == 200) {
       cef->ready = true;
