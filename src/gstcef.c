@@ -48,8 +48,7 @@
 #include "gstcef.h"
 #include "cef.h"
 
-GST_DEBUG_CATEGORY_STATIC (gst_cef_debug_category);
-#define GST_CAT_DEFAULT gst_cef_debug_category
+GST_DEBUG_CATEGORY(gst_cef_debug_category);
 #define DEFAULT_IS_LIVE            TRUE
 
 /* prototypes */
