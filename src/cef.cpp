@@ -85,6 +85,8 @@ static bool doOpen(gpointer data) {
   struct gstCb *cb = (struct gstCb*) data;
   app.get()->Open(cb->gstCef, cb->push_frame, cb->url);
   cb->url = NULL;
+
+  //FIXME: figure out why we can't free cb
   /* g_free(cb); */
   return false;
 }
@@ -112,11 +114,11 @@ void browser_loop(gpointer args) {
     return;
   }
 
+  gstCb *cb = (gstCb*) args;
+
   std::cout << "starting browser_loop" << std::endl;
 
   g_atomic_int_set(&loop_live, 1);
-
-  gstCb *cb = (gstCb*) args;
 
   g_mutex_lock(&cef_start_mutex);
 
@@ -137,7 +139,6 @@ void browser_loop(gpointer args) {
 void doOpenBrowser(gpointer args) {
   g_mutex_lock(&cef_start_mutex);
   while(!app) {
-    std::cout << "waiting" << std::endl;
     g_cond_wait(&cef_start_cond, &cef_start_mutex);
   }
   g_mutex_unlock(&cef_start_mutex);

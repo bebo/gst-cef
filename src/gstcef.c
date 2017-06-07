@@ -111,9 +111,8 @@ GST_STATIC_PAD_TEMPLATE ("src",
 G_DEFINE_TYPE_WITH_CODE (GstCef, gst_cef, GST_TYPE_PUSH_SRC,
   GST_DEBUG_CATEGORY_INIT (gst_cef_debug_category, "cef", 0,
   "debug category for cef element"));
-void * browser = NULL;
-pthread_t browserMessageLoop = 0;
-GThread *browserLoop;
+
+static GThread *browserLoop;
 
 static void
 gst_cef_class_init (GstCefClass * klass)

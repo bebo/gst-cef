@@ -76,35 +76,15 @@ void Browser::Open(void *gstCef, void *push_data, char* url) {
   window_info.SetAsWindowless(0, true);
 
   CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(window_info, browserClient, url, browser_settings, NULL);
-  browserClient->AddBrowserGstMap(browser, gstCef, push_data);
+  browserClient->AddBrowserGstMap(browser, gstCef, push_data, this->width, this->height);
 }
 
 void Browser::OnContextInitialized() {
-  std::cout << "OnContextInitialized, Url: " << url << std::endl;
+  std::cout << "OnContextInitialized " << std::endl;
   CEF_REQUIRE_UI_THREAD();
 
-  /* CefRefPtr<CefCommandLine> command_line = */
-  /*   CefCommandLine::GetGlobalCommandLine(); */
-
   // BrowserClient implements browser-level callbacks.
-  browserClient = new BrowserClient(gstCef, push_data, this->width, this->height);
+  browserClient = new BrowserClient();
 
-  // Specify CEF browser settings here.
-  CefBrowserSettings browser_settings;
-  browser_settings.windowless_frame_rate = 30;
-
-  // Information used when creating the native window.
-  CefWindowInfo window_info;
-  window_info.SetAsWindowless(0, true);
-
-  // Have to use CreateBrowserSync because there seems to be a bug with browser->GetIdentifier()
-  // in mixing CreateBrowser + CreateBrowserSync. 
-  // scenarios:
-  // CreateBrowser (OnContextInitialized) -> onAfterCreated invoked with browser_id = 1,
-  // CreateBrowserSync (Open) -> returned Browser has browser_id = 1, onAfterCreated invoked with browser_id = 2
-
-  // Create the first browser window.
-  // CefBrowserHost::CreateBrowser(window_info, browserClient, url, browser_settings, NULL);
-  CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(window_info, browserClient, url, browser_settings, NULL);
-  browserClient->AddBrowserGstMap(browser, gstCef, push_data);
+  Open(gstCef, push_data, url);
 }
