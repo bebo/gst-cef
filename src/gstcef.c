@@ -201,6 +201,35 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
   g_mutex_unlock (&cef->frame_mutex);
 }
 
+GstBuffer * make_transparent(GstCef *cef) {
+  int size = 1280 * 720 * 4 * 1; // TODO: use dynamic values
+  GstClock *clock = gst_system_clock_obtain();
+  GstClockTime now = gst_clock_get_time(clock);
+
+  GstBuffer *buf;
+  buf = gst_buffer_new_allocate (NULL, size, NULL);
+  if (G_UNLIKELY (buf == NULL)) {
+    GST_ERROR_OBJECT (cef, "Failed to allocate %u bytes", size);
+    return;
+  }
+  if (cef->startTime == 0) {
+    cef->startTime = now;
+  }
+
+  guint8 *data;
+  GstMapInfo map;
+  gst_buffer_map(buf, &map, GST_MAP_WRITE);
+  memset(map.data, 0, size);
+  gst_buffer_unmap (buf, &map);
+  GST_BUFFER_PTS(buf) = now - cef->startTime; // live sources should start at 0
+  GST_BUFFER_OFFSET (buf) = 0;
+  if (now == cef->startTime) {
+    GST_BUFFER_FLAG_SET (buf, GST_BUFFER_FLAG_DISCONT);
+  }
+  GST_LOG_OBJECT(cef, "created transparent frame");
+  return buf;
+}
+
 GstBuffer * pop_frame(GstCef *cef)
 {
   // can't wait forever as we have the GST_LIVE_LOCK - so the strategy is to
@@ -217,32 +246,29 @@ GstBuffer * pop_frame(GstCef *cef)
   } else {
     end_time = G_USEC_PER_SEC / 30; // fps
   }
+  end_time = MIN((2 * GST_SECOND / 30) /1000, end_time);
   end_time += g_get_monotonic_time();
 
   g_mutex_lock (&cef->frame_mutex);
 
-  while(1) {
-    if (g_cond_wait_until (&cef->frame_cond, &cef->frame_mutex, end_time)) {
-        frame = cef->current_frame;
-        if (frame) {
-            // new frame
-            GST_DEBUG_OBJECT(cef, "new frame");
-            break;
-        }
-    } else {
-        // timed out
-        frame = cef->current_frame;
-        if (frame) {
-            GST_DEBUG_OBJECT(cef, "timed out, copying last frame");
-            frame = gst_buffer_copy(cef->current_frame);
-            GST_BUFFER_PTS(frame) = cef->lastFrame + GST_SECOND / 30;
-            gst_buffer_unref(cef->current_frame);
-            cef->current_frame = frame;
-            break;
-        }
-    }
-    end_time = g_get_monotonic_time () +  G_USEC_PER_SEC / 30; // fps
-    // TODO create transparent buffer if we don't have stuff yet...
+  if (! cef->current_frame) {
+    cef->current_frame = make_transparent(cef);
+    gst_buffer_ref(cef->current_frame);
+    cef->lastFrame = GST_BUFFER_PTS(cef->current_frame);
+    g_mutex_unlock (&cef->frame_mutex);
+    return cef->current_frame;
+  }
+
+  if (g_cond_wait_until (&cef->frame_cond, &cef->frame_mutex, end_time)) {
+    frame = cef->current_frame;
+    GST_DEBUG_OBJECT(cef, "new frame");
+  } else {
+    // timed out
+    GST_DEBUG_OBJECT(cef, "timed out, copying last frame");
+    frame = gst_buffer_copy(cef->current_frame);
+    GST_BUFFER_PTS(frame) = cef->lastFrame + GST_SECOND / 30;
+    gst_buffer_unref(cef->current_frame);
+    cef->current_frame = frame;
   }
 
   gst_buffer_ref(cef->current_frame);
