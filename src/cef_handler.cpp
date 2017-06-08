@@ -7,7 +7,6 @@
 #include "cef.h"
 
 #include <iostream>
-#include <csignal>
 #include <string>
 
 #include "include/base/cef_bind.h"
@@ -22,7 +21,6 @@
 BrowserClient::BrowserClient(): use_views_(false), is_closing_(false) {}
 
 BrowserClient::~BrowserClient() {
-  std::cout << "Someone is killing me" << std::endl;
   browser_gst_map.clear();
 }
 
@@ -119,7 +117,7 @@ GstCefInfo_T* BrowserClient::getGstCef(CefRefPtr<CefBrowser> browser) {
   auto it_end = browser_gst_map.end();
 
   if (info_it == it_end) {
-    GST_WARN("Browser not found in the map, browser id: %d", id);
+    GST_LOG("Browser not found in the map, browser id: %d", id);
     return NULL;
   }
 
@@ -194,7 +192,6 @@ void BrowserClient::OnLoadEnd(CefRefPtr< CefBrowser > browser,
 
   auto cef = getGstCef(browser);
 
-
   // TODO: @jake - log URL
   if ( httpStatusCode < 400 && httpStatusCode >= 200) {
       GST_INFO("OnLoadEnd - window id: %d isMain: %d status code: %d", browser->GetIdentifier(), frame->IsMain(), httpStatusCode);
@@ -218,19 +215,13 @@ void BrowserClient::CloseBrowser(void * gst_cef, bool force_close) {
   CEF_REQUIRE_UI_THREAD();
 
   for (auto it = browser_gst_map.begin(); it != browser_gst_map.end(); ++it) {
-    std::cout << "it->first: " << it->first << std::endl;
-    std::cout << "gst_cef: " << gst_cef << std::endl;
-    std::cout << "it->second: " << it->second << std::endl;
-
     if (!it->second) {
-      std::cout << "ERROR: SECOND IS EMPTY. it->first: " << it->first << std::endl;
+      GST_ERROR("Closing Browser, browser id: %d. UNABLE TO FIND it->second", it->first);
       continue;
     }
 
-    std::cout << "it->second->gst_cef: " << it->second->gst_cef << std::endl;
-
     if (it->second->gst_cef == gst_cef) {
-      std::cout << "Found!!!!!" << std::endl;
+      GST_LOG("Closing Browser, browser id: %d", it->first);
       CefRefPtr<CefBrowser> browser = it->second->browser;
       browser->GetHost()->CloseBrowser(force_close);
       break;
