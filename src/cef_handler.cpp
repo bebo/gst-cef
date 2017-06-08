@@ -46,8 +46,6 @@ bool BrowserClient::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) {
 
 void BrowserClient::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType paintType, const RectList &rects, 
                const void *buffer, int width, int height) {
-  GST_ERROR("OnPaint: browser id: %d, lenght: %lu", browser->GetIdentifier(), browser_gst_map.size());
-
   auto cef = getGstCef(browser);
   if (!cef->ready) {
     GST_DEBUG("Not ready yet");
@@ -62,7 +60,7 @@ void BrowserClient::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType pain
   cef->last_tv.tv_sec = tv.tv_sec;
   cef->last_tv.tv_usec = tv.tv_usec;
 
-  GST_DEBUG("OnPaint() for size: %d x %d ms:%llu", width, height, millisecondsSinceEpoch);
+  GST_DEBUG("OnPaint() for size: %d x %d ms:%llu, browser id: %d", width, height, millisecondsSinceEpoch, browser->GetIdentifier());
   cef->push_frame(cef->gst_cef, buffer, cef->width, cef->height);
 }
 
