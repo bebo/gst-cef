@@ -1,4 +1,3 @@
-
 #include <sys/auxv.h>
 
 #include <ctime>
@@ -151,17 +150,17 @@ void open_browser(gpointer args) {
   g_thread_new("open_browser", (GThreadFunc) doOpenBrowser, args);
 }
 
-bool doCloseAll(gpointer data) {
-    if(app) {
-        app.get()->CloseAllBrowsers(true);
-    } else {
+bool doClose(gpointer args) {
+  if(app) {
+    app->CloseBrowser(args, true);
+  } else {
         GST_ERROR("ERROR: no app");
-    }
-    return false;
+  }
+  return false;
 }
 
-void close_all_browsers() {
-  g_idle_add((GSourceFunc) doCloseAll, NULL);
+void close_browser(gpointer args) {
+  g_idle_add((GSourceFunc) doClose, args);
 }
 
 void shutdown_browser() {

@@ -58,11 +58,11 @@ class BrowserWindowDelegate : public CefWindowDelegate {
 Browser::Browser(void *gstCef, void *push_data, char* url, int width, int height): 
   gstCef(gstCef), push_data(push_data), url(url), width(width), height(height) {};
 
-void Browser::CloseAllBrowsers(bool force_close) {
+void Browser::CloseBrowser(void * gst_cef, bool force_close) {
   CEF_REQUIRE_UI_THREAD();
-  GST_LOG("CloseAllBrowsers");
 
-  browserClient->CloseAllBrowsers(force_close);
+  GST_LOG("Browser::CloseBrowser");
+  browserClient->CloseBrowser(gst_cef, force_close);
 }
 
 void Browser::Open(void *gstCef, void *push_data, char* url) {

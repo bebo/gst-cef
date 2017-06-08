@@ -21,7 +21,7 @@ class Browser: public CefApp, public CefBrowserProcessHandler {
 
   // CefBrowserProcessHandler methods:
   virtual void OnContextInitialized() OVERRIDE;
-  void CloseAllBrowsers(bool force_close);
+  void CloseBrowser(void * gst_cef, bool force_close);
   void Open(void *gstCef, void *push_data, char* url);
 
  private: 
