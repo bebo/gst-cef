@@ -7,7 +7,7 @@ libgstcef_la_SOURCES = gstcef.c cef.cpp cef.h gstcef.h cef_app.cpp cef_app.h cef
 
 # compiler and linker flags used to compile this plugin, set in configure.ac
 libgstcef_la_CFLAGS = $(GST_CFLAGS)
-libgstcef_la_CPPFLAGS = $(GTK_CFLAGS) -I../build
+libgstcef_la_CPPFLAGS = $(GST_CFLAGS) $(GTK_CFLAGS) -I../build
 libgstcef_la_LIBADD = $(GST_LIBS) -L../build/dist
 libgstcef_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS) -lcef -lcef_dll_wrapper
 libgstcef_la_LIBTOOLFLAGS = --tag=disable-static

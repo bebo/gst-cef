@@ -48,8 +48,7 @@
 #include "gstcef.h"
 #include "cef.h"
 
-GST_DEBUG_CATEGORY_STATIC (gst_cef_debug_category);
-#define GST_CAT_DEFAULT gst_cef_debug_category
+GST_DEBUG_CATEGORY(gst_cef_debug_category);
 #define DEFAULT_IS_LIVE            TRUE
 
 /* prototypes */
@@ -111,8 +110,8 @@ GST_STATIC_PAD_TEMPLATE ("src",
 G_DEFINE_TYPE_WITH_CODE (GstCef, gst_cef, GST_TYPE_PUSH_SRC,
   GST_DEBUG_CATEGORY_INIT (gst_cef_debug_category, "cef", 0,
   "debug category for cef element"));
-void * browser = NULL;
-pthread_t browserMessageLoop = 0;
+
+static GThread *browserLoop;
 
 static void
 gst_cef_class_init (GstCefClass * klass)
@@ -135,7 +134,7 @@ gst_cef_class_init (GstCefClass * klass)
   /* base_src_class->set_caps = GST_DEBUG_FUNCPTR (gst_cef_set_caps); */
 
   gobject_class->dispose = gst_cef_dispose;
-  gobject_class->finalize = gst_cef_finalize;
+  /* gobject_class->finalize = gst_cef_finalize; */
   base_src_class->get_caps = GST_DEBUG_FUNCPTR (gst_cef_get_caps);
   /* base_src_class->negotiate = GST_DEBUG_FUNCPTR (gst_cef_negotiate); */
   base_src_class->is_seekable = GST_DEBUG_FUNCPTR (gst_cef_is_seekable);
@@ -279,22 +278,16 @@ GstBuffer * pop_frame(GstCef *cef)
 }
 
 void new_browser(GstCef *cef) {
-    if (cef->browserLoop == 0) {
-        /*     /1* new_browser(&browser, cef->url, 1280, 720, 30, NULL); *1/ */
-        /* pthread_attr_t attr; */
-        /* /1* Initialize and set thread detached attribute *1/ */
-        /* pthread_attr_init(&attr); */
-        /* pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE); */
-        /* pthread_create(&browserMessageLoop, &attr, (void *) browser_loop, NULL); */
-        /* /1* browser_loop(NULL); *1/ */
-        /* pthread_join(browserMessageLoop, NULL); */
-        /* GThread * */
-        struct gstCb *cb = g_malloc(sizeof(struct gstCb));
-        cb->gstCef = cef;
-        cb->push_frame = push_frame;
-        cb->url = g_strdup(cef->url);
-        cef->browserLoop = g_thread_ref(g_thread_new("browser_loop", (GThreadFunc)browser_loop, cb));
-    }
+  struct gstCb *cb = g_malloc(sizeof(struct gstCb));
+  cb->gstCef = cef;
+  cb->push_frame = push_frame;
+  cb->url = g_strdup(cef->url);
+
+  if (browserLoop == 0) {
+    browserLoop = g_thread_ref(g_thread_new("browser_loop", (GThreadFunc)browser_loop, cb));
+  } else {
+    open_browser(cb);
+  }
 }
 
 void gst_cef_init(GstCef *cef)
@@ -303,16 +296,11 @@ void gst_cef_init(GstCef *cef)
 
   gst_base_src_set_format (GST_BASE_SRC (cef), GST_FORMAT_TIME);
   gst_base_src_set_live (GST_BASE_SRC (cef), DEFAULT_IS_LIVE);
-
 }
 
 void set_url(GstCef *cef, char * url) {
   cef->url = url;
-  if (cef->browserLoop == 0) {
-      new_browser(cef);
-  } else {
-    // FIXME tell chromium to change url
-  }
+  new_browser(cef);
 }
 
 void
@@ -487,8 +475,8 @@ gst_cef_stop (GstBaseSrc * src)
   GstCef *cef = GST_CEF (src);
 
   GST_DEBUG_OBJECT (cef, "stop");
-  /* shutdown_browser(); */
-  close_all_browsers();
+
+  close_browser(cef);
 
   return TRUE;
 }
@@ -605,8 +593,6 @@ gst_cef_create (GstBaseSrc * src, guint64 offset, guint size,
   GST_LOG_OBJECT (src, "Created buffer of size %u at %" G_GINT64_FORMAT
       " with timestamp %" GST_TIME_FORMAT, gst_buffer_get_size(*buf), GST_BUFFER_OFFSET (*buf),
       GST_TIME_ARGS (GST_BUFFER_TIMESTAMP (*buf)));
-
-  GST_DEBUG_OBJECT (cef, "create");
 
   return GST_FLOW_OK;
 }

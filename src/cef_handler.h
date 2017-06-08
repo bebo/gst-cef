@@ -8,51 +8,36 @@
 #include "include/cef_client.h"
 #include <sys/time.h>
 #include <list>
+#include <map>
 
-class RenderHandler : public CefRenderHandler
-{
-private:
-  bool ready;
+typedef struct GstCefInfo {
+  void * gst_cef;
+  void (* push_frame)(void *gstCef, const void *buffer, int width, int height);
+  CefRefPtr<CefBrowser> browser;
+
   int width;
   int height;
-  uint8_t *frame_buffer;
+  bool ready;
   struct timeval last_tv;
-  unsigned long long start_sec;
-  void * gstCef;
-  void (* push_frame)(void *gstCef, const void *buffer, int width, int height);
-
-public:
-
-  RenderHandler(void *gstCef, void *push_frame, int width, int height);
-  void SetUgly(void *gstCef, void *push_frame, int width, int height);
-  bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect);
-  void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType paintType, const RectList &rects,
-               const void *buffer, int width, int height) OVERRIDE;
-  void SetReady(bool ready) { this->ready = ready ;};
-  IMPLEMENT_REFCOUNTING(RenderHandler);
-};
+}GstCefInfo_T;
 
 class BrowserClient : public CefClient,
                       public CefDisplayHandler,
                       public CefLifeSpanHandler,
-                      public CefLoadHandler {
+                      public CefLoadHandler,
+                      public CefRenderHandler {
  public:
-  explicit BrowserClient(RenderHandler* renderHandler);
+  explicit BrowserClient();
   ~BrowserClient();
 
   // Provide access to the single global instance of this object.
   /* static BrowserClient* GetInstance(); */
 
-  CefRefPtr<CefRenderHandler> GetRenderHandler() OVERRIDE;
-
   // CefClient methods:
-  virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() OVERRIDE {
-    return this;
-  }
-  virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() OVERRIDE {
-    return this;
-  }
+  virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() OVERRIDE { return this; }
+  virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() OVERRIDE { return this; }
   virtual CefRefPtr<CefLoadHandler> GetLoadHandler() OVERRIDE { return this; }
+  virtual CefRefPtr<CefRenderHandler> GetRenderHandler() OVERRIDE { return this; }
 
   // CefDisplayHandler methods:
   virtual void OnTitleChange(CefRefPtr<CefBrowser> browser,
@@ -79,9 +64,13 @@ class BrowserClient : public CefClient,
           CefRefPtr< CefFrame > frame,
           int httpStatusCode) OVERRIDE;
 
+  bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect);
+  void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType paintType,
+      const RectList &rects, const void *buffer, int width, int height) OVERRIDE;
 
   // Request that all existing browser windows close.
-  void CloseAllBrowsers(bool force_close);
+  void CloseBrowser(void * gst_cef, bool force_close);
+  void AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void * gstCef, void * push_frame, int width, int height);
 
   bool IsClosing() const { return is_closing_; }
 
@@ -93,16 +82,16 @@ class BrowserClient : public CefClient,
   // True if the application is using the Views framework.
   const bool use_views_;
 
-  // List of existing browser windows. Only accessed on the CEF UI thread.
-  typedef std::list<CefRefPtr<CefBrowser>> BrowserList;
-  BrowserList browser_list_;
-
   bool is_closing_;
 
-  CefRefPtr<RenderHandler> renderHandler;
+  // List of existing browser windows. Only accessed on the CEF UI thread.
+  std::map<int, GstCefInfo_T*> browser_gst_map;
+
+  GstCefInfo_T * getGstCef(CefRefPtr<CefBrowser> browser);
 
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(BrowserClient);
 };
+
 
 #endif  // CEF_TESTS_CEFSIMPLE_SIMPLE_HANDLER_H_

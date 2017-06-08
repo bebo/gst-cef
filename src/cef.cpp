@@ -1,4 +1,3 @@
-
 #include <sys/auxv.h>
 
 #include <ctime>
@@ -14,18 +13,22 @@
 #include "cef.h"
 #include "cef_app.h"
 
-#include "include/base/cef_logging.h"
 #include <X11/Xlib.h>
+
 namespace {
 
 int XErrorHandlerImpl(Display *display, XErrorEvent *event) {
-  LOG(WARNING)
-        << "X error received: "
-        << "type " << event->type << ", "
-        << "serial " << event->serial << ", "
-        << "error_code " << static_cast<int>(event->error_code) << ", "
-        << "request_code " << static_cast<int>(event->request_code) << ", "
-        << "minor_code " << static_cast<int>(event->minor_code);
+  GST_ERROR("X error received: "
+            "type %d "
+            "serial %lu "
+            "error_code %d "
+            "request_code %d "
+            "minor_code %d",
+            event->type,
+            event->serial,
+            static_cast<int>(event->error_code),
+            static_cast<int>(event->request_code),
+            static_cast<int>(event->minor_code));
   return 0;
 }
 
@@ -35,10 +38,13 @@ int XIOErrorHandlerImpl(Display *display) {
 
 static gint loop_live = 0;
 static CefRefPtr<Browser> app;
+static GMutex cef_start_mutex;
+static GCond cef_start_cond;
 
 }  // namespace
 
 static void doStart(gpointer data) {
+  GST_LOG("doStart");
 
   // Provide CEF with command-line arguments.
   struct gstCb *cb = (struct gstCb*) data;
@@ -72,49 +78,54 @@ static void doStart(gpointer data) {
   g_free(cb);
 
   // Initialize CEF for the browser process.
-  std::cout << "CefInitialize" << std::endl;
+  GST_LOG("CefInitialize");
   CefInitialize(main_args, settings, app.get(), NULL);
+
+  g_cond_signal(&cef_start_cond);
+  g_mutex_unlock(&cef_start_mutex);
 }
 
 static bool doOpen(gpointer data) {
   struct gstCb *cb = (struct gstCb*) data;
-  std::cout << "doOpen " << cb->url << std::endl;
   app.get()->Open(cb->gstCef, cb->push_frame, cb->url);
   cb->url = NULL;
+
+  //FIXME: figure out why we can't free cb
   /* g_free(cb); */
   return false;
 }
 
 static bool doWork(gpointer data) {
-  /* std::cout << "doWork" << std::endl; */
   if (g_atomic_int_get(&loop_live)) {
-      /* std::cout << "Calling CefDoMessageLoopWork" << std::endl; */
       CefDoMessageLoopWork();
   }
   return false;
 }
 
 static bool doShutdown(gpointer data) {
-  std::cout << "Calling CefShutdown" << std::endl;
+  GST_LOG("doShutdown");
   CefShutdown();
-  std::cout << "Called CefShutdown" << std::endl;
   return false;
 }
 
 void browser_loop(gpointer args) {
-  if (app != NULL) {
+  GST_LOG("browser_loop");
+  // TODO: this wont work
+  if (app) {
     g_idle_add((GSourceFunc) doOpen, args);
     return;
   }
 
-  std::cout << "starting browser_loop" << std::endl;
+  gstCb *cb = (gstCb*) args;
+
+  GST_LOG("starting browser_loop");
+
   g_atomic_int_set(&loop_live, 1);
 
-
-  gstCb *cb = (gstCb*) args;
-  std::cout << "Browserloop URL: " << &(cb->url) << std::endl;
+  g_mutex_lock(&cef_start_mutex);
 
   g_idle_add((GSourceFunc) doStart, args);
+
   // Run the CEF message loop. This will block until CefQuitMessageLoop() is
   usleep(100000);
   while(g_atomic_int_get(&loop_live)) {
@@ -122,22 +133,34 @@ void browser_loop(gpointer args) {
     g_idle_add((GSourceFunc) doWork, NULL);
   }
   usleep(5000);
-  std::cout << "MessageLoop Ended" << std::endl;
-  /* g_idle_add((GSourceFunc) doShutdown, NULL); */
+  GST_INFO("MessageLoop Ended");
 
 }
 
-bool doCloseAll(gpointer data) {
-    if(app) {
-        app.get()->CloseAllBrowsers(true);
-    } else {
-        std::cout << "ERROR: no app" << std::endl;
-    }
-    return false;
+void doOpenBrowser(gpointer args) {
+  g_mutex_lock(&cef_start_mutex);
+  while(!app) {
+    g_cond_wait(&cef_start_cond, &cef_start_mutex);
+  }
+  g_mutex_unlock(&cef_start_mutex);
+  g_idle_add((GSourceFunc) doOpen, args);
 }
 
-void close_all_browsers() {
-  g_idle_add((GSourceFunc) doCloseAll, NULL);
+void open_browser(gpointer args) {
+  g_thread_new("open_browser", (GThreadFunc) doOpenBrowser, args);
+}
+
+bool doClose(gpointer args) {
+  if(app) {
+    app->CloseBrowser(args, true);
+  } else {
+        GST_ERROR("ERROR: no app");
+  }
+  return false;
+}
+
+void close_browser(gpointer args) {
+  g_idle_add((GSourceFunc) doClose, args);
 }
 
 void shutdown_browser() {

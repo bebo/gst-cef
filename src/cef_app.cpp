@@ -2,6 +2,7 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
+#include "cef.h"
 #include "cef_app.h"
 
 #include <string>
@@ -54,23 +55,19 @@ class BrowserWindowDelegate : public CefWindowDelegate {
 
 }  // namespace
 
-Browser::Browser(void *gstCef, void *push_data, char* url, int width, int height): gstCef(gstCef), push_data(push_data), url(url), width(width), height(height) {};
+Browser::Browser(void *gstCef, void *push_data, char* url, int width, int height): 
+  gstCef(gstCef), push_data(push_data), url(url), width(width), height(height) {};
 
-
-void Browser::CloseAllBrowsers(bool force_close) {
-  std::cout << "CloseAllBrowsers" << std::endl;
+void Browser::CloseBrowser(void * gst_cef, bool force_close) {
   CEF_REQUIRE_UI_THREAD();
-  browserClient->CloseAllBrowsers(force_close);
+
+  GST_LOG("Browser::CloseBrowser");
+  browserClient->CloseBrowser(gst_cef, force_close);
 }
 
 void Browser::Open(void *gstCef, void *push_data, char* url) {
-  std::cout << "Open Url" << url << std::endl;
   CEF_REQUIRE_UI_THREAD();
-
-  browserClient->CloseAllBrowsers(true);
-  CefRefPtr<CefRenderHandler> cefRenderHandler = browserClient->GetRenderHandler();
-  RenderHandler *renderHandler = (RenderHandler *) cefRenderHandler.get();
-  renderHandler->SetUgly(gstCef, push_data, this->width, this->height);
+  GST_INFO("Open Url: %s", url);
 
   // Specify CEF browser settings here.
   CefBrowserSettings browser_settings;
@@ -79,28 +76,17 @@ void Browser::Open(void *gstCef, void *push_data, char* url) {
   // Information used when creating the native window.
   CefWindowInfo window_info;
   window_info.SetAsWindowless(0, true);
-  CefBrowserHost::CreateBrowser(window_info, browserClient, url, browser_settings, NULL);
+
+  CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(window_info, browserClient, url, browser_settings, NULL);
+  browserClient->AddBrowserGstMap(browser, gstCef, push_data, this->width, this->height);
 }
 
 void Browser::OnContextInitialized() {
   CEF_REQUIRE_UI_THREAD();
-
-  /* CefRefPtr<CefCommandLine> command_line = */
-  /*   CefCommandLine::GetGlobalCommandLine(); */
+  GST_LOG("OnContextInitialized");
 
   // BrowserClient implements browser-level callbacks.
-  CefRefPtr<RenderHandler> render_handler = new RenderHandler(gstCef, push_data, this->width, this->height);
-  browserClient = new BrowserClient(render_handler);
+  browserClient = new BrowserClient();
 
-  // Specify CEF browser settings here.
-  CefBrowserSettings browser_settings;
-  browser_settings.windowless_frame_rate = 30;
-
-  // Information used when creating the native window.
-  CefWindowInfo window_info;
-  window_info.SetAsWindowless(0, true);
-
-  // Create the first browser window.
-  CefBrowserHost::CreateBrowser(window_info, browserClient, url, browser_settings,
-                                  NULL);
+  Open(gstCef, push_data, url);
 }
