@@ -6,6 +6,8 @@
 #include "cef_handler.h"
 #include "cef.h"
 
+#include <algorithm>
+#include <cmath>
 #include <iostream>
 #include <string>
 
@@ -95,6 +97,7 @@ void BrowserClient::AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void * gstCe
   gst_cef_info->gst_cef = gstCef;
   gst_cef_info->push_frame = (void(*)(void *gstCef, const void *buffer, int width, int height))push_frame;
   gst_cef_info->ready = 0;
+  gst_cef_info->retry_count = 0;
   gst_cef_info->width = width;
   gst_cef_info->height = height;
   gst_cef_info->browser = browser;
@@ -183,6 +186,12 @@ void BrowserClient::OnLoadingStateChange(CefRefPtr< CefBrowser > browser,
   GST_INFO("OnLoadingStateChange: %d", isLoading);
 }
 
+void BrowserClient::Refresh(CefRefPtr<CefBrowser> browser, 
+    CefRefPtr<CefFrame> frame) {
+  GST_INFO("Refresh - window id: %d", browser->GetIdentifier());
+  browser->Reload();
+}
+
 void BrowserClient::OnLoadEnd(CefRefPtr< CefBrowser > browser,
     CefRefPtr< CefFrame > frame,
     int httpStatusCode) {
@@ -190,17 +199,36 @@ void BrowserClient::OnLoadEnd(CefRefPtr< CefBrowser > browser,
 
   auto cef = getGstCef(browser);
 
-  // TODO: @jake - log URL
-  if ( httpStatusCode < 400 && httpStatusCode >= 200) {
-      GST_INFO("OnLoadEnd - window id: %d isMain: %d status code: %d", browser->GetIdentifier(), frame->IsMain(), httpStatusCode);
+
+  if (httpStatusCode >= 200 && httpStatusCode < 400) {
+    const char * url = frame->GetURL().ToString().c_str();
+    GST_INFO("OnLoadEnd - window id: %d, is main: %d, status code: %d, url: %s", 
+        browser->GetIdentifier(), frame->IsMain(), httpStatusCode, url);
   } else {
-      GST_ERROR("OnLoadEnd - window id: %d isMain: %d status code: %d", browser->GetIdentifier(), frame->IsMain(), httpStatusCode);
+    const char * url = frame->GetURL().ToString().c_str();
+    GST_ERROR("OnLoadEnd - window id: %d, is main: %d, status code: %d, url: %s", 
+        browser->GetIdentifier(), frame->IsMain(), httpStatusCode, url);
   }
 
-  if (frame->IsMain() && httpStatusCode == 200) {
-    cef->ready = true;
+  if (frame->IsMain()) {
+    if (httpStatusCode == 200) { // 200 ~ 499?
+      cef->retry_count = 0;
+      cef->ready = true;
+    } else if (httpStatusCode >= 500 && httpStatusCode < 600) { // 500 ~ 599?
+      const char * url = frame->GetURL().ToString().c_str();
+
+      unsigned long long retry_time_ms = std::min((unsigned long long) 30000, 
+          (unsigned long long) std::pow(2, cef->retry_count) * 200); // 200, 400, 800, 1600 ... 30000
+
+      GST_INFO("OnLoadEnd - scheduled a refresh. window id: %d, status code: %d, url: %s - refreshing in %llums, count: %d", 
+          browser->GetIdentifier(), httpStatusCode, url, retry_time_ms, cef->retry_count);
+
+      CefPostDelayedTask(TID_UI, base::Bind(&BrowserClient::Refresh, this,
+          browser, frame), retry_time_ms);
+
+      cef->retry_count = cef->retry_count + 1;
+    }
   }
-  // TODO: retry, 30s max
 }
 
 void BrowserClient::CloseBrowser(void * gst_cef, bool force_close) {

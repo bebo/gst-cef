@@ -17,6 +17,7 @@ typedef struct GstCefInfo {
 
   int width;
   int height;
+  int retry_count;
   bool ready;
   struct timeval last_tv;
 }GstCefInfo_T;
@@ -88,6 +89,8 @@ class BrowserClient : public CefClient,
   std::map<int, GstCefInfo_T*> browser_gst_map;
 
   GstCefInfo_T * getGstCef(CefRefPtr<CefBrowser> browser);
+
+  void Refresh(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame);
 
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(BrowserClient);
