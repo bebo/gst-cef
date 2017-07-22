@@ -182,15 +182,11 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
 
   g_mutex_lock(&cef->frame_mutex);
 
-  if (cef->unlocked) {
-    if (cef->current_frame) {
-      gst_buffer_unref(cef->current_frame);
-      cef->current_frame = NULL;
-    }
-  } else {
+  if (cef->current_frame) {
     gst_buffer_unref(cef->current_frame);
-    cef->current_frame = buf;
   }
+
+  cef->current_frame = buf;
 
   g_cond_signal (&cef->frame_cond);
   g_mutex_unlock (&cef->frame_mutex);
@@ -203,9 +199,18 @@ GstBuffer * pop_frame(GstCef *cef)
   g_mutex_lock (&cef->frame_mutex);
 
   g_cond_wait (&cef->frame_cond, &cef->frame_mutex);
-  frame = cef->current_frame;
 
-  gst_buffer_ref(cef->current_frame);
+  if (g_atomic_int_get(&cef->unlocked) == 0) {
+    frame = cef->current_frame;
+    gst_buffer_ref(cef->current_frame);
+  } else {
+    if (cef->current_frame) {
+      gst_buffer_unref(cef->current_frame);
+      cef->current_frame = NULL;
+    }
+    frame = NULL;
+  }
+
 
   g_mutex_unlock (&cef->frame_mutex);
   return frame;
@@ -228,7 +233,8 @@ void gst_cef_init(GstCef *cef)
 {
   printf("gst_cef_init\n");
 
-  cef->unlocked = FALSE;
+  g_atomic_int_set (&cef->unlocked, 0);
+  cef->current_frame = NULL;
 
   gst_base_src_set_format (GST_BASE_SRC (cef), GST_FORMAT_TIME);
   gst_base_src_set_live (GST_BASE_SRC (cef), DEFAULT_IS_LIVE);
@@ -470,7 +476,9 @@ gst_cef_unlock (GstBaseSrc * src)
 
   GST_DEBUG_OBJECT (cef, "unlock");
 
-  cef->unlocked = TRUE;
+  g_atomic_int_set (&cef->unlocked, 1);
+
+  g_cond_signal (&cef->frame_cond);
 
   return TRUE;
 }
@@ -483,7 +491,7 @@ gst_cef_unlock_stop (GstBaseSrc * src)
 
   GST_DEBUG_OBJECT (cef, "unlock_stop");
 
-  cef->unlocked = FALSE;
+  g_atomic_int_set (&cef->unlocked, 0);
 
   return TRUE;
 }

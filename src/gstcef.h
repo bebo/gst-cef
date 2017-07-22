@@ -45,7 +45,7 @@ struct _GstCef
   GMutex frame_mutex;
   GCond frame_cond;
   /* gint64 cur_offset; */
-  gboolean unlocked;
+  volatile gint unlocked;
 };
 
 struct _GstCefClass
