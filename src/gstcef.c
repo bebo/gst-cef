@@ -211,7 +211,6 @@ GstBuffer * pop_frame(GstCef *cef)
     frame = NULL;
   }
 
-
   g_mutex_unlock (&cef->frame_mutex);
   return frame;
 }
@@ -478,7 +477,9 @@ gst_cef_unlock (GstBaseSrc * src)
 
   g_atomic_int_set (&cef->unlocked, 1);
 
-  g_cond_signal (&cef->frame_cond);
+  g_mutex_lock(&cef->frame_mutex);
+  g_cond_signal(&cef->frame_cond);
+  g_mutex_unlock(&cef->frame_mutex);
 
   return TRUE;
 }
