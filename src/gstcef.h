@@ -45,8 +45,7 @@ struct _GstCef
   GMutex frame_mutex;
   GCond frame_cond;
   /* gint64 cur_offset; */
-  GstClockTime startTime;
-  GstClockTime lastFrame;
+  gboolean unlocked;
 };
 
 struct _GstCefClass

@@ -71,7 +71,7 @@ static gboolean gst_cef_start (GstBaseSrc * src);
 static gboolean gst_cef_stop (GstBaseSrc * src);
 static void gst_cef_get_times (GstBaseSrc * src, GstBuffer * buffer,
     GstClockTime * start, GstClockTime * end);
-static gboolean gst_cef_get_size (GstBaseSrc * src, guint64 * size);
+/*static gboolean gst_cef_get_size (GstBaseSrc * src, guint64 * size);*/
 static gboolean gst_cef_is_seekable (GstBaseSrc * src);
 /* static gboolean gst_cef_prepare_seek_segment (GstBaseSrc * src, */
     /* GstEvent * seek, GstSegment * segment); */
@@ -144,7 +144,7 @@ gst_cef_class_init (GstCefClass * klass)
   base_src_class->start = GST_DEBUG_FUNCPTR (gst_cef_start);
   base_src_class->stop = GST_DEBUG_FUNCPTR (gst_cef_stop);
   /* base_src_class->get_times = GST_DEBUG_FUNCPTR (gst_cef_get_times); */
-  base_src_class->get_size = GST_DEBUG_FUNCPTR (gst_cef_get_size);
+  /*base_src_class->get_size = GST_DEBUG_FUNCPTR (gst_cef_get_size);*/
   /* /1* base_src_class->prepare_seek_segment = GST_DEBUG_FUNCPTR (gst_cef_prepare_seek_segment); *1/ */
   /* /1* base_src_class->do_seek = GST_DEBUG_FUNCPTR (gst_cef_do_seek); *1/ */
   /* base_src_class->unlock = GST_DEBUG_FUNCPTR (gst_cef_unlock); */
@@ -166,9 +166,6 @@ gst_cef_class_init (GstCefClass * klass)
 }
 
 static void push_frame(void *gstCef, const void *buffer, int width, int height) {
-  GstClock *clock = gst_system_clock_obtain();
-  GstClockTime now = gst_clock_get_time(clock);
-
   GstCef *cef = (GstCef *) gstCef;
   int size = width * height * 4 * 1;
   GstBuffer *buf;
@@ -177,101 +174,38 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
     GST_ERROR_OBJECT (cef, "Failed to allocate %u bytes", size);
     return;
   }
-  if (cef->startTime == 0) {
-    cef->startTime = now;
-  }
 
-  guint8 *data;
   GstMapInfo map;
   gst_buffer_map(buf, &map, GST_MAP_WRITE);
   memcpy(map.data, buffer, size);
   gst_buffer_unmap (buf, &map);
-  GST_BUFFER_PTS(buf) = now - cef->startTime; // live sources should start at 0
-  GST_BUFFER_OFFSET (buf) = 0;
-  if (now == cef->startTime) {
-    GST_BUFFER_FLAG_SET (buf, GST_BUFFER_FLAG_DISCONT);
-  }
+
   g_mutex_lock(&cef->frame_mutex);
-  if (cef->current_frame != NULL) {
+
+  if (cef->unlocked) {
+    if (cef->current_frame) {
+      gst_buffer_unref(cef->current_frame);
+      cef->current_frame = NULL;
+    }
+  } else {
     gst_buffer_unref(cef->current_frame);
+    cef->current_frame = buf;
   }
-  cef->current_frame = buf;
+
   g_cond_signal (&cef->frame_cond);
   g_mutex_unlock (&cef->frame_mutex);
 }
 
-GstBuffer * make_transparent(GstCef *cef) {
-  int size = 1280 * 720 * 4 * 1; // TODO: use dynamic values
-  GstClock *clock = gst_system_clock_obtain();
-  GstClockTime now = gst_clock_get_time(clock);
-
-  GstBuffer *buf;
-  buf = gst_buffer_new_allocate (NULL, size, NULL);
-  if (G_UNLIKELY (buf == NULL)) {
-    GST_ERROR_OBJECT (cef, "Failed to allocate %u bytes", size);
-    return;
-  }
-  if (cef->startTime == 0) {
-    cef->startTime = now;
-  }
-
-  guint8 *data;
-  GstMapInfo map;
-  gst_buffer_map(buf, &map, GST_MAP_WRITE);
-  memset(map.data, 0, size);
-  gst_buffer_unmap (buf, &map);
-  GST_BUFFER_PTS(buf) = now - cef->startTime; // live sources should start at 0
-  GST_BUFFER_OFFSET (buf) = 0;
-  if (now == cef->startTime) {
-    GST_BUFFER_FLAG_SET (buf, GST_BUFFER_FLAG_DISCONT);
-  }
-  GST_LOG_OBJECT(cef, "created transparent frame");
-  return buf;
-}
-
 GstBuffer * pop_frame(GstCef *cef)
 {
-  // can't wait forever as we have the GST_LIVE_LOCK - so the strategy is to
-  // provide duplicate frames
-  
   GstBuffer * frame;
-  
-  GstClock *clock = gst_system_clock_obtain();
-  GstClockTime now = gst_clock_get_time(clock) - cef->startTime;
-  gint64 end_time;
-
-  if (cef->lastFrame) {
-    end_time = MAX(1, (cef->lastFrame + 2 * GST_SECOND / 30 - now) / 1000);
-  } else {
-    end_time = G_USEC_PER_SEC / 30; // fps
-  }
-  end_time = MIN((2 * GST_SECOND / 30) /1000, end_time);
-  end_time += g_get_monotonic_time();
 
   g_mutex_lock (&cef->frame_mutex);
 
-  if (! cef->current_frame) {
-    cef->current_frame = make_transparent(cef);
-    gst_buffer_ref(cef->current_frame);
-    cef->lastFrame = GST_BUFFER_PTS(cef->current_frame);
-    g_mutex_unlock (&cef->frame_mutex);
-    return cef->current_frame;
-  }
-
-  if (g_cond_wait_until (&cef->frame_cond, &cef->frame_mutex, end_time)) {
-    frame = cef->current_frame;
-    GST_DEBUG_OBJECT(cef, "new frame");
-  } else {
-    // timed out
-    GST_DEBUG_OBJECT(cef, "timed out, copying last frame");
-    frame = gst_buffer_copy(cef->current_frame);
-    GST_BUFFER_PTS(frame) = cef->lastFrame + GST_SECOND / 30;
-    gst_buffer_unref(cef->current_frame);
-    cef->current_frame = frame;
-  }
+  g_cond_wait (&cef->frame_cond, &cef->frame_mutex);
+  frame = cef->current_frame;
 
   gst_buffer_ref(cef->current_frame);
-  cef->lastFrame = GST_BUFFER_PTS(frame);
 
   g_mutex_unlock (&cef->frame_mutex);
   return frame;
@@ -294,8 +228,11 @@ void gst_cef_init(GstCef *cef)
 {
   printf("gst_cef_init\n");
 
+  cef->unlocked = FALSE;
+
   gst_base_src_set_format (GST_BASE_SRC (cef), GST_FORMAT_TIME);
   gst_base_src_set_live (GST_BASE_SRC (cef), DEFAULT_IS_LIVE);
+  gst_base_src_set_do_timestamp (GST_BASE_SRC (cef), TRUE);
 }
 
 void set_url(GstCef *cef, char * url) {
@@ -493,18 +430,6 @@ gst_cef_get_times (GstBaseSrc * src, GstBuffer * buffer,
 
 }
 
-/* get the total size of the resource in bytes */
-static gboolean
-gst_cef_get_size (GstBaseSrc * src, guint64 * size)
-{
-  GstCef *cef = GST_CEF (src);
-
-  size = 1280 * 720 * 4;
-  GST_DEBUG_OBJECT (cef, "get_size");
-
-  return TRUE;
-}
-
 /* check if the resource is seekable */
 static gboolean
 gst_cef_is_seekable (GstBaseSrc * src)
@@ -545,6 +470,8 @@ gst_cef_unlock (GstBaseSrc * src)
 
   GST_DEBUG_OBJECT (cef, "unlock");
 
+  cef->unlocked = TRUE;
+
   return TRUE;
 }
 
@@ -556,6 +483,8 @@ gst_cef_unlock_stop (GstBaseSrc * src)
 
   GST_DEBUG_OBJECT (cef, "unlock_stop");
 
+  cef->unlocked = FALSE;
+
   return TRUE;
 }
 
@@ -564,8 +493,6 @@ static gboolean
 gst_cef_query (GstBaseSrc * src, GstQuery * query)
 {
   GstCef *cef = GST_CEF (src);
-
-  GST_DEBUG_OBJECT (cef, "query");
 
   return TRUE;
 }
@@ -589,7 +516,12 @@ gst_cef_create (GstBaseSrc * src, guint64 offset, guint size,
 {
   GstCef *cef = GST_CEF (src);
 
-  *buf = pop_frame(cef);
+  GstBuffer* buffer = pop_frame(cef);
+  if (!buffer) {
+    return GST_FLOW_FLUSHING;
+  }
+  *buf = buffer;
+
   GST_LOG_OBJECT (src, "Created buffer of size %u at %" G_GINT64_FORMAT
       " with timestamp %" GST_TIME_FORMAT, gst_buffer_get_size(*buf), GST_BUFFER_OFFSET (*buf),
       GST_TIME_ARGS (GST_BUFFER_TIMESTAMP (*buf)));
