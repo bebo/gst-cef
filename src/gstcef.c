@@ -147,8 +147,8 @@ gst_cef_class_init (GstCefClass * klass)
   /*base_src_class->get_size = GST_DEBUG_FUNCPTR (gst_cef_get_size);*/
   /* /1* base_src_class->prepare_seek_segment = GST_DEBUG_FUNCPTR (gst_cef_prepare_seek_segment); *1/ */
   /* /1* base_src_class->do_seek = GST_DEBUG_FUNCPTR (gst_cef_do_seek); *1/ */
-  /* base_src_class->unlock = GST_DEBUG_FUNCPTR (gst_cef_unlock); */
-  /* base_src_class->unlock_stop = GST_DEBUG_FUNCPTR (gst_cef_unlock_stop); */
+  base_src_class->unlock = GST_DEBUG_FUNCPTR (gst_cef_unlock);
+  base_src_class->unlock_stop = GST_DEBUG_FUNCPTR (gst_cef_unlock_stop);
   /* base_src_class->query = GST_DEBUG_FUNCPTR (gst_cef_query); */
   /* base_src_class->event = GST_DEBUG_FUNCPTR (gst_cef_event); */
   base_src_class->create = GST_DEBUG_FUNCPTR (gst_cef_create);
