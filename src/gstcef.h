@@ -46,6 +46,7 @@ struct _GstCef
   GCond frame_cond;
   /* gint64 cur_offset; */
   volatile gint unlocked;
+  volatile gint has_new_frame;
 };
 
 struct _GstCefClass

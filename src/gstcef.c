@@ -187,6 +187,7 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
   }
 
   cef->current_frame = buf;
+  g_atomic_int_set(&cef->has_new_frame, 1);
 
   g_cond_signal (&cef->frame_cond);
   g_mutex_unlock (&cef->frame_mutex);
@@ -194,22 +195,29 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
 
 GstBuffer * pop_frame(GstCef *cef)
 {
-  GstBuffer * frame;
+  GstBuffer * frame = NULL;
 
   g_mutex_lock (&cef->frame_mutex);
 
-  g_cond_wait (&cef->frame_cond, &cef->frame_mutex);
+  // the condition to wait is:
+  // 1. we don't get a new frame AND
+  // 2. we are NOT in cleaning up state - cef->unlocked = 0
+  while (g_atomic_int_get(&cef->has_new_frame) == 0 && g_atomic_int_get(&cef->unlocked) == 0) {
+    g_cond_wait (&cef->frame_cond, &cef->frame_mutex);
+  }
 
-  if (g_atomic_int_get(&cef->unlocked) == 0) {
+  if (g_atomic_int_get(&cef->unlocked) == 0) { // 0 - not in cleanup state
     frame = cef->current_frame;
     gst_buffer_ref(cef->current_frame);
   } else {
+    GST_INFO_OBJECT (cef, "pop_frame cleanup state");
+    // clean up state
     if (cef->current_frame) {
       gst_buffer_unref(cef->current_frame);
       cef->current_frame = NULL;
     }
-    frame = NULL;
   }
+  g_atomic_int_set(&cef->has_new_frame, 0);
 
   g_mutex_unlock (&cef->frame_mutex);
   return frame;
@@ -473,14 +481,17 @@ gst_cef_unlock (GstBaseSrc * src)
 {
   GstCef *cef = GST_CEF (src);
 
-  GST_DEBUG_OBJECT (cef, "unlock");
+  GST_INFO_OBJECT (cef, "unlock");
 
-  g_atomic_int_set (&cef->unlocked, 1);
 
   g_mutex_lock(&cef->frame_mutex);
+
+  g_atomic_int_set (&cef->unlocked, 1);
   g_cond_signal(&cef->frame_cond);
+
   g_mutex_unlock(&cef->frame_mutex);
 
+  GST_INFO_OBJECT (cef, "unlock complete");
   return TRUE;
 }
 
@@ -490,10 +501,13 @@ gst_cef_unlock_stop (GstBaseSrc * src)
 {
   GstCef *cef = GST_CEF (src);
 
-  GST_DEBUG_OBJECT (cef, "unlock_stop");
+  GST_INFO_OBJECT (cef, "unlock_stop");
 
+  g_mutex_lock(&cef->frame_mutex);
   g_atomic_int_set (&cef->unlocked, 0);
+  g_mutex_unlock(&cef->frame_mutex);
 
+  GST_INFO_OBJECT (cef, "unlock_stop complete");
   return TRUE;
 }
 
@@ -527,6 +541,7 @@ gst_cef_create (GstBaseSrc * src, guint64 offset, guint size,
 
   GstBuffer* buffer = pop_frame(cef);
   if (!buffer) {
+    GST_INFO_OBJECT (cef, "create gst_flow_flushing");
     return GST_FLOW_FLUSHING;
   }
   *buf = buffer;
