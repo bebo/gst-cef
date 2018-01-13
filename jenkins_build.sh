@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-CEF_BIN=cef_binary_3.3029.1619.geeeb5d7_linux64.tar.bz2
+CEF_BIN=cef_binary_3.3282.1726.gc8368c8_linux64.tar.bz2
 
 BUILD_DIR=${PWD}/build
 
@@ -12,7 +12,7 @@ mkdir -vp ${BUILD_DIR}/cef
 mkdir -vp ${BUILD_DIR}/dist
 
 cd build/cef
-wget http://opensource.spotify.com/cefbuilds/${CEF_BIN}
+wget https://s3-us-west-2.amazonaws.com/bebo-files/darkclouds/${CEF_BIN}
 tar xvjf ${CEF_BIN} --strip-components 1
 mkdir build
 cd build
