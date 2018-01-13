@@ -75,7 +75,7 @@ void Browser::Open(void *gstCef, void *push_data, char* url) {
 
   // Information used when creating the native window.
   CefWindowInfo window_info;
-  window_info.SetAsWindowless(0, true);
+  window_info.SetAsWindowless(0);
 
   CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(window_info, browserClient, url, browser_settings, NULL);
   browserClient->AddBrowserGstMap(browser, gstCef, push_data, this->width, this->height);
