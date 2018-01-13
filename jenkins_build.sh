@@ -23,7 +23,7 @@ cd ${BUILD_DIR}/cef/build
 cp libcef_dll_wrapper/libcef_dll_wrapper.a ${BUILD_DIR}/dist
 cd ..
 
-cp Release/* ${BUILD_DIR}/dist/
+cp -r Release/* ${BUILD_DIR}/dist/
 cp -a include/ ${BUILD_DIR}
 cp -a Resources/* ${BUILD_DIR}/dist/
 
