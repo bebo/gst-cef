@@ -1,6 +1,6 @@
 #!/bin/bash
 set -e
-CEF_BIN=cef_binary_3.3239.1723.g071d1c1_linux64.tar.bz2
+CEF_BIN=cef_binary_3.3239.1723.g071d1c1_linux64_minimal.tar.bz2
 
 BUILD_DIR=${PWD}/build
 
