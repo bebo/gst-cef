@@ -67,7 +67,7 @@ static void doStart(gpointer data) {
   CefString(&settings.browser_subprocess_path).FromASCII(subprocess_exe);
   g_free(subprocess_exe);
   settings.windowless_rendering_enabled = true;
-  settings.no_sandbox = false;
+  settings.no_sandbox = true;
   settings.multi_threaded_message_loop = false;
 
   // Browser implements application-level callbacks for the browser process.
@@ -79,10 +79,12 @@ static void doStart(gpointer data) {
 
   // Initialize CEF for the browser process.
   GST_LOG("CefInitialize");
+  GST_DEBUG("CefInitialize the browser process");
   CefInitialize(main_args, settings, app.get(), NULL);
 
   g_cond_signal(&cef_start_cond);
   g_mutex_unlock(&cef_start_mutex);
+  GST_DEBUG("CEF finished doStart");
 }
 
 static bool doOpen(gpointer data) {

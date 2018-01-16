@@ -230,8 +230,10 @@ void new_browser(GstCef *cef) {
   cb->url = g_strdup(cef->url);
 
   if (browserLoop == 0) {
+    GST_DEBUG("Creating new browser loop.");
     browserLoop = g_thread_ref(g_thread_new("browser_loop", (GThreadFunc)browser_loop, cb));
   } else {
+    GST_DEBUG("Opening browser.");
     open_browser(cb);
   }
 }
@@ -249,6 +251,7 @@ void gst_cef_init(GstCef *cef)
 }
 
 void set_url(GstCef *cef, char * url) {
+  GST_DEBUG("Setting new URL: %s", url);
   cef->url = url;
   new_browser(cef);
 }

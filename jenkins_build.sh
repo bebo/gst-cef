@@ -1,6 +1,7 @@
 #!/bin/bash
 set -e
-CEF_BIN=cef_binary_3.3029.1619.geeeb5d7_linux64.tar.bz2
+#CEF_BIN=cef_binary_3.3282.1726.gc8368c8_linux64_minimal.tar.bz2
+CEF_BIN=cef_binary_3.3239.1723.g071d1c1_linux64_minimal.tar.bz2
 
 BUILD_DIR=${PWD}/build
 
@@ -12,6 +13,7 @@ mkdir -vp ${BUILD_DIR}/cef
 mkdir -vp ${BUILD_DIR}/dist
 
 cd build/cef
+#wget https://s3-us-west-2.amazonaws.com/bebo-files/darkclouds/${CEF_BIN}
 wget http://opensource.spotify.com/cefbuilds/${CEF_BIN}
 tar xvjf ${CEF_BIN} --strip-components 1
 mkdir build
@@ -23,7 +25,7 @@ cd ${BUILD_DIR}/cef/build
 cp libcef_dll_wrapper/libcef_dll_wrapper.a ${BUILD_DIR}/dist
 cd ..
 
-cp Release/* ${BUILD_DIR}/dist/
+cp -r Release/* ${BUILD_DIR}/dist/
 cp -a include/ ${BUILD_DIR}
 cp -a Resources/* ${BUILD_DIR}/dist/
 
