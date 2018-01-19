@@ -255,3 +255,29 @@ void BrowserClient::CloseBrowser(void * gst_cef, bool force_close) {
   }
 
 }
+
+void BrowserClient::SetSize(void * gst_cef, int width, int height) {
+  if (!CefCurrentlyOn(TID_UI)) {
+    // Execute on the UI thread.
+    CefPostTask(TID_UI, base::Bind(&BrowserClient::SetSize, this,
+          gst_cef, width, height));
+    return;
+  }
+  CEF_REQUIRE_UI_THREAD();
+
+  GST_INFO("BrowserClient::Setting size of browser");
+
+  for (auto it = browser_gst_map.begin(); it != browser_gst_map.end(); ++it) {
+    if (!it->second) {
+      GST_ERROR("BrowserClient::SetSize, browser id: %d. UNABLE TO FIND it->second", it->first);
+      continue;
+    }
+
+    if (it->second->gst_cef == gst_cef) {
+      CefRefPtr<CefBrowser> browser = it->second->browser;
+      browser->Reload();
+      break;
+    }
+  }
+
+}

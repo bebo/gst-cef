@@ -23,6 +23,7 @@ class Browser: public CefApp, public CefBrowserProcessHandler {
   virtual void OnContextInitialized() OVERRIDE;
   void CloseBrowser(void * gst_cef, bool force_close);
   void Open(void *gstCef, void *push_data, char* url);
+  void SetSize(void *gstCef, int width, int height);
 
  private: 
   CefRefPtr<BrowserClient> browserClient;

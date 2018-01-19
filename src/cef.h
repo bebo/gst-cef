@@ -16,8 +16,15 @@ struct gstCb {
     char * url;
 };
 
+struct gstSizeArgs {
+  void * gstCef;
+  int width;
+  int height;
+};
+
 void browser_loop(void * args);
 void open_browser(void * args);
+void set_size(void * args);
 void close_browser(void * args);
 void shutdown_browser();
 

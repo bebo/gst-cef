@@ -150,6 +150,25 @@ void open_browser(gpointer args) {
   g_thread_new("open_browser", (GThreadFunc) doOpenBrowser, args);
 }
 
+void doSetSize(void *args) {
+  gstSizeArgs *sizeArgs = (gstSizeArgs *)args;
+  int width = sizeArgs->width;
+  int height = sizeArgs->height;
+  void *gstCef = sizeArgs->gstCef;
+  g_free(sizeArgs);
+  GST_INFO("set size to %u by %u", width, height);
+
+  if(!app) {
+    return;
+  }
+
+  app->SetSize(gstCef, width, height);
+}
+
+void set_size(void *args) {
+  g_idle_add((GSourceFunc) doSetSize, args);
+}
+
 bool doClose(gpointer args) {
   if(app) {
     app->CloseBrowser(args, true);

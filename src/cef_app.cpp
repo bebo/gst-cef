@@ -81,6 +81,12 @@ void Browser::Open(void *gstCef, void *push_data, char* url) {
   browserClient->AddBrowserGstMap(browser, gstCef, push_data, this->width, this->height);
 }
 
+void Browser::SetSize(void *gstCef, int width, int height) {
+  CEF_REQUIRE_UI_THREAD();
+  GST_INFO("Browser::SetSize");
+  browserClient->SetSize(gstCef, width, height);
+}
+
 void Browser::OnContextInitialized() {
   CEF_REQUIRE_UI_THREAD();
   GST_LOG("OnContextInitialized");

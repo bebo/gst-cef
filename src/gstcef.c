@@ -131,14 +131,13 @@ gst_cef_class_init (GstCefClass * klass)
   gobject_class->get_property = gst_cef_get_property;
 
   /* base_src_class->fixate = GST_DEBUG_FUNCPTR (gst_cef_fixate); */
-  /* base_src_class->set_caps = GST_DEBUG_FUNCPTR (gst_cef_set_caps); */
-
+  base_src_class->set_caps = GST_DEBUG_FUNCPTR (gst_cef_set_caps);
   gobject_class->dispose = gst_cef_dispose;
   /* gobject_class->finalize = gst_cef_finalize; */
-  base_src_class->get_caps = GST_DEBUG_FUNCPTR (gst_cef_get_caps);
-  /* base_src_class->negotiate = GST_DEBUG_FUNCPTR (gst_cef_negotiate); */
+  //base_src_class->get_caps = GST_DEBUG_FUNCPTR (gst_cef_get_caps);
+  //base_src_class->negotiate = GST_DEBUG_FUNCPTR (gst_cef_negotiate);
   base_src_class->is_seekable = GST_DEBUG_FUNCPTR (gst_cef_is_seekable);
-  /* base_src_class->fill = GST_DEBUG_FUNCPTR (gst_cef_fill); */
+  //base_src_class->fill = GST_DEBUG_FUNCPTR (gst_cef_fill);
 
   /* base_src_class->decide_allocation = GST_DEBUG_FUNCPTR (gst_cef_decide_allocation); */
   base_src_class->start = GST_DEBUG_FUNCPTR (gst_cef_start);
@@ -153,8 +152,6 @@ gst_cef_class_init (GstCefClass * klass)
   /* base_src_class->event = GST_DEBUG_FUNCPTR (gst_cef_event); */
   base_src_class->create = GST_DEBUG_FUNCPTR (gst_cef_create);
   /* base_src_class->alloc = GST_DEBUG_FUNCPTR (gst_cef_alloc); */
-  /* base_src_class->alloc = NULL; */
-  /* base_src_class->fill = NULL; */
 
   g_object_class_install_property (gobject_class, PROP_VERBOSE,
       g_param_spec_boolean ("verbose", "Verbose", "Produce verbose output",
@@ -202,24 +199,31 @@ GstBuffer * pop_frame(GstCef *cef)
   // the condition to wait is:
   // 1. we don't get a new frame AND
   // 2. we are NOT in cleaning up state - cef->unlocked = 0
+  GST_DEBUG("pop_frame -- 1");
   while (g_atomic_int_get(&cef->has_new_frame) == 0 && g_atomic_int_get(&cef->unlocked) == 0) {
     g_cond_wait (&cef->frame_cond, &cef->frame_mutex);
   }
+  GST_DEBUG("pop_frame -- 2");
 
   if (g_atomic_int_get(&cef->unlocked) == 0) { // 0 - not in cleanup state
+    GST_DEBUG("pop_frame -- 3");
     frame = cef->current_frame;
     gst_buffer_ref(cef->current_frame);
   } else {
+    GST_DEBUG("pop_frame -- 4");
     GST_INFO_OBJECT (cef, "pop_frame cleanup state");
     // clean up state
     if (cef->current_frame) {
+      GST_DEBUG("pop_frame -- 5");
       gst_buffer_unref(cef->current_frame);
       cef->current_frame = NULL;
     }
   }
   g_atomic_int_set(&cef->has_new_frame, 0);
+  GST_DEBUG("pop_frame -- 6");
 
   g_mutex_unlock (&cef->frame_mutex);
+  GST_DEBUG("pop_frame -- 7");
   return frame;
 }
 
@@ -263,9 +267,11 @@ gst_cef_set_property (GObject * object, guint property_id,
 
   switch (property_id) {
     case PROP_VERBOSE:
+      GST_DEBUG("verbose property");
       cef->verbose = g_value_get_boolean (value);
       break;
     case PROP_URL:
+      GST_DEBUG("verbose url");
       set_url(cef, g_value_get_string (value));
       break;
     default:
@@ -370,7 +376,7 @@ gst_cef_negotiate (GstBaseSrc * src)
 {
   GstCef *cef = GST_CEF (src);
 
-  GST_DEBUG_OBJECT (cef, "negotiate");
+  GST_INFO_OBJECT (cef, "neil negotiate");
 
   return TRUE;
 }
@@ -390,9 +396,31 @@ gst_cef_fixate (GstBaseSrc * src, GstCaps * caps)
 static gboolean
 gst_cef_set_caps (GstBaseSrc * src, GstCaps * caps)
 {
+
+  GstVideoInfo info;
+  GST_DEBUG("setting cappsssss");
+  const GstStructure *structure;
+  int width;
+  int height;
+ 
+  structure = gst_caps_get_structure (caps, 0);
+ 
+  gst_structure_get_int (structure, "width", &width);
+  gst_structure_get_int (structure, "height", &height);
+
   GstCef *cef = GST_CEF (src);
 
-  GST_DEBUG_OBJECT (cef, "set_caps");
+  GST_INFO_OBJECT (caps, "neil set_caps");
+  GST_INFO_OBJECT (caps, "neil -- caps info width %u", width);
+  GST_INFO_OBJECT (caps, "neil -- caps info height %u", height);
+
+
+  struct gstSizeArgs * args = g_malloc(sizeof(struct gstSizeArgs));
+
+  args->gstCef = cef;
+  args->width = width;
+  args->height = height;
+  set_size(args);
 
   return TRUE;
 }
@@ -537,16 +565,17 @@ static GstFlowReturn
 gst_cef_create (GstBaseSrc * src, guint64 offset, guint size,
     GstBuffer ** buf)
 {
+  GST_DEBUG("neil create");
   GstCef *cef = GST_CEF (src);
 
   GstBuffer* buffer = pop_frame(cef);
   if (!buffer) {
-    GST_INFO_OBJECT (cef, "create gst_flow_flushing");
+    GST_INFO_OBJECT (cef, "Neil create gst_flow_flushing");
     return GST_FLOW_FLUSHING;
   }
   *buf = buffer;
 
-  GST_LOG_OBJECT (src, "Created buffer of size %u at %" G_GINT64_FORMAT
+  GST_DEBUG_OBJECT (src, "Neil Created buffer of size %u at %" G_GINT64_FORMAT
       " with timestamp %" GST_TIME_FORMAT, gst_buffer_get_size(*buf), GST_BUFFER_OFFSET (*buf),
       GST_TIME_ARGS (GST_BUFFER_TIMESTAMP (*buf)));
 
@@ -570,10 +599,6 @@ gst_cef_alloc (GstBaseSrc * src, guint64 offset, guint size,
 static GstFlowReturn
 gst_cef_fill (GstBaseSrc * src, guint64 offset, guint size, GstBuffer * buf)
 {
-  GstCef *cef = GST_CEF (src);
-
-  GST_DEBUG_OBJECT (cef, "fill");
-
   return GST_FLOW_OK;
 }
 
