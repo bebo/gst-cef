@@ -414,12 +414,12 @@ gst_cef_set_caps (GstBaseSrc * src, GstCaps * caps)
   GST_INFO_OBJECT (caps, "neil -- caps info width %u", width);
   GST_INFO_OBJECT (caps, "neil -- caps info height %u", height);
 
-
   struct gstSizeArgs * args = g_malloc(sizeof(struct gstSizeArgs));
 
   args->gstCef = cef;
   args->width = width;
   args->height = height;
+
   set_size(args);
 
   return TRUE;

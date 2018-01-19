@@ -29,7 +29,7 @@ BrowserClient::~BrowserClient() {
 bool BrowserClient::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) {
   CEF_REQUIRE_UI_THREAD();
 
-  GST_DEBUG("GetViewRect: browser id: %d, lenght: %lu", browser->GetIdentifier(), browser_gst_map.size());
+  GST_INFO("GetViewRect: browser id: %d, lenght: %lu", browser->GetIdentifier(), browser_gst_map.size());
 
   // TODO: getGstCef may returns NULL because GetViewRect is called before 
   // the CreateBrowserSync return. We add the browser to the map after 
@@ -41,6 +41,8 @@ bool BrowserClient::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) {
     rect = CefRect(0, 0, 1280, 720); // FIXME: value should not be hardcoded
     return true;
   }
+
+  GST_INFO("rect i got cef: %uX%u", cef->width, cef->height);
 
   rect = CefRect(0, 0, cef->width, cef->height);
   return true;
@@ -257,6 +259,9 @@ void BrowserClient::CloseBrowser(void * gst_cef, bool force_close) {
 }
 
 void BrowserClient::SetSize(void * gst_cef, int width, int height) {
+
+  GST_INFO("Set Size Any Thread");
+
   if (!CefCurrentlyOn(TID_UI)) {
     // Execute on the UI thread.
     CefPostTask(TID_UI, base::Bind(&BrowserClient::SetSize, this,
@@ -265,7 +270,7 @@ void BrowserClient::SetSize(void * gst_cef, int width, int height) {
   }
   CEF_REQUIRE_UI_THREAD();
 
-  GST_INFO("BrowserClient::Setting size of browser");
+  GST_INFO("BrowserClient::Setting size of browser %ux%u", width, height);
 
   for (auto it = browser_gst_map.begin(); it != browser_gst_map.end(); ++it) {
     if (!it->second) {
@@ -274,10 +279,17 @@ void BrowserClient::SetSize(void * gst_cef, int width, int height) {
     }
 
     if (it->second->gst_cef == gst_cef) {
+      //GstCefInfo_T *info = (GstCefInfo_T *)it->second->gst_cef;
+      //info->width = 1280;
+      //info->height = 720;
       CefRefPtr<CefBrowser> browser = it->second->browser;
-      browser->Reload();
+      GST_INFO("i got the browser");
+      CefRefPtr<CefBrowserHost> host = browser->GetHost();
+      host->WasResized();
+      GST_INFO("was resized");
       break;
     }
   }
 
+  GST_INFO("end of SetSize");
 }
