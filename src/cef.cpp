@@ -73,8 +73,7 @@ static void doStart(gpointer data) {
   // Browser implements application-level callbacks for the browser process.
   // It will create the first browser instance in OnContextInitialized() after
   // CEF has initialized.
-  app = new Browser(cb->gstCef, cb->push_frame, cb->url, 1280, 720);
-  cb->url = NULL;
+  app = new Browser(cb->gstCef, cb->push_frame, cb->url, cb->width, cb->height);
   g_free(cb);
 
   // Initialize CEF for the browser process.
@@ -86,9 +85,9 @@ static void doStart(gpointer data) {
 }
 
 static bool doOpen(gpointer data) {
+  GST_INFO("doOpen");
   struct gstCb *cb = (struct gstCb*) data;
-  app.get()->Open(cb->gstCef, cb->push_frame, cb->url);
-  cb->url = NULL;
+  app.get()->Open(cb->gstCef, cb->push_frame, cb->url, cb->width, cb->height);
 
   //FIXME: figure out why we can't free cb
   /* g_free(cb); */
@@ -116,8 +115,6 @@ void browser_loop(gpointer args) {
     return;
   }
 
-  gstCb *cb = (gstCb*) args;
-
   GST_LOG("starting browser_loop");
 
   g_atomic_int_set(&loop_live, 1);
@@ -138,6 +135,7 @@ void browser_loop(gpointer args) {
 }
 
 void doOpenBrowser(gpointer args) {
+  GST_INFO("doOpenBrowser");
   g_mutex_lock(&cef_start_mutex);
   while(!app) {
     g_cond_wait(&cef_start_cond, &cef_start_mutex);

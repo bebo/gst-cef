@@ -64,18 +64,11 @@ static void gst_cef_finalize (GObject * object);
 static GstCaps *gst_cef_get_caps (GstBaseSrc * src, GstCaps * filter);
 static gboolean gst_cef_negotiate (GstBaseSrc * src);
 static GstCaps *gst_cef_fixate (GstBaseSrc * src, GstCaps * caps);
-static gboolean gst_cef_set_caps (GstBaseSrc * src, GstCaps * caps);
-static gboolean gst_cef_decide_allocation (GstBaseSrc * src,
-    GstQuery * query);
 static gboolean gst_cef_start (GstBaseSrc * src);
 static gboolean gst_cef_stop (GstBaseSrc * src);
 static void gst_cef_get_times (GstBaseSrc * src, GstBuffer * buffer,
     GstClockTime * start, GstClockTime * end);
-/*static gboolean gst_cef_get_size (GstBaseSrc * src, guint64 * size);*/
 static gboolean gst_cef_is_seekable (GstBaseSrc * src);
-/* static gboolean gst_cef_prepare_seek_segment (GstBaseSrc * src, */
-    /* GstEvent * seek, GstSegment * segment); */
-/* static gboolean gst_cef_do_seek (GstBaseSrc * src, GstSegment * segment); */
 static gboolean gst_cef_unlock (GstBaseSrc * src);
 static gboolean gst_cef_unlock_stop (GstBaseSrc * src);
 static gboolean gst_cef_query (GstBaseSrc * src, GstQuery * query);
@@ -90,8 +83,9 @@ static GstFlowReturn gst_cef_fill (GstBaseSrc * src, guint64 offset,
 enum
 {
   PROP_0,
-  PROP_VERBOSE,
-  PROP_URL
+  PROP_URL,
+  PROP_WIDTH,
+  PROP_HEIGHT
 };
 
 /* pad templates */
@@ -131,40 +125,40 @@ gst_cef_class_init (GstCefClass * klass)
   gobject_class->get_property = gst_cef_get_property;
 
   /* base_src_class->fixate = GST_DEBUG_FUNCPTR (gst_cef_fixate); */
-  base_src_class->set_caps = GST_DEBUG_FUNCPTR (gst_cef_set_caps);
   gobject_class->dispose = gst_cef_dispose;
   /* gobject_class->finalize = gst_cef_finalize; */
-  //base_src_class->get_caps = GST_DEBUG_FUNCPTR (gst_cef_get_caps);
+  base_src_class->get_caps = GST_DEBUG_FUNCPTR (gst_cef_get_caps);
   //base_src_class->negotiate = GST_DEBUG_FUNCPTR (gst_cef_negotiate);
   base_src_class->is_seekable = GST_DEBUG_FUNCPTR (gst_cef_is_seekable);
   //base_src_class->fill = GST_DEBUG_FUNCPTR (gst_cef_fill);
 
-  /* base_src_class->decide_allocation = GST_DEBUG_FUNCPTR (gst_cef_decide_allocation); */
   base_src_class->start = GST_DEBUG_FUNCPTR (gst_cef_start);
   base_src_class->stop = GST_DEBUG_FUNCPTR (gst_cef_stop);
   /* base_src_class->get_times = GST_DEBUG_FUNCPTR (gst_cef_get_times); */
-  /*base_src_class->get_size = GST_DEBUG_FUNCPTR (gst_cef_get_size);*/
-  /* /1* base_src_class->prepare_seek_segment = GST_DEBUG_FUNCPTR (gst_cef_prepare_seek_segment); *1/ */
-  /* /1* base_src_class->do_seek = GST_DEBUG_FUNCPTR (gst_cef_do_seek); *1/ */
   base_src_class->unlock = GST_DEBUG_FUNCPTR (gst_cef_unlock);
   base_src_class->unlock_stop = GST_DEBUG_FUNCPTR (gst_cef_unlock_stop);
   /* base_src_class->query = GST_DEBUG_FUNCPTR (gst_cef_query); */
-  /* base_src_class->event = GST_DEBUG_FUNCPTR (gst_cef_event); */
+  //base_src_class->event = GST_DEBUG_FUNCPTR (gst_cef_event);
   base_src_class->create = GST_DEBUG_FUNCPTR (gst_cef_create);
   /* base_src_class->alloc = GST_DEBUG_FUNCPTR (gst_cef_alloc); */
 
-  g_object_class_install_property (gobject_class, PROP_VERBOSE,
-      g_param_spec_boolean ("verbose", "Verbose", "Produce verbose output",
-          FALSE, G_PARAM_READWRITE));
-
   g_object_class_install_property (gobject_class, PROP_URL,
-      g_param_spec_string ("url", "URL", "website to render into video",
-        "https://bebo.com/", G_PARAM_READWRITE));
+      g_param_spec_string ("url", "url", "website to render into video",
+        "", G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+
+  g_object_class_install_property (gobject_class, PROP_WIDTH,
+      g_param_spec_uint ("width", "width", "website to render into video",
+        0, 1920, 1280, G_PARAM_READWRITE));
+
+  g_object_class_install_property (gobject_class, PROP_HEIGHT,
+      g_param_spec_uint ("height", "height", "website to render into video",
+        0, 1080, 720, G_PARAM_READWRITE));
 }
 
 static void push_frame(void *gstCef, const void *buffer, int width, int height) {
   GstCef *cef = (GstCef *) gstCef;
   int size = width * height * 4 * 1;
+  GST_DEBUG("push_frame: %u, %u x %u", size, width, height);
   GstBuffer *buf;
   buf = gst_buffer_new_allocate (NULL, size, NULL);
   if (G_UNLIKELY (buf == NULL)) {
@@ -179,11 +173,15 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
 
   g_mutex_lock(&cef->frame_mutex);
 
+  cef->last_width=width;
+  cef->last_height=height;
+
   if (cef->current_frame) {
     gst_buffer_unref(cef->current_frame);
   }
 
   cef->current_frame = buf;
+  GST_DEBUG("setting has_new_frame to 1");
   g_atomic_int_set(&cef->has_new_frame, 1);
 
   g_cond_signal (&cef->frame_cond);
@@ -193,45 +191,70 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
 GstBuffer * pop_frame(GstCef *cef)
 {
   GstBuffer * frame = NULL;
+  gint64 end_time;
 
-  g_mutex_lock (&cef->frame_mutex);
+  //GST_INFO("popping frame");
+
+  //g_mutex_lock (&cef->frame_mutex);
+
+  //GST_INFO("popping frame past lock");
 
   // the condition to wait is:
   // 1. we don't get a new frame AND
   // 2. we are NOT in cleaning up state - cef->unlocked = 0
-  GST_DEBUG("pop_frame -- 1");
   while (g_atomic_int_get(&cef->has_new_frame) == 0 && g_atomic_int_get(&cef->unlocked) == 0) {
+    //end_time = g_get_monotonic_time () + 100 * G_TIME_SPAN_MILLISECOND;
     g_cond_wait (&cef->frame_cond, &cef->frame_mutex);
+    //if (!g_cond_wait (&cef->frame_cond, &cef->frame_mutex)) {
+    //  GST_INFO("reached 100 ms timeout, pushing previous frame");
+    //  break;
+    //}
   }
-  GST_DEBUG("pop_frame -- 2");
 
   if (g_atomic_int_get(&cef->unlocked) == 0) { // 0 - not in cleanup state
-    GST_DEBUG("pop_frame -- 3");
-    frame = cef->current_frame;
-    gst_buffer_ref(cef->current_frame);
+    GST_DEBUG("no cleanup");
+    if(cef->current_frame) {
+      frame = cef->current_frame;
+      gst_buffer_ref(cef->current_frame);
+      gsize frame_size = gst_buffer_get_size(frame);
+      gsize last_size = cef->last_width * cef->last_height * 4;
+      if (frame_size != last_size) {
+        GST_ERROR("last size not the same as frame size");
+      }
+
+      g_atomic_int_set(&cef->has_new_frame, 0);
+      //g_mutex_unlock (&cef->frame_mutex);
+
+      return frame;
+    }
   } else {
-    GST_DEBUG("pop_frame -- 4");
     GST_INFO_OBJECT (cef, "pop_frame cleanup state");
-    // clean up state
     if (cef->current_frame) {
-      GST_DEBUG("pop_frame -- 5");
       gst_buffer_unref(cef->current_frame);
       cef->current_frame = NULL;
     }
   }
-  g_atomic_int_set(&cef->has_new_frame, 0);
-  GST_DEBUG("pop_frame -- 6");
+  GST_DEBUG("no frame????");
+  //g_mutex_unlock (&cef->frame_mutex);
 
-  g_mutex_unlock (&cef->frame_mutex);
-  GST_DEBUG("pop_frame -- 7");
-  return frame;
+  return NULL;
 }
 
 void new_browser(GstCef *cef) {
+  const GstStructure *structure;
+  int width;
+  int height;
   struct gstCb *cb = g_malloc(sizeof(struct gstCb));
+
+  GST_INFO("actual new browser");
+ 
   cb->gstCef = cef;
   cb->push_frame = push_frame;
   cb->url = g_strdup(cef->url);
+  cb->width = cef->width;
+  cb->height = cef->height;
+
+  GST_INFO("set cb");
 
   if (browserLoop == 0) {
     browserLoop = g_thread_ref(g_thread_new("browser_loop", (GThreadFunc)browser_loop, cb));
@@ -246,15 +269,16 @@ void gst_cef_init(GstCef *cef)
 
   g_atomic_int_set (&cef->unlocked, 0);
   cef->current_frame = NULL;
+  cef->has_opened_browser = FALSE;
+  cef->width=1280;
+  cef->height=720;
+  cef->last_width=0;
+  cef->last_height=0;
+  cef->current_caps=NULL;
 
   gst_base_src_set_format (GST_BASE_SRC (cef), GST_FORMAT_TIME);
   gst_base_src_set_live (GST_BASE_SRC (cef), DEFAULT_IS_LIVE);
   gst_base_src_set_do_timestamp (GST_BASE_SRC (cef), TRUE);
-}
-
-void set_url(GstCef *cef, char * url) {
-  cef->url = url;
-  new_browser(cef);
 }
 
 void
@@ -266,18 +290,43 @@ gst_cef_set_property (GObject * object, guint property_id,
   GST_DEBUG_OBJECT (cef, "set_property");
 
   switch (property_id) {
-    case PROP_VERBOSE:
-      GST_DEBUG("verbose property");
-      cef->verbose = g_value_get_boolean (value);
-      break;
     case PROP_URL:
-      GST_DEBUG("verbose url");
-      set_url(cef, g_value_get_string (value));
-      break;
+      {
+        const gchar *url;
+        url = g_value_get_string (value);
+        g_free (cef->url);
+        cef->url = g_strdup (url);
+        break;
+      }
+    case PROP_WIDTH:
+      {
+        const width = g_value_get_uint (value);
+        cef->width = width;
+        gst_cef_set_size(cef, cef->width, cef->height);
+        break;
+      }
+    case PROP_HEIGHT:
+      {
+        const height = g_value_get_uint (value);
+        cef->height = height;
+        gst_cef_set_size(cef, cef->width, cef->height);
+        break;
+      }
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
       break;
   }
+}
+
+void gst_cef_set_size (GObject *object, int width, int height) {
+  GstCef *cef = GST_CEF (object);
+  struct gstSizeArgs *args = g_malloc(sizeof(struct gstSizeArgs));
+  args->gstCef = cef;
+  args->width = width;
+  args->height = height;
+
+  set_size(args);
+  GST_INFO("setting size");
 }
 
 void
@@ -288,11 +337,14 @@ gst_cef_get_property (GObject * object, guint property_id,
 
   GST_DEBUG_OBJECT (cef, "get_property");
   switch (property_id) {
-    case PROP_VERBOSE:
-      g_value_set_boolean(value, cef->verbose);
-      break;
     case PROP_URL:
       g_value_set_string(value, cef->url);
+      break;
+    case PROP_WIDTH:
+      g_value_set_uint(value, cef->width);
+      break;
+    case PROP_HEIGHT:
+      g_value_set_uint(value, cef->height);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
@@ -329,45 +381,29 @@ static GstCaps *
 gst_cef_get_caps (GstBaseSrc * src, GstCaps * filter)
 {
   GstCef *cef = GST_CEF (src);
+  GstCaps *caps;
 
   GST_DEBUG_OBJECT (cef, "get_caps");
 
-  /* GstCaps *caps = NULL, *temp = NULL; */
-  /* GstPadTemplate *pad_template; */
-  /* GstBaseSrcClass *bclass = GST_BASE_SRC_GET_CLASS (cef); */
-  /* guint i; */
-  /* gint width, height; */
+  GST_OBJECT_LOCK (cef);
 
-/* /1*   if (qt_src->window) { *1/ */
-/* /1*     qt_src->window->getGeometry (&width, &height); *1/ */
-/* /1*   } *1/ */
+  if (cef->current_caps) {
+    caps = cef->current_caps;
+    gst_caps_ref(caps);
+  } else {
+    caps = gst_caps_new_simple ("video/x-raw",
+        "format", G_TYPE_STRING, "BGRA",
+        "framerate", GST_TYPE_FRACTION, 0, 1,
+        "pixel-aspect-ratio", GST_TYPE_FRACTION, 1, 1,
+        "width", G_TYPE_INT, cef->width,
+        "height", G_TYPE_INT, cef->height,
+        NULL);
+  }
 
-  /* pad_template = gst_element_class_get_pad_template (GST_ELEMENT_CLASS (cef), "src"); */
-  /* if (pad_template != NULL) */
-  /*   caps = gst_pad_template_get_caps (pad_template); */
+  GST_OBJECT_UNLOCK (cef);
 
-
-  /* guint n_caps = gst_caps_get_size (caps); */
-  /*   for (i = 0; i < n_caps; i++) { */
-  /*     GstStructure *s = gst_caps_get_structure (caps, i); */
-  /*     gst_structure_set (s, "width", G_TYPE_INT, 1280, NULL); */
-  /*     gst_structure_set (s, "height", G_TYPE_INT, 720, NULL); */
-  /*     /1* because the framerate is unknown *1/ */
-  /*     gst_structure_set (s, "framerate", GST_TYPE_FRACTION, 0, 1, NULL); */
-  /*     gst_structure_set (s, "pixel-aspect-ratio", */
-  /*         GST_TYPE_FRACTION, 1, 1, NULL); */
-  /*   } */
-
-GstCaps *caps = gst_caps_new_simple ("video/x-raw",
-   "format", G_TYPE_STRING, "BGRA",
-   "framerate", GST_TYPE_FRACTION, 30, 1,
-   "pixel-aspect-ratio", GST_TYPE_FRACTION, 1, 1,
-   "width", G_TYPE_INT, 1280,
-   "height", G_TYPE_INT, 720,
-   NULL);
 
   return caps;
-
 }
 
 /* decide on caps */
@@ -392,48 +428,27 @@ gst_cef_fixate (GstBaseSrc * src, GstCaps * caps)
   return NULL;
 }
 
-/* notify the subclass of new caps */
 static gboolean
-gst_cef_set_caps (GstBaseSrc * src, GstCaps * caps)
+gst_cef_do_negotiate (GstBaseSrc * basesrc)
 {
+  GST_INFO("do negotiate");
+  GstCef *cef = GST_CEF (basesrc);
+  gboolean result;
+  GstCaps *caps;
 
-  GstVideoInfo info;
-  GST_DEBUG("setting cappsssss");
-  const GstStructure *structure;
-  int width;
-  int height;
- 
-  structure = gst_caps_get_structure (caps, 0);
- 
-  gst_structure_get_int (structure, "width", &width);
-  gst_structure_get_int (structure, "height", &height);
+  GST_OBJECT_LOCK (basesrc);
+  caps = cef->current_caps ? gst_caps_ref (cef->current_caps) : NULL;
+  GST_OBJECT_UNLOCK (basesrc);
 
-  GstCef *cef = GST_CEF (src);
+  if (caps) {
+    GST_INFO_OBJECT(caps, "do_negotiate caps");
+    result = gst_base_src_set_caps (basesrc, caps);
+    gst_caps_unref (caps);
+  } else {
+    result = GST_BASE_SRC_CLASS(gst_cef_parent_class)->negotiate (basesrc);
+  }
 
-  GST_INFO_OBJECT (caps, "neil set_caps");
-  GST_INFO_OBJECT (caps, "neil -- caps info width %u", width);
-  GST_INFO_OBJECT (caps, "neil -- caps info height %u", height);
-
-  struct gstSizeArgs * args = g_malloc(sizeof(struct gstSizeArgs));
-
-  args->gstCef = cef;
-  args->width = width;
-  args->height = height;
-
-  set_size(args);
-
-  return TRUE;
-}
-
-/* setup allocation query */
-static gboolean
-gst_cef_decide_allocation (GstBaseSrc * src, GstQuery * query)
-{
-  GstCef *cef = GST_CEF (src);
-
-  GST_DEBUG_OBJECT (cef, "decide_allocation");
-
-  return TRUE;
+  return result;
 }
 
 /* start and stop processing, ideal for opening/closing the resource */
@@ -442,7 +457,18 @@ gst_cef_start (GstBaseSrc * src)
 {
   GstCef *cef = GST_CEF (src);
 
-  GST_DEBUG_OBJECT (cef, "start");
+  gint width = cef->width;
+  gint height = cef->width;
+  char *url = cef->url;
+
+  if(!width || !height || !url) {
+    GST_ERROR("no width, or height, or url");
+    return FALSE;
+  }
+
+  new_browser(cef);
+
+  GST_INFO_OBJECT (cef, "start");
 
   return TRUE;
 }
@@ -459,18 +485,6 @@ gst_cef_stop (GstBaseSrc * src)
   return TRUE;
 }
 
-/* given a buffer, return start and stop time when it should be pushed
- * out. The base class will sync on the clock using these times. */
-static void
-gst_cef_get_times (GstBaseSrc * src, GstBuffer * buffer,
-    GstClockTime * start, GstClockTime * end)
-{
-  GstCef *cef = GST_CEF (src);
-
-  GST_DEBUG_OBJECT (cef, "get_times");
-
-}
-
 /* check if the resource is seekable */
 static gboolean
 gst_cef_is_seekable (GstBaseSrc * src)
@@ -478,32 +492,6 @@ gst_cef_is_seekable (GstBaseSrc * src)
   return FALSE;
 }
 
-/* /1* Prepare the segment on which to perform do_seek(), converting to the */
-/*  * current basesrc format. *1/ */
-/* static gboolean */
-/* gst_cef_prepare_seek_segment (GstBaseSrc * src, GstEvent * seek, */
-/*     GstSegment * segment) */
-/* { */
-/*   GstCef *cef = GST_CEF (src); */
-
-/*   GST_DEBUG_OBJECT (cef, "prepare_seek_segment"); */
-
-/*   return TRUE; */
-/* } */
-
-/* /1* notify subclasses of a seek *1/ */
-/* static gboolean */
-/* gst_cef_do_seek (GstBaseSrc * src, GstSegment * segment) */
-/* { */
-/*   GstCef *cef = GST_CEF (src); */
-
-/*   GST_DEBUG_OBJECT (cef, "do_seek"); */
-
-/*   return TRUE; */
-/* } */
-
-/* unlock any pending access to the resource. subclasses should unlock
- * any function ASAP. */
 static gboolean
 gst_cef_unlock (GstBaseSrc * src)
 {
@@ -554,7 +542,12 @@ gst_cef_event (GstBaseSrc * src, GstEvent * event)
 {
   GstCef *cef = GST_CEF (src);
 
-  GST_DEBUG_OBJECT (cef, "event");
+  GST_INFO_OBJECT (cef, "event");
+  GstEventType type = GST_EVENT_TYPE(event);
+  switch (type) {
+    default:
+      GST_INFO("event_type: %s", GST_EVENT_TYPE_NAME(event));
+  }
 
   return TRUE;
 }
@@ -565,22 +558,54 @@ static GstFlowReturn
 gst_cef_create (GstBaseSrc * src, guint64 offset, guint size,
     GstBuffer ** buf)
 {
-  GST_DEBUG("neil create");
   GstCef *cef = GST_CEF (src);
 
+  g_mutex_lock(&cef->frame_mutex);
   GstBuffer* buffer = pop_frame(cef);
   if (!buffer) {
-    GST_INFO_OBJECT (cef, "Neil create gst_flow_flushing");
+    g_mutex_unlock(&cef->frame_mutex);
+    GST_INFO_OBJECT (cef, "neil create gst_flow_flushing");
     return GST_FLOW_FLUSHING;
   }
+
   *buf = buffer;
 
-  GST_DEBUG_OBJECT (src, "Neil Created buffer of size %u at %" G_GINT64_FORMAT
-      " with timestamp %" GST_TIME_FORMAT, gst_buffer_get_size(*buf), GST_BUFFER_OFFSET (*buf),
-      GST_TIME_ARGS (GST_BUFFER_TIMESTAMP (*buf)));
+  gboolean caps_changed = TRUE;
+
+  if (cef->current_caps) {
+    gint width = 0;
+    gint height = 0;
+    GstStructure *structure = gst_caps_get_structure(cef->current_caps, 0);
+    if( !gst_structure_get_int(structure, "width", &width))
+      GST_ERROR ("couldn't get the width");
+    if( !gst_structure_get_int(structure, "height", &height))
+      GST_ERROR ("couldn't get the height");
+
+    //width or height changed
+    if(width == cef->last_width && height == cef->last_height) {
+      caps_changed = FALSE;
+    }
+  }
+
+  if (caps_changed) {
+    GST_DEBUG("create caps_changed -- replacing");
+    GstCaps *caps = gst_caps_new_simple ("video/x-raw",
+        "format", G_TYPE_STRING, "BGRA",
+        "framerate", GST_TYPE_FRACTION, 0, 1,
+        "pixel-aspect-ratio", GST_TYPE_FRACTION, 1, 1,
+        "width", G_TYPE_INT, cef->last_width,
+        "height", G_TYPE_INT, cef->last_height,
+        NULL);
+
+    gst_caps_replace(&cef->current_caps, caps);
+    gst_cef_do_negotiate(cef);
+  }
+
+  g_mutex_unlock(&cef->frame_mutex);
 
   return GST_FLOW_OK;
 }
+
 
 /* ask the subclass to allocate an output buffer. The default implementation
  * will use the negotiated allocator. */

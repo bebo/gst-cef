@@ -19,6 +19,7 @@
 #include "include/wrapper/cef_helpers.h"
 #include <sys/time.h>
 
+
 // TODO: support changing url by gst_cef
 BrowserClient::BrowserClient(): use_views_(false), is_closing_(false) {}
 
@@ -56,16 +57,8 @@ void BrowserClient::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType pain
     return;
   }
 
-  struct timeval tv;
-  gettimeofday(&tv, NULL);
-  unsigned long long millisecondsSinceEpoch = 
-    ((unsigned long long)(tv.tv_sec) - (unsigned long long)(cef->last_tv.tv_sec)) * 1000000 
-    + (unsigned long long)(tv.tv_usec) - (unsigned long long)(cef->last_tv.tv_usec);
-  cef->last_tv.tv_sec = tv.tv_sec;
-  cef->last_tv.tv_usec = tv.tv_usec;
-
-  GST_DEBUG("OnPaint() for size: %d x %d ms:%llu, browser id: %d", width, height, millisecondsSinceEpoch, browser->GetIdentifier());
-  cef->push_frame(cef->gst_cef, buffer, cef->width, cef->height);
+  GST_DEBUG("OnPaint() for size: %d x %d browser id: %d", width, height, browser->GetIdentifier());
+  cef->push_frame(cef->gst_cef, buffer, width, height);
 }
 
 void BrowserClient::OnTitleChange(CefRefPtr<CefBrowser> browser,
@@ -109,6 +102,8 @@ void BrowserClient::AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void * gstCe
   GST_INFO("Adding browser to gst map browser id: %d", id);
 
   browser_gst_map[id] = gst_cef_info;
+  //Do this because the caps may have triggered a SetSize before this function was called
+  this->SetSize(gstCef, width, height);
 }
 
 GstCefInfo_T* BrowserClient::getGstCef(CefRefPtr<CefBrowser> browser) {
@@ -250,7 +245,7 @@ void BrowserClient::CloseBrowser(void * gst_cef, bool force_close) {
 
     if (it->second->gst_cef == gst_cef) {
       GST_LOG("Closing Browser, browser id: %d", it->first);
-      CefRefPtr<CefBrowser> browser = it->second->browser;
+      CefBrowser* browser = it->second->browser.get();
       browser->GetHost()->CloseBrowser(force_close);
       break;
     }
@@ -279,17 +274,19 @@ void BrowserClient::SetSize(void * gst_cef, int width, int height) {
     }
 
     if (it->second->gst_cef == gst_cef) {
-      //GstCefInfo_T *info = (GstCefInfo_T *)it->second->gst_cef;
-      //info->width = 1280;
-      //info->height = 720;
-      CefRefPtr<CefBrowser> browser = it->second->browser;
-      GST_INFO("i got the browser");
-      CefRefPtr<CefBrowserHost> host = browser->GetHost();
+      GstCefInfo_T *info = (GstCefInfo_T *)it->second;
+      CefBrowser* browser = info->browser.get();
+      GST_INFO("got cef. BrowserClient::SetSize id: %d", browser->GetIdentifier());
+      info->width = width;
+      info->height = height;
+      CefBrowserHost *host = browser->GetHost().get();
       host->WasResized();
-      GST_INFO("was resized");
-      break;
+      return;
     }
   }
 
-  GST_INFO("end of SetSize");
+  GST_INFO("Didn't get gst_cef");
 }
+
+
+

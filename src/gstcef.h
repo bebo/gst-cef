@@ -47,6 +47,12 @@ struct _GstCef
   /* gint64 cur_offset; */
   volatile gint unlocked;
   volatile gint has_new_frame;
+  volatile gboolean has_opened_browser;
+  int width;
+  int height;
+  int last_width;
+  int last_height;
+  GstCaps *current_caps;
 };
 
 struct _GstCefClass

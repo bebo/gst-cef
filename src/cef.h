@@ -14,6 +14,8 @@ struct gstCb {
     void * gstCef;
     void * push_frame;
     char * url;
+    int width;
+    int height;
 };
 
 struct gstSizeArgs {
