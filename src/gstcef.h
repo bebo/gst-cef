@@ -43,6 +43,7 @@ struct _GstCef
   const char *url;
   int width;
   int height;
+  gboolean opened_browser;
 };
 
 struct _GstCefClass

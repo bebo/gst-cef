@@ -186,8 +186,38 @@ void gst_cef_init(GstCef *cef)
   gst_element_add_pad(GST_ELEMENT_CAST(bin), gst_ghost_pad_new("src", src_pad));
   gst_object_unref(GST_OBJECT(src_pad));
 
-  cef->width=1280;
-  cef->height=720;
+  cef->width=-1;
+  cef->height=-1;
+  cef->opened_browser = FALSE;
+}
+
+void try_new_browser(GstCef *cef) {
+  char *url = cef->url;
+  int width = cef->width;
+  int height = cef->height;
+  gboolean opened = cef->opened_browser;
+
+  if(!width) {
+    GST_DEBUG("no width yet, not opening");
+    return;
+  }
+
+  if(!height) {
+    GST_DEBUG("no height yet, not opening");
+    return;
+  }
+
+  if(!url) {
+    GST_DEBUG("no url yet, not opening");
+    return;
+  }
+
+  if(opened) {
+    GST_ERROR("changing width,height,url not yet supported");
+    return;
+  }
+
+  new_browser(cef);
 }
 
 void
@@ -205,21 +235,23 @@ gst_cef_set_property (GObject * object, guint property_id,
         url = g_value_get_string (value);
         g_free (cef->url);
         cef->url = g_strdup (url);
-        new_browser(cef);
+        try_new_browser(cef);
         break;
       }
     case PROP_WIDTH:
       {
         const width = g_value_get_uint (value);
         cef->width = width;
-        gst_cef_set_size(cef, cef->width, cef->height);
+        //gst_cef_set_size(cef, cef->width, cef->height);
+        try_new_browser(cef);
         break;
       }
     case PROP_HEIGHT:
       {
         const height = g_value_get_uint (value);
         cef->height = height;
-        gst_cef_set_size(cef, cef->width, cef->height);
+        //gst_cef_set_size(cef, cef->width, cef->height);
+        try_new_browser(cef);
         break;
       }
     default:
