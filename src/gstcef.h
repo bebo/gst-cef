@@ -21,7 +21,7 @@
 #define _GST_CEF_H_
 
 #include <gst/gst.h>
-#include <gst/base/gstpushsrc.h>
+#include <gst/app/gstappsrc.h>
 #include <gst/video/gstvideometa.h>
 #include <gst/video/video.h>
 
@@ -38,26 +38,16 @@ typedef struct _GstCefClass GstCefClass;
 
 struct _GstCef
 {
-  GstPushSrc src;
-  gboolean verbose; 
+  GstBin bin;
+  GstAppSrc *appsrc;
   const char *url;
-  GstBuffer *current_frame;
-  GMutex frame_mutex;
-  GCond frame_cond;
-  /* gint64 cur_offset; */
-  volatile gint unlocked;
-  volatile gint has_new_frame;
-  volatile gboolean has_opened_browser;
   int width;
   int height;
-  int last_width;
-  int last_height;
-  GstCaps *current_caps;
 };
 
 struct _GstCefClass
 {
-  GstPushSrcClass base_cef_class;
+  GstBinClass base_cef_class;
 };
 
 GType gst_cef_get_type (void);
