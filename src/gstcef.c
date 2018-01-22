@@ -127,7 +127,7 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
     return;
   }
 
-  //TODO: save them if they didn't change and use the same ones
+  //TODO: save them if they didn't change and use the same ones???
   GstCaps *caps = gst_caps_new_simple ("video/x-raw",
       "format", G_TYPE_STRING, "BGRA",
       "framerate", GST_TYPE_FRACTION, 0, 1,
@@ -178,6 +178,7 @@ void gst_cef_init(GstCef *cef)
   cef->appsrc = appsrc;
   g_object_set (G_OBJECT(appsrc), "is-live", TRUE, NULL);
   g_object_set (G_OBJECT(appsrc), "do-timestamp", TRUE, NULL);
+  g_object_set (G_OBJECT(appsrc), "format", 3, NULL);
 
   gst_bin_add(bin, GST_ELEMENT_CAST(appsrc));
 
@@ -211,18 +212,31 @@ gst_cef_set_property (GObject * object, guint property_id,
       {
         const width = g_value_get_uint (value);
         cef->width = width;
+        gst_cef_set_size(cef, cef->width, cef->height);
         break;
       }
     case PROP_HEIGHT:
       {
         const height = g_value_get_uint (value);
         cef->height = height;
+        gst_cef_set_size(cef, cef->width, cef->height);
         break;
       }
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
       break;
   }
+}
+
+void gst_cef_set_size(GstCef *cef, int width, int height) {
+  struct gstSizeArgs *args = g_malloc(sizeof(struct gstSizeArgs));
+
+  GST_INFO("actual new browser");
+  args->gstCef = cef;
+  args->width = width;
+  args->height = height;
+
+  set_size(args);
 }
 
 void
