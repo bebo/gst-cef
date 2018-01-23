@@ -118,6 +118,7 @@ gst_cef_class_init (GstCefClass * klass)
 
 static void gst_cef_dispose(GObject *object) {
   GstCef *cef = GST_CEF(object);
+  GST_OBJECT_LOCK(cef);
   if(cef->url) {
     g_free(cef->url);
   }
@@ -125,11 +126,11 @@ static void gst_cef_dispose(GObject *object) {
   if(cef->appsrc) {
     gst_object_unref(cef->appsrc);
   }
+  GST_OBJECT_UNLOCK(cef);
 }
 
 static void push_frame(void *gstCef, const void *buffer, int width, int height) {
   GstCef *cef = (GstCef *) gstCef;
-  GstAppSrc *appsrc = cef->appsrc;
   const int size = width * height * 4 * 1;
 
   GST_DEBUG("push_frame: %u, %u x %u", size, width, height);
@@ -139,6 +140,9 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
     GST_ERROR_OBJECT (cef, "Failed to allocate %u bytes", size);
     return;
   }
+
+  GST_OBJECT_LOCK(cef);
+  GstAppSrc *appsrc = cef->appsrc;
 
   //TODO: save them if they didn't change and use the same ones???
   GstCaps *caps = gst_caps_new_simple ("video/x-raw",
@@ -155,9 +159,11 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
   gst_buffer_unmap (buf, &map);
 
   GstSample *sample = gst_sample_new(buf, caps, NULL, NULL);
-
+  gst_buffer_unref(buf);
   //TODO: listen to return here
   gst_app_src_push_sample(appsrc, sample);
+  gst_sample_unref(buf);
+  GST_OBJECT_UNLOCK(cef);
 }
 
 void new_browser(GstCef *cef) {
@@ -240,6 +246,7 @@ gst_cef_set_property (GObject * object, guint property_id,
     const GValue * value, GParamSpec * pspec)
 {
   GstCef *cef = GST_CEF (object);
+  GST_OBJECT_LOCK(cef);
 
   GST_DEBUG_OBJECT (cef, "set_property");
 
@@ -271,6 +278,8 @@ gst_cef_set_property (GObject * object, guint property_id,
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
       break;
   }
+
+  GST_OBJECT_UNLOCK(cef);
 }
 
 void gst_cef_set_size(GstCef *cef, int width, int height) {
