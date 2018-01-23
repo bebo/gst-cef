@@ -103,7 +103,7 @@ void BrowserClient::AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void * gstCe
 
   browser_gst_map[id] = gst_cef_info;
   //Do this because the caps may have triggered a SetSize before this function was called
-  this->SetSize(gstCef, width, height);
+  //this->SetSize(gstCef, width, height);
 }
 
 GstCefInfo_T* BrowserClient::getGstCef(CefRefPtr<CefBrowser> browser) {

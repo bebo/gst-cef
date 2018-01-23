@@ -52,6 +52,9 @@ GST_DEBUG_CATEGORY(gst_cef_debug_category);
 
 /* prototypes */
 
+static GObjectClass *parent_class = NULL;
+static GstBinClass *parent_bin_class = NULL;
+
 static void gst_cef_set_property (GObject * object,
     guint property_id, const GValue * value, GParamSpec * pspec);
 static void gst_cef_get_property (GObject * object,
@@ -90,7 +93,9 @@ gst_cef_class_init (GstCefClass * klass)
 {
   printf("gst_cef_class_init\n");
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
-  GstBin *bin_class = GST_BIN_CLASS (klass);
+  parent_class = gobject_class;
+  GstBinClass *bin_class = GST_BIN_CLASS(klass);
+  parent_bin_class = bin_class;
 
   gst_element_class_add_static_pad_template (GST_ELEMENT_CLASS(klass),
       &gst_cef_src_template);
@@ -121,12 +126,15 @@ static void gst_cef_dispose(GObject *object) {
   GST_OBJECT_LOCK(cef);
   if(cef->url) {
     g_free(cef->url);
+    cef->url = NULL;
   }
 
   if(cef->appsrc) {
     gst_object_unref(cef->appsrc);
+    cef->appsrc = NULL;
   }
   GST_OBJECT_UNLOCK(cef);
+  parent_class->dispose(object);
 }
 
 static void push_frame(void *gstCef, const void *buffer, int width, int height) {
@@ -162,7 +170,7 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
   gst_buffer_unref(buf);
   //TODO: listen to return here
   gst_app_src_push_sample(appsrc, sample);
-  gst_sample_unref(buf);
+  gst_sample_unref(sample);
   GST_OBJECT_UNLOCK(cef);
 }
 
@@ -192,6 +200,7 @@ void new_browser(GstCef *cef) {
 void gst_cef_init(GstCef *cef)
 {
   printf("gst_cef_init\n");
+  GST_INFO("cef version neil");
   GstBin *bin = GST_BIN_CAST (cef);
   GstAppSrc *appsrc = gst_element_factory_make("appsrc", NULL);
   cef->appsrc = appsrc;

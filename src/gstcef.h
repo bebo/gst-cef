@@ -48,7 +48,7 @@ struct _GstCef
 
 struct _GstCefClass
 {
-  GstBinClass base_cef_class;
+  GstBinClass parent_class;
 };
 
 GType gst_cef_get_type (void);
