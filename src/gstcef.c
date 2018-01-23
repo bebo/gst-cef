@@ -61,14 +61,16 @@ static void gst_cef_set_property (GObject * object,
 static void gst_cef_get_property (GObject * object,
     guint property_id, GValue * value, GParamSpec * pspec);
 static void gst_cef_dispose (GObject * object);
-static GstStateChangeReturn gst_cef_change_state (GstElement *element, GstStateChange transition);
+static GstStateChangeReturn gst_cef_change_state(GstElement *element, GstStateChange transition);
+void cleanup(GstCef *cef);
 
 enum
 {
   PROP_0,
   PROP_URL,
   PROP_WIDTH,
-  PROP_HEIGHT
+  PROP_HEIGHT,
+  PROP_CLEANUP
 };
 
 /* pad templates */
@@ -80,7 +82,6 @@ GST_STATIC_PAD_TEMPLATE ("src",
     GST_PAD_ALWAYS,
     GST_STATIC_CAPS (VTS_VIDEO_CAPS)
     );
-
 
 /* class initialization */
 
@@ -111,7 +112,7 @@ gst_cef_class_init (GstCefClass * klass)
   gobject_class->dispose = gst_cef_dispose;
   gobject_class->set_property = gst_cef_set_property;
   gobject_class->get_property = gst_cef_get_property;
-  //element_class->change_state = gst_cef_change_state;
+  //parent_element_class->change_state = gst_cef_change_state;
 
   g_object_class_install_property (gobject_class, PROP_URL,
       g_param_spec_string ("url", "url", "website to render into video",
@@ -124,58 +125,53 @@ gst_cef_class_init (GstCefClass * klass)
   g_object_class_install_property (gobject_class, PROP_HEIGHT,
       g_param_spec_uint ("height", "height", "website to render into video",
         0, 1080, 720, G_PARAM_READWRITE));
+
+  //TODO: this is just hacky to make it work. Want to cleanup on the change_state
+  g_object_class_install_property (gobject_class, PROP_CLEANUP,
+      g_param_spec_boolean ("cleanup", "cleanup", "hacky way to cleanup resources because it's late and I couldn't figure out the change_state function",
+        FALSE, G_PARAM_READWRITE));
 }
 
-void cleanup(GstCef *cef) {
-  GST_OBJECT_LOCK(cef);
-  if(cef->url) {
-    g_free(cef->url);
-    cef->url = NULL;
-  }
+//TODO: this crashes and I don't know why
+static GstStateChangeReturn gst_cef_change_state(GstElement *element, GstStateChange transition) {
 
-  if(cef->appsrc) {
-    gst_object_unref(cef->appsrc);
-    cef->appsrc = NULL;
-  }
-
-  close_browser(cef);
-
-  GST_OBJECT_UNLOCK(cef);
-}
-
-static void gst_cef_dispose(GObject *object) {
-  GstCef *cef = GST_CEF(object);
-  cleanup(cef);
-  parent_class->dispose(object);
-}
-
-static GstStateChangeReturn gst_cef_change_state (GstElement *element, GstStateChange transition)
-{
-  GstStateChangeReturn ret = GST_STATE_CHANGE_SUCCESS;
   GstCef *cef = GST_CEF (element);
+  GstStateChangeReturn ret = GST_STATE_CHANGE_SUCCESS;
 
-  GST_DEBUG("state change transition: %u", transition);
-  switch (transition) {
-    case GST_STATE_CHANGE_PAUSED_TO_PLAYING:
-      try_new_browser(cef);
-      break;
-    default:
-      break;
-  }
-
-  ret = parent_element_class->change_state (element, transition);
   if (ret == GST_STATE_CHANGE_FAILURE)
     return ret;
 
   switch (transition) {
     case GST_STATE_CHANGE_READY_TO_NULL:
-      cleanup (cef);
+      cleanup(cef);
       break;
     default:
       break;
   }
 
   return ret;
+}
+
+void cleanup(GstCef *cef) {
+  GST_INFO("cleanup");
+  if(cef->url) {
+    g_free(cef->url);
+    cef->url = NULL;
+  }
+
+  if(cef->appsrc) {
+    gst_app_src_end_of_stream(cef->appsrc);
+    gst_object_unref(cef->appsrc);
+    cef->appsrc = NULL;
+  }
+
+  close_browser(cef);
+}
+
+static void gst_cef_dispose(GObject *object) {
+  GstCef *cef = GST_CEF(object);
+  cleanup(cef);
+  parent_class->dispose(object);
 }
 
 static void push_frame(void *gstCef, const void *buffer, int width, int height) {
@@ -190,7 +186,6 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
     return;
   }
 
-  GST_OBJECT_LOCK(cef);
   GstAppSrc *appsrc = cef->appsrc;
 
   //TODO: save them if they didn't change and use the same ones???
@@ -212,7 +207,6 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
   //TODO: listen to return here
   gst_app_src_push_sample(appsrc, sample);
   gst_sample_unref(sample);
-  GST_OBJECT_UNLOCK(cef);
 }
 
 void new_browser(GstCef *cef) {
@@ -248,6 +242,7 @@ void gst_cef_init(GstCef *cef)
   g_object_set (G_OBJECT(appsrc), "is-live", TRUE, NULL);
   g_object_set (G_OBJECT(appsrc), "do-timestamp", TRUE, NULL);
   g_object_set (G_OBJECT(appsrc), "format", 3, NULL);
+  g_object_set (G_OBJECT(appsrc), "block", TRUE, NULL);
   //TODO: make this based on width and height
   g_object_set (G_OBJECT(appsrc), "max-bytes", 2 * 1920 * 1080 * 4, NULL);
 
@@ -333,6 +328,12 @@ gst_cef_set_property (GObject * object, guint property_id,
         try_new_browser(cef);
         break;
       }
+    case PROP_CLEANUP:
+      {
+        cef->cleanup = TRUE;
+        cleanup(cef);
+        break;
+      }
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
       break;
@@ -368,6 +369,9 @@ gst_cef_get_property (GObject * object, guint property_id,
       break;
     case PROP_HEIGHT:
       g_value_set_uint(value, cef->height);
+      break;
+    case PROP_CLEANUP:
+      g_value_set_boolean(value, cef->cleanup);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
