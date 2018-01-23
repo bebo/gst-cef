@@ -50,9 +50,6 @@ struct _GstCef
   volatile gboolean has_opened_browser;
   int width;
   int height;
-  int last_width;
-  int last_height;
-  GstCaps *current_caps;
 };
 
 struct _GstCefClass

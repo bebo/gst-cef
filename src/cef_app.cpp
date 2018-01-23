@@ -79,6 +79,7 @@ void Browser::Open(void *gstCef, void *push_data, char* url, int width, int heig
 
   CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(window_info, browserClient, url, browser_settings, NULL);
   browserClient->AddBrowserGstMap(browser, gstCef, push_data, width, height);
+  browser->GetHost()->WasResized();
 }
 
 void Browser::SetSize(void *gstCef, int width, int height) {

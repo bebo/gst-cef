@@ -173,9 +173,6 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
 
   g_mutex_lock(&cef->frame_mutex);
 
-  cef->last_width=width;
-  cef->last_height=height;
-
   if (cef->current_frame) {
     gst_buffer_unref(cef->current_frame);
   }
@@ -193,22 +190,8 @@ GstBuffer * pop_frame(GstCef *cef)
   GstBuffer * frame = NULL;
   gint64 end_time;
 
-  //GST_INFO("popping frame");
-
-  //g_mutex_lock (&cef->frame_mutex);
-
-  //GST_INFO("popping frame past lock");
-
-  // the condition to wait is:
-  // 1. we don't get a new frame AND
-  // 2. we are NOT in cleaning up state - cef->unlocked = 0
   while (g_atomic_int_get(&cef->has_new_frame) == 0 && g_atomic_int_get(&cef->unlocked) == 0) {
-    //end_time = g_get_monotonic_time () + 100 * G_TIME_SPAN_MILLISECOND;
     g_cond_wait (&cef->frame_cond, &cef->frame_mutex);
-    //if (!g_cond_wait (&cef->frame_cond, &cef->frame_mutex)) {
-    //  GST_INFO("reached 100 ms timeout, pushing previous frame");
-    //  break;
-    //}
   }
 
   if (g_atomic_int_get(&cef->unlocked) == 0) { // 0 - not in cleanup state
@@ -216,14 +199,7 @@ GstBuffer * pop_frame(GstCef *cef)
     if(cef->current_frame) {
       frame = cef->current_frame;
       gst_buffer_ref(cef->current_frame);
-      gsize frame_size = gst_buffer_get_size(frame);
-      gsize last_size = cef->last_width * cef->last_height * 4;
-      if (frame_size != last_size) {
-        GST_ERROR("last size not the same as frame size");
-      }
-
       g_atomic_int_set(&cef->has_new_frame, 0);
-      //g_mutex_unlock (&cef->frame_mutex);
 
       return frame;
     }
@@ -235,8 +211,6 @@ GstBuffer * pop_frame(GstCef *cef)
     }
   }
   GST_DEBUG("no frame????");
-  //g_mutex_unlock (&cef->frame_mutex);
-
   return NULL;
 }
 
@@ -270,11 +244,8 @@ void gst_cef_init(GstCef *cef)
   g_atomic_int_set (&cef->unlocked, 0);
   cef->current_frame = NULL;
   cef->has_opened_browser = FALSE;
-  cef->width=1280;
-  cef->height=720;
-  cef->last_width=0;
-  cef->last_height=0;
-  cef->current_caps=NULL;
+  cef->width=-1;
+  cef->height=-1;
 
   gst_base_src_set_format (GST_BASE_SRC (cef), GST_FORMAT_TIME);
   gst_base_src_set_live (GST_BASE_SRC (cef), DEFAULT_IS_LIVE);
@@ -385,23 +356,13 @@ gst_cef_get_caps (GstBaseSrc * src, GstCaps * filter)
 
   GST_DEBUG_OBJECT (cef, "get_caps");
 
-  GST_OBJECT_LOCK (cef);
-
-  if (cef->current_caps) {
-    caps = cef->current_caps;
-    gst_caps_ref(caps);
-  } else {
-    caps = gst_caps_new_simple ("video/x-raw",
-        "format", G_TYPE_STRING, "BGRA",
-        "framerate", GST_TYPE_FRACTION, 0, 1,
-        "pixel-aspect-ratio", GST_TYPE_FRACTION, 1, 1,
-        "width", G_TYPE_INT, cef->width,
-        "height", G_TYPE_INT, cef->height,
-        NULL);
-  }
-
-  GST_OBJECT_UNLOCK (cef);
-
+  caps = gst_caps_new_simple ("video/x-raw",
+      "format", G_TYPE_STRING, "BGRA",
+      "framerate", GST_TYPE_FRACTION, 0, 1,
+      "pixel-aspect-ratio", GST_TYPE_FRACTION, 1, 1,
+      "width", G_TYPE_INT, cef->width,
+      "height", G_TYPE_INT, cef->height,
+      NULL);
 
   return caps;
 }
@@ -426,29 +387,6 @@ gst_cef_fixate (GstBaseSrc * src, GstCaps * caps)
   GST_DEBUG_OBJECT (cef, "fixate");
 
   return NULL;
-}
-
-static gboolean
-gst_cef_do_negotiate (GstBaseSrc * basesrc)
-{
-  GST_INFO("do negotiate");
-  GstCef *cef = GST_CEF (basesrc);
-  gboolean result;
-  GstCaps *caps;
-
-  GST_OBJECT_LOCK (basesrc);
-  caps = cef->current_caps ? gst_caps_ref (cef->current_caps) : NULL;
-  GST_OBJECT_UNLOCK (basesrc);
-
-  if (caps) {
-    GST_INFO_OBJECT(caps, "do_negotiate caps");
-    result = gst_base_src_set_caps (basesrc, caps);
-    gst_caps_unref (caps);
-  } else {
-    result = GST_BASE_SRC_CLASS(gst_cef_parent_class)->negotiate (basesrc);
-  }
-
-  return result;
 }
 
 /* start and stop processing, ideal for opening/closing the resource */
@@ -506,6 +444,8 @@ gst_cef_unlock (GstBaseSrc * src)
   g_cond_signal(&cef->frame_cond);
 
   g_mutex_unlock(&cef->frame_mutex);
+
+  close_browser(cef);
 
   GST_INFO_OBJECT (cef, "unlock complete");
   return TRUE;
@@ -569,37 +509,6 @@ gst_cef_create (GstBaseSrc * src, guint64 offset, guint size,
   }
 
   *buf = buffer;
-
-  gboolean caps_changed = TRUE;
-
-  if (cef->current_caps) {
-    gint width = 0;
-    gint height = 0;
-    GstStructure *structure = gst_caps_get_structure(cef->current_caps, 0);
-    if( !gst_structure_get_int(structure, "width", &width))
-      GST_ERROR ("couldn't get the width");
-    if( !gst_structure_get_int(structure, "height", &height))
-      GST_ERROR ("couldn't get the height");
-
-    //width or height changed
-    if(width == cef->last_width && height == cef->last_height) {
-      caps_changed = FALSE;
-    }
-  }
-
-  if (caps_changed) {
-    GST_DEBUG("create caps_changed -- replacing");
-    GstCaps *caps = gst_caps_new_simple ("video/x-raw",
-        "format", G_TYPE_STRING, "BGRA",
-        "framerate", GST_TYPE_FRACTION, 0, 1,
-        "pixel-aspect-ratio", GST_TYPE_FRACTION, 1, 1,
-        "width", G_TYPE_INT, cef->last_width,
-        "height", G_TYPE_INT, cef->last_height,
-        NULL);
-
-    gst_caps_replace(&cef->current_caps, caps);
-    gst_cef_do_negotiate(cef);
-  }
 
   g_mutex_unlock(&cef->frame_mutex);
 
