@@ -56,6 +56,7 @@ static void gst_cef_set_property (GObject * object,
     guint property_id, const GValue * value, GParamSpec * pspec);
 static void gst_cef_get_property (GObject * object,
     guint property_id, GValue * value, GParamSpec * pspec);
+static void gst_cef_dispose (GObject * object);
 
 enum
 {
@@ -98,6 +99,7 @@ gst_cef_class_init (GstCefClass * klass)
       "Gstreamer chromium embedded (cef)", "Generic", "FIXME Description",
       "Florian P. Nierhaus <fpn@bebo.com>");
 
+  gobject_class->dispose = gst_cef_dispose;
   gobject_class->set_property = gst_cef_set_property;
   gobject_class->get_property = gst_cef_get_property;
 
@@ -112,6 +114,17 @@ gst_cef_class_init (GstCefClass * klass)
   g_object_class_install_property (gobject_class, PROP_HEIGHT,
       g_param_spec_uint ("height", "height", "website to render into video",
         0, 1080, 720, G_PARAM_READWRITE));
+}
+
+static void gst_cef_dispose(GObject *object) {
+  GstCef *cef = GST_CEF(object);
+  if(cef->url) {
+    g_free(cef->url);
+  }
+
+  if(cef->appsrc) {
+    gst_object_unref(cef->appsrc);
+  }
 }
 
 static void push_frame(void *gstCef, const void *buffer, int width, int height) {
@@ -179,6 +192,8 @@ void gst_cef_init(GstCef *cef)
   g_object_set (G_OBJECT(appsrc), "is-live", TRUE, NULL);
   g_object_set (G_OBJECT(appsrc), "do-timestamp", TRUE, NULL);
   g_object_set (G_OBJECT(appsrc), "format", 3, NULL);
+  //TODO: make this based on width and height
+  g_object_set (G_OBJECT(appsrc), "max-size-bytes", 2 * 1920 * 1080 * 4, NULL);
 
   gst_bin_add(bin, GST_ELEMENT_CAST(appsrc));
 
@@ -242,7 +257,6 @@ gst_cef_set_property (GObject * object, guint property_id,
       {
         const width = g_value_get_uint (value);
         cef->width = width;
-        //gst_cef_set_size(cef, cef->width, cef->height);
         try_new_browser(cef);
         break;
       }
@@ -250,7 +264,6 @@ gst_cef_set_property (GObject * object, guint property_id,
       {
         const height = g_value_get_uint (value);
         cef->height = height;
-        //gst_cef_set_size(cef, cef->width, cef->height);
         try_new_browser(cef);
         break;
       }
