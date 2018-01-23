@@ -32,19 +32,13 @@ bool BrowserClient::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) {
 
   GST_INFO("GetViewRect: browser id: %d, lenght: %lu", browser->GetIdentifier(), browser_gst_map.size());
 
-  // TODO: getGstCef may returns NULL because GetViewRect is called before 
-  // the CreateBrowserSync return. We add the browser to the map after 
-  // CreateBrowserSync return. Should figure a better dynamic alternative
-  // for the width and height
   auto cef = getGstCef(browser);
 
-  if (cef == 0) {
-    rect = CefRect(0, 0, 1280, 720); // FIXME: value should not be hardcoded
-    return true;
+  if(!cef) {
+    return false;
   }
 
   GST_INFO("rect i got cef: %uX%u", cef->width, cef->height);
-
   rect = CefRect(0, 0, cef->width, cef->height);
   return true;
 }
@@ -247,10 +241,10 @@ void BrowserClient::CloseBrowser(void * gst_cef, bool force_close) {
       GST_LOG("Closing Browser, browser id: %d", it->first);
       CefBrowser* browser = it->second->browser.get();
       browser->GetHost()->CloseBrowser(force_close);
+      browser_gst_map.erase(it);
       break;
     }
   }
-
 }
 
 void BrowserClient::SetSize(void * gst_cef, int width, int height) {

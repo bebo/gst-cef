@@ -54,12 +54,14 @@ GST_DEBUG_CATEGORY(gst_cef_debug_category);
 
 static GObjectClass *parent_class = NULL;
 static GstBinClass *parent_bin_class = NULL;
+static GstElementClass *parent_element_class = NULL;
 
 static void gst_cef_set_property (GObject * object,
     guint property_id, const GValue * value, GParamSpec * pspec);
 static void gst_cef_get_property (GObject * object,
     guint property_id, GValue * value, GParamSpec * pspec);
 static void gst_cef_dispose (GObject * object);
+static GstStateChangeReturn gst_cef_change_state (GstElement *element, GstStateChange transition);
 
 enum
 {
@@ -96,6 +98,8 @@ gst_cef_class_init (GstCefClass * klass)
   parent_class = gobject_class;
   GstBinClass *bin_class = GST_BIN_CLASS(klass);
   parent_bin_class = bin_class;
+  GstElementClass *element_class = GST_ELEMENT_CLASS(klass);
+  parent_element_class = element_class;
 
   gst_element_class_add_static_pad_template (GST_ELEMENT_CLASS(klass),
       &gst_cef_src_template);
@@ -107,6 +111,7 @@ gst_cef_class_init (GstCefClass * klass)
   gobject_class->dispose = gst_cef_dispose;
   gobject_class->set_property = gst_cef_set_property;
   gobject_class->get_property = gst_cef_get_property;
+  //element_class->change_state = gst_cef_change_state;
 
   g_object_class_install_property (gobject_class, PROP_URL,
       g_param_spec_string ("url", "url", "website to render into video",
@@ -121,8 +126,7 @@ gst_cef_class_init (GstCefClass * klass)
         0, 1080, 720, G_PARAM_READWRITE));
 }
 
-static void gst_cef_dispose(GObject *object) {
-  GstCef *cef = GST_CEF(object);
+void cleanup(GstCef *cef) {
   GST_OBJECT_LOCK(cef);
   if(cef->url) {
     g_free(cef->url);
@@ -133,8 +137,45 @@ static void gst_cef_dispose(GObject *object) {
     gst_object_unref(cef->appsrc);
     cef->appsrc = NULL;
   }
+
+  close_browser(cef);
+
   GST_OBJECT_UNLOCK(cef);
+}
+
+static void gst_cef_dispose(GObject *object) {
+  GstCef *cef = GST_CEF(object);
+  cleanup(cef);
   parent_class->dispose(object);
+}
+
+static GstStateChangeReturn gst_cef_change_state (GstElement *element, GstStateChange transition)
+{
+  GstStateChangeReturn ret = GST_STATE_CHANGE_SUCCESS;
+  GstCef *cef = GST_CEF (element);
+
+  GST_DEBUG("state change transition: %u", transition);
+  switch (transition) {
+    case GST_STATE_CHANGE_PAUSED_TO_PLAYING:
+      try_new_browser(cef);
+      break;
+    default:
+      break;
+  }
+
+  ret = parent_element_class->change_state (element, transition);
+  if (ret == GST_STATE_CHANGE_FAILURE)
+    return ret;
+
+  switch (transition) {
+    case GST_STATE_CHANGE_READY_TO_NULL:
+      cleanup (cef);
+      break;
+    default:
+      break;
+  }
+
+  return ret;
 }
 
 static void push_frame(void *gstCef, const void *buffer, int width, int height) {
@@ -208,7 +249,7 @@ void gst_cef_init(GstCef *cef)
   g_object_set (G_OBJECT(appsrc), "do-timestamp", TRUE, NULL);
   g_object_set (G_OBJECT(appsrc), "format", 3, NULL);
   //TODO: make this based on width and height
-  g_object_set (G_OBJECT(appsrc), "max-size-bytes", 2 * 1920 * 1080 * 4, NULL);
+  g_object_set (G_OBJECT(appsrc), "max-bytes", 2 * 1920 * 1080 * 4, NULL);
 
   gst_bin_add(bin, GST_ELEMENT_CAST(appsrc));
 
@@ -226,6 +267,15 @@ void try_new_browser(GstCef *cef) {
   int width = cef->width;
   int height = cef->height;
   gboolean opened = cef->opened_browser;
+
+  //GstState state;
+  //GstElement *element = GST_ELEMENT(cef);
+  //gst_element_get_state(element, &state, NULL, GST_CLOCK_TIME_NONE);
+
+  //if(state != GST_STATE_PLAYING) {
+  //  GST_DEBUG("not in playing state, not opening");
+  //  return;
+  //}
 
   if(!width) {
     GST_DEBUG("no width yet, not opening");

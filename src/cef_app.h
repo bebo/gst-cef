@@ -27,7 +27,6 @@ class Browser: public CefApp, public CefBrowserProcessHandler {
 
  private: 
   CefRefPtr<BrowserClient> browserClient;
-  
   void * gstCef;
   void * push_data;
   int height;
