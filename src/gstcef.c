@@ -51,6 +51,7 @@
 GST_DEBUG_CATEGORY(gst_cef_debug_category);
 #define DEFAULT_IS_LIVE            TRUE
 
+static int thread_tag = 0;
 /* prototypes */
 
 
@@ -62,23 +63,14 @@ static void gst_cef_dispose (GObject * object);
 static void gst_cef_finalize (GObject * object);
 
 static GstCaps *gst_cef_get_caps (GstBaseSrc * src, GstCaps * filter);
-static gboolean gst_cef_negotiate (GstBaseSrc * src);
-static GstCaps *gst_cef_fixate (GstBaseSrc * src, GstCaps * caps);
 static gboolean gst_cef_start (GstBaseSrc * src);
 static gboolean gst_cef_stop (GstBaseSrc * src);
-static void gst_cef_get_times (GstBaseSrc * src, GstBuffer * buffer,
-    GstClockTime * start, GstClockTime * end);
 static gboolean gst_cef_is_seekable (GstBaseSrc * src);
 static gboolean gst_cef_unlock (GstBaseSrc * src);
 static gboolean gst_cef_unlock_stop (GstBaseSrc * src);
-static gboolean gst_cef_query (GstBaseSrc * src, GstQuery * query);
-static gboolean gst_cef_event (GstBaseSrc * src, GstEvent * event);
 static GstFlowReturn gst_cef_create (GstBaseSrc * src, guint64 offset,
     guint size, GstBuffer ** buf);
-static GstFlowReturn gst_cef_alloc (GstBaseSrc * src, guint64 offset,
-    guint size, GstBuffer ** buf);
-static GstFlowReturn gst_cef_fill (GstBaseSrc * src, guint64 offset,
-    guint size, GstBuffer * buf);
+static GstStateChangeReturn gst_cef_change_state (GstElement * element, GstStateChange transition);
 
 enum
 {
@@ -101,6 +93,8 @@ GST_STATIC_PAD_TEMPLATE ("src",
 
 /* class initialization */
 
+static GstElementClass *parent_element_class = NULL;
+
 G_DEFINE_TYPE_WITH_CODE (GstCef, gst_cef, GST_TYPE_PUSH_SRC,
   GST_DEBUG_CATEGORY_INIT (gst_cef_debug_category, "cef", 0,
   "debug category for cef element"));
@@ -113,6 +107,8 @@ gst_cef_class_init (GstCefClass * klass)
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
   printf("gst_cef_class_init\n");
   GstBaseSrcClass *base_src_class = GST_BASE_SRC_CLASS (klass);
+  GstElementClass *element_class = GST_ELEMENT_CLASS(klass);
+  parent_element_class = element_class;
 
   gst_element_class_add_static_pad_template (GST_ELEMENT_CLASS(klass),
       &gst_cef_src_template);
@@ -124,23 +120,15 @@ gst_cef_class_init (GstCefClass * klass)
   gobject_class->set_property = gst_cef_set_property;
   gobject_class->get_property = gst_cef_get_property;
 
-  /* base_src_class->fixate = GST_DEBUG_FUNCPTR (gst_cef_fixate); */
   gobject_class->dispose = gst_cef_dispose;
-  /* gobject_class->finalize = gst_cef_finalize; */
   base_src_class->get_caps = GST_DEBUG_FUNCPTR (gst_cef_get_caps);
-  //base_src_class->negotiate = GST_DEBUG_FUNCPTR (gst_cef_negotiate);
   base_src_class->is_seekable = GST_DEBUG_FUNCPTR (gst_cef_is_seekable);
-  //base_src_class->fill = GST_DEBUG_FUNCPTR (gst_cef_fill);
-
   base_src_class->start = GST_DEBUG_FUNCPTR (gst_cef_start);
   base_src_class->stop = GST_DEBUG_FUNCPTR (gst_cef_stop);
-  /* base_src_class->get_times = GST_DEBUG_FUNCPTR (gst_cef_get_times); */
   base_src_class->unlock = GST_DEBUG_FUNCPTR (gst_cef_unlock);
   base_src_class->unlock_stop = GST_DEBUG_FUNCPTR (gst_cef_unlock_stop);
-  /* base_src_class->query = GST_DEBUG_FUNCPTR (gst_cef_query); */
-  //base_src_class->event = GST_DEBUG_FUNCPTR (gst_cef_event);
   base_src_class->create = GST_DEBUG_FUNCPTR (gst_cef_create);
-  /* base_src_class->alloc = GST_DEBUG_FUNCPTR (gst_cef_alloc); */
+  //element_class->change_state = GST_DEBUG_FUNCPTR (gst_cef_change_state);
 
   g_object_class_install_property (gobject_class, PROP_URL,
       g_param_spec_string ("url", "url", "website to render into video",
@@ -158,7 +146,6 @@ gst_cef_class_init (GstCefClass * klass)
 static void push_frame(void *gstCef, const void *buffer, int width, int height) {
   GstCef *cef = (GstCef *) gstCef;
   int size = width * height * 4 * 1;
-  GST_DEBUG("push_frame: %u, %u x %u", size, width, height);
   GstBuffer *buf;
   buf = gst_buffer_new_allocate (NULL, size, NULL);
   if (G_UNLIKELY (buf == NULL)) {
@@ -178,7 +165,6 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
   }
 
   cef->current_frame = buf;
-  GST_DEBUG("setting has_new_frame to 1");
   g_atomic_int_set(&cef->has_new_frame, 1);
 
   g_cond_signal (&cef->frame_cond);
@@ -187,21 +173,39 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
 
 GstBuffer * pop_frame(GstCef *cef)
 {
+
+  g_mutex_lock (&cef->frame_mutex);
+
   GstBuffer * frame = NULL;
   gint64 end_time;
 
+  end_time = g_get_monotonic_time () + 100 * G_TIME_SPAN_MILLISECOND;
   while (g_atomic_int_get(&cef->has_new_frame) == 0 && g_atomic_int_get(&cef->unlocked) == 0) {
+//    if(!g_cond_wait_until (&cef->frame_cond, &cef->frame_mutex, end_time)) {
+//      break;
+//    }
     g_cond_wait (&cef->frame_cond, &cef->frame_mutex);
   }
 
   if (g_atomic_int_get(&cef->unlocked) == 0) { // 0 - not in cleanup state
-    GST_DEBUG("no cleanup");
+    GST_INFO("no cleanup");
     if(cef->current_frame) {
       frame = cef->current_frame;
       gst_buffer_ref(cef->current_frame);
       g_atomic_int_set(&cef->has_new_frame, 0);
 
+      g_mutex_unlock (&cef->frame_mutex);
       return frame;
+    } else {
+      GST_INFO("fallback making buffer: %u", cef->width * cef->height * 4);
+      GstBuffer * buf = gst_buffer_new_allocate (NULL, cef->width * cef->height * 4, NULL);
+      g_atomic_int_set(&cef->has_new_frame, 0);
+      if (G_UNLIKELY (buf == NULL)) {
+        g_mutex_unlock (&cef->frame_mutex);
+        return;
+      }
+      g_mutex_unlock (&cef->frame_mutex);
+      return buf;
     }
   } else {
     GST_INFO_OBJECT (cef, "pop_frame cleanup state");
@@ -211,6 +215,8 @@ GstBuffer * pop_frame(GstCef *cef)
     }
   }
   GST_DEBUG("no frame????");
+  
+  g_mutex_unlock (&cef->frame_mutex);
   return NULL;
 }
 
@@ -231,8 +237,10 @@ void new_browser(GstCef *cef) {
   GST_INFO("set cb");
 
   if (browserLoop == 0) {
+    GST_INFO("making browser loop");
     browserLoop = g_thread_ref(g_thread_new("browser_loop", (GThreadFunc)browser_loop, cb));
   } else {
+    GST_INFO("open browser");
     open_browser(cb);
   }
 }
@@ -273,14 +281,12 @@ gst_cef_set_property (GObject * object, guint property_id,
       {
         const width = g_value_get_uint (value);
         cef->width = width;
-        gst_cef_set_size(cef, cef->width, cef->height);
         break;
       }
     case PROP_HEIGHT:
       {
         const height = g_value_get_uint (value);
         cef->height = height;
-        gst_cef_set_size(cef, cef->width, cef->height);
         break;
       }
     default:
@@ -367,17 +373,6 @@ gst_cef_get_caps (GstBaseSrc * src, GstCaps * filter)
   return caps;
 }
 
-/* decide on caps */
-static gboolean
-gst_cef_negotiate (GstBaseSrc * src)
-{
-  GstCef *cef = GST_CEF (src);
-
-  GST_INFO_OBJECT (cef, "neil negotiate");
-
-  return TRUE;
-}
-
 /* called if, in negotiation, caps need fixating */
 static GstCaps *
 gst_cef_fixate (GstBaseSrc * src, GstCaps * caps)
@@ -403,8 +398,6 @@ gst_cef_start (GstBaseSrc * src)
     GST_ERROR("no width, or height, or url");
     return FALSE;
   }
-
-  new_browser(cef);
 
   GST_INFO_OBJECT (cef, "start");
 
@@ -463,18 +456,12 @@ gst_cef_unlock_stop (GstBaseSrc * src)
   g_atomic_int_set (&cef->unlocked, 0);
   g_mutex_unlock(&cef->frame_mutex);
 
+  new_browser(cef);
+
   GST_INFO_OBJECT (cef, "unlock_stop complete");
   return TRUE;
 }
 
-/* notify subclasses of a query */
-static gboolean
-gst_cef_query (GstBaseSrc * src, GstQuery * query)
-{
-  GstCef *cef = GST_CEF (src);
-
-  return TRUE;
-}
 
 /* notify subclasses of an event */
 static gboolean
@@ -498,43 +485,29 @@ static GstFlowReturn
 gst_cef_create (GstBaseSrc * src, guint64 offset, guint size,
     GstBuffer ** buf)
 {
+  GST_INFO("create");
   GstCef *cef = GST_CEF (src);
 
-  g_mutex_lock(&cef->frame_mutex);
+  GST_INFO("create inside lock");
   GstBuffer* buffer = pop_frame(cef);
   if (!buffer) {
-    g_mutex_unlock(&cef->frame_mutex);
     GST_INFO_OBJECT (cef, "neil create gst_flow_flushing");
     return GST_FLOW_FLUSHING;
   }
 
   *buf = buffer;
 
-  g_mutex_unlock(&cef->frame_mutex);
-
+  GST_INFO("create end");
   return GST_FLOW_OK;
 }
 
-
-/* ask the subclass to allocate an output buffer. The default implementation
- * will use the negotiated allocator. */
-static GstFlowReturn
-gst_cef_alloc (GstBaseSrc * src, guint64 offset, guint size,
-    GstBuffer ** buf)
-{
-  GstCef *cef = GST_CEF (src);
-
-  GST_DEBUG_OBJECT (cef, "alloc");
-
-  return GST_FLOW_OK;
+static GstStateChangeReturn gst_cef_change_state (GstElement * element, GstStateChange transition) {
+  GstCef *cef = GST_CEF (element);
+  GstStateChangeReturn ret = GST_STATE_CHANGE_SUCCESS;
+  ret = GST_ELEMENT_CLASS (parent_element_class)->change_state (element, transition);
+  return ret;
 }
 
-/* ask the subclass to fill the buffer with data from offset and size */
-static GstFlowReturn
-gst_cef_fill (GstBaseSrc * src, guint64 offset, guint size, GstBuffer * buf)
-{
-  return GST_FLOW_OK;
-}
 
 static gboolean
 plugin_init (GstPlugin * plugin)

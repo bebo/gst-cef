@@ -32,10 +32,6 @@ bool BrowserClient::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) {
 
   GST_INFO("GetViewRect: browser id: %d, lenght: %lu", browser->GetIdentifier(), browser_gst_map.size());
 
-  // TODO: getGstCef may returns NULL because GetViewRect is called before 
-  // the CreateBrowserSync return. We add the browser to the map after 
-  // CreateBrowserSync return. Should figure a better dynamic alternative
-  // for the width and height
   auto cef = getGstCef(browser);
 
   if (cef == 0) {
@@ -56,7 +52,6 @@ void BrowserClient::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType pain
     return;
   }
 
-  GST_DEBUG("OnPaint() for size: %d x %d browser id: %d", width, height, browser->GetIdentifier());
   cef->push_frame(cef->gst_cef, buffer, width, height);
 }
 
@@ -197,13 +192,11 @@ void BrowserClient::OnLoadEnd(CefRefPtr< CefBrowser > browser,
 
 
   if (httpStatusCode >= 200 && httpStatusCode < 400) {
-    const char * url = frame->GetURL().ToString().c_str();
-    GST_INFO("OnLoadEnd - window id: %d, is main: %d, status code: %d, url: %s", 
-        browser->GetIdentifier(), frame->IsMain(), httpStatusCode, url);
-  } else {
-    const char * url = frame->GetURL().ToString().c_str();
-    GST_ERROR("OnLoadEnd - window id: %d, is main: %d, status code: %d, url: %s", 
-        browser->GetIdentifier(), frame->IsMain(), httpStatusCode, url);
+    GST_INFO("OnLoadEnd - window id: %d, is main: %d, status code: %d", 
+        browser->GetIdentifier(), frame->IsMain(), httpStatusCode);
+  } else if(httpStatusCode) {
+    GST_ERROR("OnLoadEnd - window id: %d, is main: %d, status code: %d", 
+        browser->GetIdentifier(), frame->IsMain(), httpStatusCode);
   }
 
   if (frame->IsMain()) {

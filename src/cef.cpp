@@ -108,9 +108,9 @@ static bool doShutdown(gpointer data) {
 }
 
 void browser_loop(gpointer args) {
-  GST_LOG("browser_loop");
   // TODO: this wont work
   if (app) {
+    GST_INFO("have app");
     g_idle_add((GSourceFunc) doOpen, args);
     return;
   }
