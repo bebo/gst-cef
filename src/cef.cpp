@@ -15,6 +15,7 @@
 
 #include <X11/Xlib.h>
 
+
 namespace {
 
 int XErrorHandlerImpl(Display *display, XErrorEvent *event) {
@@ -40,6 +41,7 @@ static gint loop_live = 0;
 static CefRefPtr<Browser> app;
 static GMutex cef_start_mutex;
 static GCond cef_start_cond;
+static guint browser_loop_index = 0;
 
 }  // namespace
 
@@ -115,7 +117,7 @@ void browser_loop(gpointer args) {
     return;
   }
 
-  GST_LOG("starting browser_loop");
+  browser_loop_index++;
 
   g_atomic_int_set(&loop_live, 1);
 
@@ -131,7 +133,6 @@ void browser_loop(gpointer args) {
   }
   usleep(5000);
   GST_INFO("MessageLoop Ended");
-
 }
 
 void doOpenBrowser(gpointer args) {
@@ -183,6 +184,7 @@ void close_browser(gpointer args) {
 }
 
 void shutdown_browser() {
+  GST_WARNING("shutdown browser");
   g_atomic_int_set(&loop_live, 0);
   usleep(3000000);
   g_idle_add((GSourceFunc) doShutdown, NULL);

@@ -51,10 +51,6 @@
 GST_DEBUG_CATEGORY(gst_cef_debug_category);
 #define DEFAULT_IS_LIVE            TRUE
 
-static int thread_tag = 0;
-/* prototypes */
-
-
 static void gst_cef_set_property (GObject * object,
     guint property_id, const GValue * value, GParamSpec * pspec);
 static void gst_cef_get_property (GObject * object,
@@ -63,8 +59,6 @@ static void gst_cef_dispose (GObject * object);
 static void gst_cef_finalize (GObject * object);
 
 static GstCaps *gst_cef_get_caps (GstBaseSrc * src, GstCaps * filter);
-static gboolean gst_cef_start (GstBaseSrc * src);
-static gboolean gst_cef_stop (GstBaseSrc * src);
 static gboolean gst_cef_is_seekable (GstBaseSrc * src);
 static gboolean gst_cef_unlock (GstBaseSrc * src);
 static gboolean gst_cef_unlock_stop (GstBaseSrc * src);
@@ -123,8 +117,6 @@ gst_cef_class_init (GstCefClass * klass)
   gobject_class->dispose = gst_cef_dispose;
   base_src_class->get_caps = GST_DEBUG_FUNCPTR (gst_cef_get_caps);
   base_src_class->is_seekable = GST_DEBUG_FUNCPTR (gst_cef_is_seekable);
-  base_src_class->start = GST_DEBUG_FUNCPTR (gst_cef_start);
-  base_src_class->stop = GST_DEBUG_FUNCPTR (gst_cef_stop);
   base_src_class->unlock = GST_DEBUG_FUNCPTR (gst_cef_unlock);
   base_src_class->unlock_stop = GST_DEBUG_FUNCPTR (gst_cef_unlock_stop);
   base_src_class->create = GST_DEBUG_FUNCPTR (gst_cef_create);
@@ -373,49 +365,6 @@ gst_cef_get_caps (GstBaseSrc * src, GstCaps * filter)
   return caps;
 }
 
-/* called if, in negotiation, caps need fixating */
-static GstCaps *
-gst_cef_fixate (GstBaseSrc * src, GstCaps * caps)
-{
-  GstCef *cef = GST_CEF (src);
-
-  GST_DEBUG_OBJECT (cef, "fixate");
-
-  return NULL;
-}
-
-/* start and stop processing, ideal for opening/closing the resource */
-static gboolean
-gst_cef_start (GstBaseSrc * src)
-{
-  GstCef *cef = GST_CEF (src);
-
-  gint width = cef->width;
-  gint height = cef->width;
-  char *url = cef->url;
-
-  if(!width || !height || !url) {
-    GST_ERROR("no width, or height, or url");
-    return FALSE;
-  }
-
-  GST_INFO_OBJECT (cef, "start");
-
-  return TRUE;
-}
-
-static gboolean
-gst_cef_stop (GstBaseSrc * src)
-{
-  GstCef *cef = GST_CEF (src);
-
-  GST_DEBUG_OBJECT (cef, "stop");
-
-  close_browser(cef);
-
-  return TRUE;
-}
-
 /* check if the resource is seekable */
 static gboolean
 gst_cef_is_seekable (GstBaseSrc * src)
@@ -430,15 +379,14 @@ gst_cef_unlock (GstBaseSrc * src)
 
   GST_INFO_OBJECT (cef, "unlock");
 
-
   g_mutex_lock(&cef->frame_mutex);
+
+  close_browser(cef);
 
   g_atomic_int_set (&cef->unlocked, 1);
   g_cond_signal(&cef->frame_cond);
 
   g_mutex_unlock(&cef->frame_mutex);
-
-  close_browser(cef);
 
   GST_INFO_OBJECT (cef, "unlock complete");
   return TRUE;
@@ -449,14 +397,23 @@ static gboolean
 gst_cef_unlock_stop (GstBaseSrc * src)
 {
   GstCef *cef = GST_CEF (src);
+  gint width = cef->width;
+  gint height = cef->width;
+  char *url = cef->url;
 
   GST_INFO_OBJECT (cef, "unlock_stop");
 
   g_mutex_lock(&cef->frame_mutex);
-  g_atomic_int_set (&cef->unlocked, 0);
-  g_mutex_unlock(&cef->frame_mutex);
+
+  if(!width || !height || !url) {
+    GST_ERROR("no width, or height, or url");
+    return FALSE;
+  }
 
   new_browser(cef);
+  g_atomic_int_set (&cef->unlocked, 0);
+
+  g_mutex_unlock(&cef->frame_mutex);
 
   GST_INFO_OBJECT (cef, "unlock_stop complete");
   return TRUE;
@@ -485,10 +442,8 @@ static GstFlowReturn
 gst_cef_create (GstBaseSrc * src, guint64 offset, guint size,
     GstBuffer ** buf)
 {
-  GST_INFO("create");
   GstCef *cef = GST_CEF (src);
 
-  GST_INFO("create inside lock");
   GstBuffer* buffer = pop_frame(cef);
   if (!buffer) {
     GST_INFO_OBJECT (cef, "neil create gst_flow_flushing");
@@ -497,7 +452,6 @@ gst_cef_create (GstBaseSrc * src, guint64 offset, guint size,
 
   *buf = buffer;
 
-  GST_INFO("create end");
   return GST_FLOW_OK;
 }
 
