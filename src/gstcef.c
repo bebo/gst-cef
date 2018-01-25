@@ -180,6 +180,7 @@ GstBuffer * pop_frame(GstCef *cef)
   }
 
   if (g_atomic_int_get(&cef->unlocked) == 0) { // 0 - not in cleanup state
+    GST_LOG_INFO("no cleanup");
     if(cef->current_frame) {
       frame = cef->current_frame;
       gst_buffer_ref(cef->current_frame);
