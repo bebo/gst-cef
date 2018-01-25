@@ -128,11 +128,11 @@ gst_cef_class_init (GstCefClass * klass)
 
   g_object_class_install_property (gobject_class, PROP_WIDTH,
       g_param_spec_uint ("width", "width", "website to render into video",
-        0, 1920, 1280, G_PARAM_READWRITE));
+        0, G_MAXUINT, 1920, G_PARAM_READWRITE));
 
   g_object_class_install_property (gobject_class, PROP_HEIGHT,
       g_param_spec_uint ("height", "height", "website to render into video",
-        0, 1080, 720, G_PARAM_READWRITE));
+        0, G_MAXUINT, 1080, G_PARAM_READWRITE));
 }
 
 static void push_frame(void *gstCef, const void *buffer, int width, int height) {
@@ -180,7 +180,6 @@ GstBuffer * pop_frame(GstCef *cef)
   }
 
   if (g_atomic_int_get(&cef->unlocked) == 0) { // 0 - not in cleanup state
-    GST_INFO("no cleanup");
     if(cef->current_frame) {
       frame = cef->current_frame;
       gst_buffer_ref(cef->current_frame);
@@ -200,7 +199,6 @@ GstBuffer * pop_frame(GstCef *cef)
       return buf;
     }
   } else {
-    GST_INFO_OBJECT (cef, "pop_frame cleanup state");
     if (cef->current_frame) {
       gst_buffer_unref(cef->current_frame);
       cef->current_frame = NULL;
