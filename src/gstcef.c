@@ -62,8 +62,7 @@ static GstCaps *gst_cef_get_caps (GstBaseSrc * src, GstCaps * filter);
 static gboolean gst_cef_is_seekable (GstBaseSrc * src);
 static gboolean gst_cef_unlock (GstBaseSrc * src);
 static gboolean gst_cef_unlock_stop (GstBaseSrc * src);
-static GstFlowReturn gst_cef_create (GstBaseSrc * src, guint64 offset,
-    guint size, GstBuffer ** buf);
+static GstFlowReturn gst_cef_create (GstBaseSrc * src, GstBuffer ** buf);
 static GstStateChangeReturn gst_cef_change_state (GstElement * element, GstStateChange transition);
 
 enum
@@ -101,6 +100,7 @@ gst_cef_class_init (GstCefClass * klass)
   GObjectClass *gobject_class = G_OBJECT_CLASS (klass);
   printf("gst_cef_class_init\n");
   GstBaseSrcClass *base_src_class = GST_BASE_SRC_CLASS (klass);
+  GstPushSrcClass *push_src_class = GST_PUSH_SRC_CLASS (klass);
   GstElementClass *element_class = GST_ELEMENT_CLASS(klass);
   parent_element_class = element_class;
 
@@ -119,8 +119,7 @@ gst_cef_class_init (GstCefClass * klass)
   base_src_class->is_seekable = GST_DEBUG_FUNCPTR (gst_cef_is_seekable);
   base_src_class->unlock = GST_DEBUG_FUNCPTR (gst_cef_unlock);
   base_src_class->unlock_stop = GST_DEBUG_FUNCPTR (gst_cef_unlock_stop);
-  base_src_class->create = GST_DEBUG_FUNCPTR (gst_cef_create);
-  //element_class->change_state = GST_DEBUG_FUNCPTR (gst_cef_change_state);
+  push_src_class->create = GST_DEBUG_FUNCPTR (gst_cef_create);
 
   g_object_class_install_property (gobject_class, PROP_URL,
       g_param_spec_string ("url", "url", "website to render into video",
@@ -171,33 +170,19 @@ GstBuffer * pop_frame(GstCef *cef)
   GstBuffer * frame = NULL;
   gint64 end_time;
 
-  end_time = g_get_monotonic_time () + 100 * G_TIME_SPAN_MILLISECOND;
   while (g_atomic_int_get(&cef->has_new_frame) == 0 && g_atomic_int_get(&cef->unlocked) == 0) {
-//    if(!g_cond_wait_until (&cef->frame_cond, &cef->frame_mutex, end_time)) {
-//      break;
-//    }
     g_cond_wait (&cef->frame_cond, &cef->frame_mutex);
   }
 
   if (g_atomic_int_get(&cef->unlocked) == 0) { // 0 - not in cleanup state
-    GST_LOG_INFO("no cleanup");
     if(cef->current_frame) {
       frame = cef->current_frame;
+
       gst_buffer_ref(cef->current_frame);
       g_atomic_int_set(&cef->has_new_frame, 0);
 
       g_mutex_unlock (&cef->frame_mutex);
       return frame;
-    } else {
-      GST_INFO("fallback making buffer: %u", cef->width * cef->height * 4);
-      GstBuffer * buf = gst_buffer_new_allocate (NULL, cef->width * cef->height * 4, NULL);
-      g_atomic_int_set(&cef->has_new_frame, 0);
-      if (G_UNLIKELY (buf == NULL)) {
-        g_mutex_unlock (&cef->frame_mutex);
-        return;
-      }
-      g_mutex_unlock (&cef->frame_mutex);
-      return buf;
     }
   } else {
     if (cef->current_frame) {
@@ -438,8 +423,7 @@ gst_cef_event (GstBaseSrc * src, GstEvent * event)
 /* ask the subclass to create a buffer with offset and size, the default
  * implementation will call alloc and fill. */
 static GstFlowReturn
-gst_cef_create (GstBaseSrc * src, guint64 offset, guint size,
-    GstBuffer ** buf)
+gst_cef_create (GstBaseSrc * src, GstBuffer ** buf)
 {
   GstCef *cef = GST_CEF (src);
 
