@@ -137,7 +137,7 @@ bool BrowserClient::DoClose(CefRefPtr<CefBrowser> browser) {
 void BrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
 
-  GST_LOG("OnBeforeClose, browser id: %d", browser->GetIdentifier());
+  GST_INFO("OnBeforeClose, browser id: %d", browser->GetIdentifier());
 
   // Remove from the browser from the map.
   for (auto it = browser_gst_map.begin(); it != browser_gst_map.end(); ++it) {
@@ -155,6 +155,7 @@ void BrowserClient::OnLoadError(CefRefPtr<CefBrowser> browser,
     const CefString& errorText,
     const CefString& failedUrl) {
   CEF_REQUIRE_UI_THREAD();
+  GST_ERROR("OnLoadError");
 
   // Don't display an error for downloaded files.
   if (errorCode == ERR_ABORTED)

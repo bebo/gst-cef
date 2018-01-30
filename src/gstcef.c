@@ -64,6 +64,8 @@ static gboolean gst_cef_unlock (GstBaseSrc * src);
 static gboolean gst_cef_unlock_stop (GstBaseSrc * src);
 static GstFlowReturn gst_cef_create (GstBaseSrc * src, GstBuffer ** buf);
 static GstStateChangeReturn gst_cef_change_state (GstElement * element, GstStateChange transition);
+static gboolean gst_cef_start (GstBaseSrc *src);
+static gboolean gst_cef_stop (GstBaseSrc *src);
 
 enum
 {
@@ -119,6 +121,8 @@ gst_cef_class_init (GstCefClass * klass)
   base_src_class->is_seekable = GST_DEBUG_FUNCPTR (gst_cef_is_seekable);
   base_src_class->unlock = GST_DEBUG_FUNCPTR (gst_cef_unlock);
   base_src_class->unlock_stop = GST_DEBUG_FUNCPTR (gst_cef_unlock_stop);
+  base_src_class->start = GST_DEBUG_FUNCPTR (gst_cef_start);
+  base_src_class->stop = GST_DEBUG_FUNCPTR (gst_cef_stop);
   push_src_class->create = GST_DEBUG_FUNCPTR (gst_cef_create);
 
   g_object_class_install_property (gobject_class, PROP_URL,
@@ -376,6 +380,33 @@ gst_cef_unlock (GstBaseSrc * src)
   return TRUE;
 }
 
+static gboolean gst_cef_start (GstBaseSrc *src) {
+  GstCef *cef = GST_CEF (src);
+  gint width = cef->width;
+  gint height = cef->width;
+  char *url = cef->url;
+
+  GST_INFO_OBJECT (cef, "start");
+
+  if(!width || !height || !url) {
+    GST_ERROR("no width, or height, or url");
+    return FALSE;
+  }
+
+  new_browser(cef);
+
+  gst_base_src_start_complete(src, GST_FLOW_OK);
+
+  return TRUE;
+}
+
+static gboolean gst_cef_stop (GstBaseSrc *src) {
+  GstCef *cef = GST_CEF (src);
+  GST_INFO_OBJECT (cef, "stop");
+  close_browser(cef);
+  return TRUE;
+}
+
 /* Clear any pending unlock request, as we succeeded in unlocking */
 static gboolean
 gst_cef_unlock_stop (GstBaseSrc * src)
@@ -394,7 +425,6 @@ gst_cef_unlock_stop (GstBaseSrc * src)
     return FALSE;
   }
 
-  new_browser(cef);
   g_atomic_int_set (&cef->unlocked, 0);
 
   g_mutex_unlock(&cef->frame_mutex);
@@ -402,7 +432,6 @@ gst_cef_unlock_stop (GstBaseSrc * src)
   GST_INFO_OBJECT (cef, "unlock_stop complete");
   return TRUE;
 }
-
 
 /* notify subclasses of an event */
 static gboolean
