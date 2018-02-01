@@ -394,8 +394,9 @@ static gboolean gst_cef_start (GstBaseSrc *src) {
   }
 
   new_browser(cef);
+  GST_INFO("no start complete");
 
-  gst_base_src_start_complete(src, GST_FLOW_OK);
+  //gst_base_src_start_complete(src, GST_FLOW_OK);
 
   return TRUE;
 }
