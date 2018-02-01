@@ -174,8 +174,17 @@ GstBuffer * pop_frame(GstCef *cef)
   GstBuffer * frame = NULL;
   gint64 end_time;
 
+  end_time = g_get_monotonic_time () + 200 * G_TIME_SPAN_MILLISECOND;
+
   while (g_atomic_int_get(&cef->has_new_frame) == 0 && g_atomic_int_get(&cef->unlocked) == 0) {
-    g_cond_wait (&cef->frame_cond, &cef->frame_mutex);
+    if (!g_cond_wait_until (&cef->frame_cond, &cef->frame_mutex, end_time)) {
+      //if we have a frame and it's been 200ms without a new one, push the last frame again
+      if(!cef->current_frame) {
+        end_time = g_get_monotonic_time () + 200 * G_TIME_SPAN_MILLISECOND;
+        continue;
+      }
+      break;
+    }
   }
 
   if (g_atomic_int_get(&cef->unlocked) == 0) { // 0 - not in cleanup state
@@ -394,9 +403,6 @@ static gboolean gst_cef_start (GstBaseSrc *src) {
   }
 
   new_browser(cef);
-  GST_INFO("no start complete");
-
-  //gst_base_src_start_complete(src, GST_FLOW_OK);
 
   return TRUE;
 }
