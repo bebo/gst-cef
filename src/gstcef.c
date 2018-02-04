@@ -62,8 +62,7 @@ static GstCaps *gst_cef_get_caps (GstBaseSrc * src, GstCaps * filter);
 static gboolean gst_cef_is_seekable (GstBaseSrc * src);
 static gboolean gst_cef_unlock (GstBaseSrc * src);
 static gboolean gst_cef_unlock_stop (GstBaseSrc * src);
-static GstFlowReturn gst_cef_create (GstBaseSrc * src, GstBuffer ** buf);
-static GstStateChangeReturn gst_cef_change_state (GstElement * element, GstStateChange transition);
+static GstFlowReturn gst_cef_fill (GstPushSrc * src, GstBuffer * buf);
 static gboolean gst_cef_start (GstBaseSrc *src);
 static gboolean gst_cef_stop (GstBaseSrc *src);
 
@@ -123,7 +122,7 @@ gst_cef_class_init (GstCefClass * klass)
   base_src_class->unlock_stop = GST_DEBUG_FUNCPTR (gst_cef_unlock_stop);
   base_src_class->start = GST_DEBUG_FUNCPTR (gst_cef_start);
   base_src_class->stop = GST_DEBUG_FUNCPTR (gst_cef_stop);
-  push_src_class->create = GST_DEBUG_FUNCPTR (gst_cef_create);
+  push_src_class->fill = GST_DEBUG_FUNCPTR (gst_cef_fill);
 
   g_object_class_install_property (gobject_class, PROP_URL,
       g_param_spec_string ("url", "url", "website to render into video",
@@ -139,71 +138,40 @@ gst_cef_class_init (GstCefClass * klass)
 }
 
 static void push_frame(void *gstCef, const void *buffer, int width, int height) {
+
   GstCef *cef = (GstCef *) gstCef;
   int size = width * height * 4 * 1;
-  GstBuffer *buf;
-  buf = gst_buffer_new_allocate (NULL, size, NULL);
-  if (G_UNLIKELY (buf == NULL)) {
-    GST_ERROR_OBJECT (cef, "Failed to allocate %u bytes", size);
-    return;
-  }
-
-  GstMapInfo map;
-  gst_buffer_map(buf, &map, GST_MAP_WRITE);
-  memcpy(map.data, buffer, size);
-  gst_buffer_unmap (buf, &map);
 
   g_mutex_lock(&cef->frame_mutex);
 
-  if (cef->current_frame) {
-    gst_buffer_unref(cef->current_frame);
-  }
+  GST_INFO("push_frame %u", size);
 
-  cef->current_frame = buf;
+  memcpy(cef->current_buffer, buffer, size);
+
   g_atomic_int_set(&cef->has_new_frame, 1);
-
   g_cond_signal (&cef->frame_cond);
   g_mutex_unlock (&cef->frame_mutex);
 }
 
-GstBuffer * pop_frame(GstCef *cef)
+void * pop_frame(GstCef *cef)
 {
 
   g_mutex_lock (&cef->frame_mutex);
 
-  GstBuffer * frame = NULL;
   gint64 end_time;
 
   end_time = g_get_monotonic_time () + 200 * G_TIME_SPAN_MILLISECOND;
-
   while (g_atomic_int_get(&cef->has_new_frame) == 0 && g_atomic_int_get(&cef->unlocked) == 0) {
     if (!g_cond_wait_until (&cef->frame_cond, &cef->frame_mutex, end_time)) {
-      //if we have a frame and it's been 200ms without a new one, push the last frame again
-      if(!cef->current_frame) {
-        end_time = g_get_monotonic_time () + 200 * G_TIME_SPAN_MILLISECOND;
-        continue;
-      }
       break;
     }
   }
 
   if (g_atomic_int_get(&cef->unlocked) == 0) { // 0 - not in cleanup state
-    if(cef->current_frame) {
-      frame = cef->current_frame;
-
-      gst_buffer_ref(cef->current_frame);
-      g_atomic_int_set(&cef->has_new_frame, 0);
-
-      g_mutex_unlock (&cef->frame_mutex);
-      return frame;
-    }
-  } else {
-    if (cef->current_frame) {
-      gst_buffer_unref(cef->current_frame);
-      cef->current_frame = NULL;
-    }
+    g_atomic_int_set(&cef->has_new_frame, 0);
+    g_mutex_unlock (&cef->frame_mutex);
+    return cef->current_buffer;
   }
-  GST_DEBUG("no frame????");
   
   g_mutex_unlock (&cef->frame_mutex);
   return NULL;
@@ -402,6 +370,8 @@ static gboolean gst_cef_start (GstBaseSrc *src) {
     return FALSE;
   }
 
+  cef->current_buffer = malloc(4 * cef->width * cef->height);
+
   new_browser(cef);
 
   return TRUE;
@@ -411,6 +381,9 @@ static gboolean gst_cef_stop (GstBaseSrc *src) {
   GstCef *cef = GST_CEF (src);
   GST_INFO_OBJECT (cef, "stop");
   close_browser(cef);
+  if(cef->current_buffer) {
+    free(cef->current_buffer);
+  }
   return TRUE;
 }
 
@@ -456,31 +429,16 @@ gst_cef_event (GstBaseSrc * src, GstEvent * event)
   return TRUE;
 }
 
-/* ask the subclass to create a buffer with offset and size, the default
- * implementation will call alloc and fill. */
-static GstFlowReturn
-gst_cef_create (GstBaseSrc * src, GstBuffer ** buf)
-{
+static GstFlowReturn gst_cef_fill (GstPushSrc *src, GstBuffer *buf) {
   GstCef *cef = GST_CEF (src);
-
-  GstBuffer* buffer = pop_frame(cef);
-  if (!buffer) {
-    GST_INFO_OBJECT (cef, "neil create gst_flow_flushing");
-    return GST_FLOW_FLUSHING;
-  }
-
-  *buf = buffer;
-
-  return GST_FLOW_OK;
+  void *frame = pop_frame(cef);
+  gsize size = gst_buffer_get_size(buf);
+  GST_INFO("fill size = %u", size);
+  GstMapInfo map;
+  gst_buffer_map(buf, &map, GST_MAP_WRITE);
+  memcpy(map.data, frame, size);
+  gst_buffer_unmap (buf, &map);
 }
-
-static GstStateChangeReturn gst_cef_change_state (GstElement * element, GstStateChange transition) {
-  GstCef *cef = GST_CEF (element);
-  GstStateChangeReturn ret = GST_STATE_CHANGE_SUCCESS;
-  ret = GST_ELEMENT_CLASS (parent_element_class)->change_state (element, transition);
-  return ret;
-}
-
 
 static gboolean
 plugin_init (GstPlugin * plugin)

@@ -42,6 +42,7 @@ struct _GstCef
   gboolean verbose; 
   const char *url;
   GstBuffer *current_frame;
+  void *current_buffer;
   GMutex frame_mutex;
   GCond frame_cond;
   /* gint64 cur_offset; */
