@@ -39,9 +39,7 @@ typedef struct _GstCefClass GstCefClass;
 struct _GstCef
 {
   GstPushSrc src;
-  gboolean verbose; 
   const char *url;
-  GstBuffer *current_frame;
   void *current_buffer;
   GMutex frame_mutex;
   GCond frame_cond;

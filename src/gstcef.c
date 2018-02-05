@@ -413,27 +413,10 @@ gst_cef_unlock_stop (GstBaseSrc * src)
   return TRUE;
 }
 
-/* notify subclasses of an event */
-static gboolean
-gst_cef_event (GstBaseSrc * src, GstEvent * event)
-{
-  GstCef *cef = GST_CEF (src);
-
-  GST_INFO_OBJECT (cef, "event");
-  GstEventType type = GST_EVENT_TYPE(event);
-  switch (type) {
-    default:
-      GST_INFO("event_type: %s", GST_EVENT_TYPE_NAME(event));
-  }
-
-  return TRUE;
-}
-
 static GstFlowReturn gst_cef_fill (GstPushSrc *src, GstBuffer *buf) {
   GstCef *cef = GST_CEF (src);
   void *frame = pop_frame(cef);
   gsize size = gst_buffer_get_size(buf);
-  GST_INFO("fill size = %u", size);
   GstMapInfo map;
   gst_buffer_map(buf, &map, GST_MAP_WRITE);
   memcpy(map.data, frame, size);

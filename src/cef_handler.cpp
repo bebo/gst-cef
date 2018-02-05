@@ -30,15 +30,13 @@ BrowserClient::~BrowserClient() {
 bool BrowserClient::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) {
   CEF_REQUIRE_UI_THREAD();
 
-  GST_INFO("GetViewRect: browser id: %d, lenght: %lu", browser->GetIdentifier(), browser_gst_map.size());
-
   auto cef = getGstCef(browser);
 
   if (cef == 0) {
     return false;
   }
 
-  GST_INFO("rect i got cef: %uX%u", cef->width, cef->height);
+  GST_DEBUG("rect i got cef: %uX%u", cef->width, cef->height);
 
   rect = CefRect(0, 0, cef->width, cef->height);
   return true;
@@ -93,7 +91,7 @@ void BrowserClient::AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void * gstCe
   gettimeofday(&gst_cef_info->last_tv, NULL);
 
   int id = browser->GetIdentifier();
-  GST_INFO("Adding browser to gst map browser id: %d", id);
+  GST_DEBUG("Adding browser to gst map browser id: %d", id);
 
   browser_gst_map[id] = gst_cef_info;
   //Do this because the caps may have triggered a SetSize before this function was called
@@ -109,7 +107,7 @@ GstCefInfo_T* BrowserClient::getGstCef(CefRefPtr<CefBrowser> browser) {
   auto it_end = browser_gst_map.end();
 
   if (info_it == it_end) {
-    GST_LOG("Browser not found in the map, browser id: %d", id);
+    GST_DEBUG("Browser not found in the map, browser id: %d", id);
     return NULL;
   }
 
@@ -119,7 +117,7 @@ GstCefInfo_T* BrowserClient::getGstCef(CefRefPtr<CefBrowser> browser) {
 bool BrowserClient::DoClose(CefRefPtr<CefBrowser> browser) {
   CEF_REQUIRE_UI_THREAD();
 
-  GST_LOG("DoClose, browser id: %d", browser->GetIdentifier());
+  GST_DEBUG("DoClose, browser id: %d", browser->GetIdentifier());
 
   // Closing the main window requires special handling. See the DoClose()
   // documentation in the CEF header for a detailed destription of this
