@@ -140,22 +140,23 @@ gst_cef_class_init (GstCefClass * klass)
 static void push_frame(void *gstCef, const void *buffer, int width, int height) {
 
   GstCef *cef = (GstCef *) gstCef;
-  int size = width * height * 4 * 1;
+  int size = width * height * 4;
 
   g_mutex_lock(&cef->frame_mutex);
 
-  GST_INFO("push_frame %u", size);
+  if(cef->current_buffer) {
+    memcpy(cef->current_buffer, buffer, size);
+    g_atomic_int_set(&cef->has_new_frame, 1);
+    g_cond_signal (&cef->frame_cond);
+    g_mutex_unlock (&cef->frame_mutex);
+    return;
+  }
 
-  memcpy(cef->current_buffer, buffer, size);
-
-  g_atomic_int_set(&cef->has_new_frame, 1);
-  g_cond_signal (&cef->frame_cond);
   g_mutex_unlock (&cef->frame_mutex);
 }
 
 void * pop_frame(GstCef *cef)
 {
-
   g_mutex_lock (&cef->frame_mutex);
 
   gint64 end_time;
@@ -369,7 +370,9 @@ static gboolean gst_cef_start (GstBaseSrc *src) {
     return FALSE;
   }
 
-  cef->current_buffer = malloc(4 * cef->width * cef->height);
+  gsize size = 4 * cef->width * cef->height;
+  cef->current_buffer = g_malloc(size);
+  memset(cef->current_buffer, 0, size);
 
   new_browser(cef);
 
@@ -381,7 +384,8 @@ static gboolean gst_cef_stop (GstBaseSrc *src) {
   GST_INFO_OBJECT (cef, "stop");
   close_browser(cef);
   if(cef->current_buffer) {
-    free(cef->current_buffer);
+    g_free(cef->current_buffer);
+    cef->current_buffer = NULL;
   }
   return TRUE;
 }
@@ -415,11 +419,15 @@ gst_cef_unlock_stop (GstBaseSrc * src)
 static GstFlowReturn gst_cef_fill (GstPushSrc *src, GstBuffer *buf) {
   GstCef *cef = GST_CEF (src);
   void *frame = pop_frame(cef);
+  if(!frame) {
+    return GST_FLOW_FLUSHING;
+  }
   gsize size = gst_buffer_get_size(buf);
   GstMapInfo map;
   gst_buffer_map(buf, &map, GST_MAP_WRITE);
   memcpy(map.data, frame, size);
   gst_buffer_unmap (buf, &map);
+  return GST_FLOW_OK;
 }
 
 static gboolean
