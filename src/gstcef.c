@@ -207,7 +207,6 @@ void gst_cef_init(GstCef *cef)
   printf("gst_cef_init\n");
 
   g_atomic_int_set (&cef->unlocked, 0);
-  cef->current_frame = NULL;
   cef->has_opened_browser = FALSE;
   cef->width=-1;
   cef->height=-1;
