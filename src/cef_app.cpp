@@ -90,6 +90,12 @@ void Browser::SetSize(void *gstCef, int width, int height) {
   browserClient->SetSize(gstCef, width, height);
 }
 
+void Browser::SetHidden(void *gstCef, bool hidden) {
+  CEF_REQUIRE_UI_THREAD();
+  GST_INFO("Browser::SetSize");
+  browserClient->SetHidden(gstCef, hidden);
+}
+
 void Browser::OnContextInitialized() {
   CEF_REQUIRE_UI_THREAD();
   GST_INFO("OnContextInitialized");

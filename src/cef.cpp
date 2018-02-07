@@ -170,6 +170,25 @@ void set_size(void *args) {
   g_idle_add((GSourceFunc) doSetSize, args);
 }
 
+static bool doSetHidden(void *args) {
+  gstHiddenArgs *hiddenArgs = (gstHiddenArgs *)args;
+  bool hidden = hiddenArgs->hidden;
+  void *gstCef = hiddenArgs->gstCef;
+  g_free(args);
+
+  if(!app) {
+    return false;
+  }
+
+  app->SetHidden(gstCef, hidden);
+  return false;
+}
+
+void set_hidden(void * args) {
+  GST_INFO("set_hidden");
+  g_idle_add((GSourceFunc) doSetHidden, args);
+}
+
 bool doClose(gpointer args) {
   if(app) {
     app->CloseBrowser(args, true);

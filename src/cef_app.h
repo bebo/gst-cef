@@ -24,6 +24,7 @@ class Browser: public CefApp, public CefBrowserProcessHandler {
   void CloseBrowser(void * gst_cef, bool force_close);
   void Open(void *gstCef, void *push_data, char* url, int width, int height);
   void SetSize(void *gstCef, int width, int height);
+  void SetHidden(void *gstCef, bool hidden);
 
  private: 
   CefRefPtr<BrowserClient> browserClient;
