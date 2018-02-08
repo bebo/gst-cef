@@ -128,7 +128,7 @@ void browser_loop(gpointer args) {
   // Run the CEF message loop. This will block until CefQuitMessageLoop() is
   usleep(100000);
   while(g_atomic_int_get(&loop_live)) {
-    usleep(5000);
+    usleep(20000);
     g_idle_add((GSourceFunc) doWork, NULL);
   }
   usleep(5000);
