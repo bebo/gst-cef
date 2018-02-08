@@ -75,7 +75,7 @@ void Browser::Open(void *gstCef, void *push_data, char* url, int width, int heig
 
   // Information used when creating the native window.
   CefWindowInfo window_info;
-  window_info.SetAsWindowless(0, true);
+  window_info.SetAsWindowless(NULL);
 
   CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(window_info, browserClient, url, browser_settings, NULL);
   browserClient->AddBrowserGstMap(browser, gstCef, push_data, width, height);
@@ -92,7 +92,6 @@ void Browser::SetSize(void *gstCef, int width, int height) {
 
 void Browser::SetHidden(void *gstCef, bool hidden) {
   CEF_REQUIRE_UI_THREAD();
-  GST_INFO("Browser::SetSize");
   browserClient->SetHidden(gstCef, hidden);
 }
 

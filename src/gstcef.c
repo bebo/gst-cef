@@ -247,6 +247,7 @@ void gst_cef_init(GstCef *cef)
   cef->has_opened_browser = FALSE;
   cef->width=-1;
   cef->height=-1;
+  cef->hidden=FALSE;
 
   gst_base_src_set_format (GST_BASE_SRC (cef), GST_FORMAT_TIME);
   gst_base_src_set_live (GST_BASE_SRC (cef), DEFAULT_IS_LIVE);
@@ -285,8 +286,10 @@ gst_cef_set_property (GObject * object, guint property_id,
     case PROP_HIDDEN:
       {
         const gboolean hidden = g_value_get_boolean (value);
-        cef->hidden = hidden;
-        gst_cef_set_hidden(cef, hidden);
+        if(hidden != cef->hidden) {
+          cef->hidden = hidden;
+          gst_cef_set_hidden(cef, hidden);
+        }
         break;
       }
     default:

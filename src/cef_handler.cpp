@@ -191,7 +191,6 @@ void BrowserClient::OnLoadEnd(CefRefPtr< CefBrowser > browser,
 
   auto cef = getGstCef(browser);
 
-
   if (httpStatusCode >= 200 && httpStatusCode < 400) {
     GST_INFO("OnLoadEnd - window id: %d, is main: %d, status code: %d", 
         browser->GetIdentifier(), frame->IsMain(), httpStatusCode);
@@ -268,8 +267,7 @@ void BrowserClient::SetHidden(void * gst_cef, bool hidden) {
     if (it->second->gst_cef == gst_cef) {
       GstCefInfo_T *info = (GstCefInfo_T *)it->second;
       CefBrowser* browser = info->browser.get();
-      GST_INFO("got cef. BrowserClient::hidden id: %d", browser->GetIdentifier());
-      CefBrowserHost *host = browser->GetHost().get();
+      CefRefPtr<CefBrowserHost> host = browser->GetHost();
       host->WasHidden(hidden);
       return;
     }
