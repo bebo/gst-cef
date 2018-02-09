@@ -145,6 +145,9 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
 
   GstCef *cef = (GstCef *) gstCef;
   int size = width * height * 4;
+  if(size != (cef->width * cef->height * 4)) {
+    GST_ERROR("push_frame size mismatch");
+  }
 
   g_mutex_lock(&cef->frame_mutex);
 
@@ -161,7 +164,6 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height) 
 
 void * pop_frame(GstCef *cef)
 {
-  g_mutex_lock (&cef->frame_mutex);
 
   gint64 end_time;
 
@@ -174,11 +176,9 @@ void * pop_frame(GstCef *cef)
 
   if (g_atomic_int_get(&cef->unlocked) == 0) { // 0 - not in cleanup state
     g_atomic_int_set(&cef->has_new_frame, 0);
-    g_mutex_unlock (&cef->frame_mutex);
     return cef->current_buffer;
   }
   
-  g_mutex_unlock (&cef->frame_mutex);
   return NULL;
 }
 
@@ -442,15 +442,22 @@ gst_cef_unlock_stop (GstBaseSrc * src)
 
 static GstFlowReturn gst_cef_fill (GstPushSrc *src, GstBuffer *buf) {
   GstCef *cef = GST_CEF (src);
+  g_mutex_lock (&cef->frame_mutex);
   void *frame = pop_frame(cef);
   if(!frame) {
+    g_mutex_unlock (&cef->frame_mutex);
     return GST_FLOW_FLUSHING;
   }
   gsize size = gst_buffer_get_size(buf);
-  GstMapInfo map;
-  gst_buffer_map(buf, &map, GST_MAP_WRITE);
-  memcpy(map.data, frame, size);
-  gst_buffer_unmap (buf, &map);
+  gsize my_size = cef->width * cef->height * 4;
+  //TODO: why????? when cef->queue->fakesink after being in normal pipeline
+  //fill asks for 4096 size. Not sure why, working around because of visial weirdness
+  if(size == my_size) {
+    gst_buffer_fill(buf, 0, frame, size);
+  } else {
+    gst_buffer_memset(buf, 0, 0, size);
+  }
+  g_mutex_unlock (&cef->frame_mutex);
   return GST_FLOW_OK;
 }
 
