@@ -62,7 +62,7 @@ static GstCaps *gst_cef_get_caps (GstBaseSrc * src, GstCaps * filter);
 static gboolean gst_cef_is_seekable (GstBaseSrc * src);
 static gboolean gst_cef_unlock (GstBaseSrc * src);
 static gboolean gst_cef_unlock_stop (GstBaseSrc * src);
-static GstFlowReturn gst_cef_fill (GstPushSrc * src, GstBuffer * buf);
+static GstFlowReturn gst_cef_create (GstPushSrc * src, GstBuffer ** buf);
 static gboolean gst_cef_start (GstBaseSrc *src);
 static gboolean gst_cef_stop (GstBaseSrc *src);
 
@@ -123,7 +123,7 @@ gst_cef_class_init (GstCefClass * klass)
   base_src_class->unlock_stop = GST_DEBUG_FUNCPTR (gst_cef_unlock_stop);
   base_src_class->start = GST_DEBUG_FUNCPTR (gst_cef_start);
   base_src_class->stop = GST_DEBUG_FUNCPTR (gst_cef_stop);
-  push_src_class->fill = GST_DEBUG_FUNCPTR (gst_cef_fill);
+  push_src_class->create = GST_DEBUG_FUNCPTR (gst_cef_create);
 
   g_object_class_install_property (gobject_class, PROP_URL,
       g_param_spec_string ("url", "url", "website to render into video",
@@ -440,23 +440,20 @@ gst_cef_unlock_stop (GstBaseSrc * src)
   return TRUE;
 }
 
-static GstFlowReturn gst_cef_fill (GstPushSrc *src, GstBuffer *buf) {
+static GstFlowReturn gst_cef_create (GstPushSrc *src, GstBuffer ** buf) {
   GstCef *cef = GST_CEF (src);
   g_mutex_lock (&cef->frame_mutex);
+
   void *frame = pop_frame(cef);
   if(!frame) {
     g_mutex_unlock (&cef->frame_mutex);
     return GST_FLOW_FLUSHING;
   }
-  gsize size = gst_buffer_get_size(buf);
+
   gsize my_size = cef->width * cef->height * 4;
-  //TODO: why????? when cef->queue->fakesink after being in normal pipeline
-  //fill asks for 4096 size. Not sure why, working around because of visial weirdness
-  if(size == my_size) {
-    gst_buffer_fill(buf, 0, frame, size);
-  } else {
-    gst_buffer_memset(buf, 0, 0, size);
-  }
+  GstBuffer *buffer = gst_buffer_new_allocate(NULL, my_size, NULL);
+  gst_buffer_fill(buffer, 0, frame, my_size);
+  *buf = buffer;
   g_mutex_unlock (&cef->frame_mutex);
   return GST_FLOW_OK;
 }
