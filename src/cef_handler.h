@@ -72,6 +72,7 @@ class BrowserClient : public CefClient,
   // Request that all existing browser windows close.
   void CloseBrowser(void * gst_cef, bool force_close);
   void SetSize(void * gst_cef, int width, int height);
+  void SetHidden(void * gst_cef, bool hidden);
   void AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void * gstCef, void * push_frame, int width, int height);
 
   bool IsClosing() const { return is_closing_; }

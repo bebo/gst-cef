@@ -71,7 +71,8 @@ enum
   PROP_0,
   PROP_URL,
   PROP_WIDTH,
-  PROP_HEIGHT
+  PROP_HEIGHT,
+  PROP_HIDDEN
 };
 
 /* pad templates */
@@ -135,6 +136,9 @@ gst_cef_class_init (GstCefClass * klass)
   g_object_class_install_property (gobject_class, PROP_HEIGHT,
       g_param_spec_uint ("height", "height", "website to render into video",
         0, G_MAXUINT, 1080, G_PARAM_READWRITE));
+
+  g_object_class_install_property (gobject_class, PROP_HIDDEN,
+      g_param_spec_boolean ("hidden", "hidden", "set the cef browser to hidden for throttling", FALSE, G_PARAM_READWRITE));
 }
 
 static void push_frame(void *gstCef, const void *buffer, int width, int height) {
@@ -211,6 +215,7 @@ void gst_cef_init(GstCef *cef)
   cef->has_opened_browser = FALSE;
   cef->width=-1;
   cef->height=-1;
+  cef->hidden=FALSE;
 
   gst_base_src_set_format (GST_BASE_SRC (cef), GST_FORMAT_TIME);
   gst_base_src_set_live (GST_BASE_SRC (cef), DEFAULT_IS_LIVE);
@@ -236,14 +241,23 @@ gst_cef_set_property (GObject * object, guint property_id,
       }
     case PROP_WIDTH:
       {
-        const width = g_value_get_uint (value);
+        const guint width = g_value_get_uint (value);
         cef->width = width;
         break;
       }
     case PROP_HEIGHT:
       {
-        const height = g_value_get_uint (value);
+        const guint height = g_value_get_uint (value);
         cef->height = height;
+        break;
+      }
+    case PROP_HIDDEN:
+      {
+        const gboolean hidden = g_value_get_boolean (value);
+        if(hidden != cef->hidden) {
+          cef->hidden = hidden;
+          gst_cef_set_hidden(cef, hidden);
+        }
         break;
       }
     default:
@@ -263,6 +277,13 @@ void gst_cef_set_size (GObject *object, int width, int height) {
   GST_INFO("setting size");
 }
 
+void gst_cef_set_hidden(GstCef *cef, gboolean hidden) {
+  struct gstHiddenArgs *args = g_malloc(sizeof(struct gstHiddenArgs));
+  args->gstCef = cef;
+  args->hidden = hidden;
+  set_hidden(args);
+}
+
 void
 gst_cef_get_property (GObject * object, guint property_id,
     GValue * value, GParamSpec * pspec)
@@ -279,6 +300,9 @@ gst_cef_get_property (GObject * object, guint property_id,
       break;
     case PROP_HEIGHT:
       g_value_set_uint(value, cef->height);
+      break;
+    case PROP_HIDDEN:
+      g_value_set_boolean(value, cef->hidden);
       break;
     default:
       G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);

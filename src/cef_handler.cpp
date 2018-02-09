@@ -189,7 +189,6 @@ void BrowserClient::OnLoadEnd(CefRefPtr< CefBrowser > browser,
 
   auto cef = getGstCef(browser);
 
-
   if (httpStatusCode >= 200 && httpStatusCode < 400) {
     GST_INFO("OnLoadEnd - window id: %d, is main: %d, status code: %d", 
         browser->GetIdentifier(), frame->IsMain(), httpStatusCode);
@@ -242,6 +241,37 @@ void BrowserClient::CloseBrowser(void * gst_cef, bool force_close) {
     }
   }
 
+}
+
+void BrowserClient::SetHidden(void * gst_cef, bool hidden) {
+  GST_INFO("Set Size Any Thread");
+
+  if (!CefCurrentlyOn(TID_UI)) {
+    // Execute on the UI thread.
+    CefPostTask(TID_UI, base::Bind(&BrowserClient::SetHidden, this,
+          gst_cef, hidden));
+    return;
+  }
+  CEF_REQUIRE_UI_THREAD();
+
+  GST_INFO("BrowserClient::SetHidden hidden %u", hidden);
+
+  for (auto it = browser_gst_map.begin(); it != browser_gst_map.end(); ++it) {
+    if (!it->second) {
+      GST_ERROR("BrowserClient::SetHidden, browser id: %d. UNABLE TO FIND it->second", it->first);
+      continue;
+    }
+
+    if (it->second->gst_cef == gst_cef) {
+      GstCefInfo_T *info = (GstCefInfo_T *)it->second;
+      CefBrowser* browser = info->browser.get();
+      CefRefPtr<CefBrowserHost> host = browser->GetHost();
+      host->WasHidden(hidden);
+      return;
+    }
+  }
+
+  GST_INFO("Didn't get gst_cef");
 }
 
 void BrowserClient::SetSize(void * gst_cef, int width, int height) {

@@ -128,7 +128,7 @@ void browser_loop(gpointer args) {
   // Run the CEF message loop. This will block until CefQuitMessageLoop() is
   usleep(100000);
   while(g_atomic_int_get(&loop_live)) {
-    usleep(5000);
+    usleep(20000);
     g_idle_add((GSourceFunc) doWork, NULL);
   }
   usleep(5000);
@@ -168,6 +168,25 @@ static bool doSetSize(void *args) {
 void set_size(void *args) {
   GST_INFO("set_size");
   g_idle_add((GSourceFunc) doSetSize, args);
+}
+
+static bool doSetHidden(void *args) {
+  gstHiddenArgs *hiddenArgs = (gstHiddenArgs *)args;
+  bool hidden = hiddenArgs->hidden;
+  void *gstCef = hiddenArgs->gstCef;
+  g_free(args);
+
+  if(!app) {
+    return false;
+  }
+
+  app->SetHidden(gstCef, hidden);
+  return false;
+}
+
+void set_hidden(void * args) {
+  GST_INFO("set_hidden");
+  g_idle_add((GSourceFunc) doSetHidden, args);
 }
 
 bool doClose(gpointer args) {

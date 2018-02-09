@@ -24,9 +24,15 @@ struct gstSizeArgs {
   int height;
 };
 
+struct gstHiddenArgs {
+  void * gstCef;
+  gboolean hidden;
+};
+
 void browser_loop(void * args);
 void open_browser(void * args);
 void set_size(void * args);
+void set_hidden(void * args);
 void close_browser(void * args);
 void shutdown_browser();
 

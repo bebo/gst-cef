@@ -49,6 +49,7 @@ struct _GstCef
   volatile gboolean has_opened_browser;
   int width;
   int height;
+  gboolean hidden;
 };
 
 struct _GstCefClass
