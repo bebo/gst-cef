@@ -62,4 +62,13 @@ TARGET_LINK_LIBRARIES(libgstcef
 if(USE_SANDBOX)
   # Logical target used to link the cef_sandbox library.
   ADD_LOGICAL_TARGET("cef_sandbox_lib" "${CEF_SANDBOX_LIB_DEBUG}" "${CEF_SANDBOX_LIB_RELEASE}")
+  TARGET_LINK_LIBRARIES(libgstcef
+    cef_sandbox_lib
+    ${CEF_SANDBOX_STANDARD_LIBS}
+  )
 endif()
+
+# Copy binary and resource files to the target output directory.
+set(TARGET_OUT_DIR "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}")
+COPY_FILES(libgstcef "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${TARGET_OUT_DIR}")
+COPY_FILES(libgstcef "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${TARGET_OUT_DIR}")

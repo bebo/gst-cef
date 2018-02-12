@@ -3,9 +3,11 @@
 #include <list>
 #include <glib.h>
 #include <Windows.h>
+
 #include <include/cef_app.h>
 #include <include/cef_client.h>
 #include <include/cef_render_handler.h>
+#include "include/cef_sandbox_win.h"
 #include <include/wrapper/cef_helpers.h>
 
 #include "cef.h"
@@ -55,7 +57,16 @@ static void doStart(gpointer data) {
 
   // Initialize CEF for the browser process.
   GST_LOG("CefInitialize");
-  CefInitialize(main_args, settings, app.get(), NULL);
+  void* sandbox_info = NULL;
+  #if defined(CEF_USE_SANDBOX)
+	  // Manage the life span of the sandbox information object. This is necessary
+	  // for sandbox support on Windows. See cef_sandbox_win.h for complete details.
+	  CefScopedSandboxInfo scoped_sandbox;
+	  sandbox_info = scoped_sandbox.sandbox_info();
+  #endif
+  //  TODO: Use the sandbox.
+	  settings.no_sandbox = true;
+  CefInitialize(main_args, settings, app.get(), sandbox_info);
 
   g_cond_signal(&cef_start_cond);
   g_mutex_unlock(&cef_start_mutex);
