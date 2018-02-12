@@ -57,6 +57,7 @@ gst-plugins-bad-*.tar.*
 *.la
 *.so
 *.o
+*.pyc
 *~
 /m4
 Makefile.in
@@ -80,4 +81,39 @@ Build
 *.log
 *.trs
 
+*.gypcmd
+*.mk
+*.ncb
+*.opensdf
+*.props
+*.pyc
+*.rules
+*.sdf
+*.sln
+*.sublime-project
+*.sublime-workspace
+*.suo
+*.targets
+*.user
+*.vcproj
+*.vcxproj
+*.vcxproj.filters
+*.vpj
+*.vpw
+*.vpwhistu
+*.vtg
+*.xcodeproj
+*.xcworkspace
+*_proto.xml
+*_proto_cpp.xml
+*~
 
+# CEF build directory
+/build
+# CEF download directory
+/third_party/cef/
+# clang-format downloads
+/tools/buildtools/external_bin
+/tools/buildtools/linux64/clang-format
+/tools/buildtools/mac/clang-format
+/tools/buildtools/win/clang-format.exe
