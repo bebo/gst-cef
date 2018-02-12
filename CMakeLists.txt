@@ -62,18 +62,9 @@ endif()
 #
 # Clang-format configuration.
 #
+set(GS_PLATFORM "win32")
+set(GS_HASHPATH "win/clang-format.exe.sha1")
 
-if(OS_WINDOWS)
-  # TODO: I changed to x64 from win32.
-  set(GS_PLATFORM "x64")
-  set(GS_HASHPATH "win/clang-format.exe.sha1")
-elseif(OS_MACOSX)
-  set(GS_PLATFORM "darwin")
-  set(GS_HASHPATH "mac/clang-format.sha1")
-elseif(OS_LINUX)
-  set(GS_PLATFORM "linux*")
-  set(GS_HASHPATH "linux64/clang-format.sha1")
-endif()
 
 message(STATUS "Downloading clang-format from Google Storage...")
 execute_process(
@@ -98,8 +89,6 @@ endif()
 
 # Include the libcef_dll_wrapper target (executes libcef_dll/CMakeLists.txt).
 add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
-
-add_subdirectory(${CEF_ROOT}/src)
 
 # Allow includes relative to the current source directory.
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
