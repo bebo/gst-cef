@@ -20,6 +20,7 @@ static CefRefPtr<Browser> app;
 static GMutex cef_start_mutex;
 static GCond cef_start_cond;
 static guint browser_loop_index = 0;
+
 }  // namespace
 
 static void doStart(gpointer data) {
@@ -27,7 +28,7 @@ static void doStart(gpointer data) {
 
   // Provide CEF with command-line arguments.
   struct gstCb *cb = (struct gstCb*) data;
-  CefMainArgs main_args(0, nullptr);
+  CefMainArgs main_args(GetModuleHandle(NULL));
 
   // Specify CEF global settings here.
   CefSettings settings;

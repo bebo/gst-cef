@@ -44,7 +44,6 @@ TARGET_LINK_LIBRARIES(libgstcef
   gstbase-1.0
   glib-2.0
   gobject-2.0
-  debug strmbasd
   rpcrt4
   uuid
   winmm
