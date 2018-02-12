@@ -10,7 +10,7 @@ cmake_minimum_required(VERSION 2.8.12.1)
 set(CMAKE_CONFIGURATION_TYPES Debug Release)
 
 # Project name.
-project(cef)
+project(gst-cef)
 
 # Use folders in the resulting project files.
 set_property(GLOBAL PROPERTY OS_FOLDERS ON)
@@ -82,7 +82,8 @@ endif()
 #
 
 if(OS_WINDOWS)
-  set(GS_PLATFORM "win32")
+  # TODO: I changed to x64 from win32.
+  set(GS_PLATFORM "x64")
   set(GS_HASHPATH "win/clang-format.exe.sha1")
 elseif(OS_MACOSX)
   set(GS_PLATFORM "darwin")
