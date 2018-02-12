@@ -6,7 +6,7 @@
 #define CEF_TESTS_CEFSIMPLE_SIMPLE_HANDLER_H_
 
 #include "include/cef_client.h"
-#include <sys/time.h>
+// #include <sys/time.h>
 #include <list>
 #include <map>
 

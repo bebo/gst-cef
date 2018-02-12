@@ -17,8 +17,34 @@
 #include "include/views/cef_window.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_helpers.h"
-#include <sys/time.h>
+//#include <sys/time.h>
 
+// POSTGRESQL gettimeofday windows.
+
+/* FILETIME of Jan 1 1970 00:00:00. */
+static const unsigned __int64 epoch = 116444736000000000;
+/*
+ * timezone information is stored outside the kernel so tzp isn't used anymore.
+ *
+ * Note: this function is not for Win32 high precision timing purpose. See
+ * elapsed_time().
+ */
+int
+gettimeofday(struct timeval * tp, struct timezone * tzp)
+{
+    FILETIME    file_time;
+    SYSTEMTIME  system_time;
+    ULARGE_INTEGER ularge;
+ 
+	GetSystemTime(&system_time);
+	SystemTimeToFileTime(&system_time, &file_time);
+	ularge.LowPart = file_time.dwLowDateTime;
+	ularge.HighPart = file_time.dwHighDateTime;
+
+	tp->tv_sec = (long)((ularge.QuadPart - epoch) / 10000000L);
+	tp->tv_usec = (long)(system_time.wMilliseconds * 1000);
+	return 0;
+}
 
 // TODO: support changing url by gst_cef
 BrowserClient::BrowserClient(): use_views_(false), is_closing_(false) {}
@@ -204,8 +230,7 @@ void BrowserClient::OnLoadEnd(CefRefPtr< CefBrowser > browser,
     } else if (httpStatusCode >= 500 && httpStatusCode < 600) { // 500 ~ 599?
       const char * url = frame->GetURL().ToString().c_str();
 
-      unsigned long long retry_time_ms = std::min((unsigned long long) 30000, 
-          (unsigned long long) std::pow(2, cef->retry_count) * 200); // 200, 400, 800, 1600 ... 30000
+      unsigned long long retry_time_ms = (std::min)((unsigned long long) 30000, (unsigned long long) std::pow(2, cef->retry_count) * 200); // 200, 400, 800, 1600 ... 30000
 
       GST_INFO("OnLoadEnd - scheduled a refresh. window id: %d, status code: %d, url: %s - refreshing in %llums, count: %d", 
           browser->GetIdentifier(), httpStatusCode, url, retry_time_ms, cef->retry_count);

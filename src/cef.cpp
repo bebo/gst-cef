@@ -1,10 +1,11 @@
-#include <sys/auxv.h>
+// #include <sys/auxv.h>
 
 #include <ctime>
 #include <iostream>
 #include <list>
 #include <glib.h>
 // #include <unistd.h>
+#include <Windows.h>
 #include <include/cef_app.h>
 #include <include/cef_client.h>
 #include <include/cef_render_handler.h>
@@ -126,12 +127,12 @@ void browser_loop(gpointer args) {
   g_idle_add((GSourceFunc) doStart, args);
 
   // Run the CEF message loop. This will block until CefQuitMessageLoop() is
-  usleep(100000);
+ Sleep(1000);
   while(g_atomic_int_get(&loop_live)) {
-    usleep(20000);
+    Sleep(200);
     g_idle_add((GSourceFunc) doWork, NULL);
   }
-  usleep(5000);
+  Sleep(500);
   GST_INFO("MessageLoop Ended");
 }
 
@@ -205,6 +206,6 @@ void close_browser(gpointer args) {
 void shutdown_browser() {
   GST_WARNING("shutdown browser");
   g_atomic_int_set(&loop_live, 0);
-  usleep(3000000);
+  Sleep(3000);
   g_idle_add((GSourceFunc) doShutdown, NULL);
 }
