@@ -4,12 +4,12 @@
 
 cmake_minimum_required(VERSION 3.10)
 
-SET(GST_INSTALL_BASE "C:\\gstreamer\\1.0\\x86_64" CACHE PATH "Path to the GStreamer install base")
-
 SET_PROPERTY(
   DIRECTORY
   APPEND PROPERTY COMPILE_DEFINITIONS
 )
+
+ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
 
 INCLUDE_DIRECTORIES(
   ${GST_INSTALL_BASE}/include
@@ -50,4 +50,11 @@ TARGET_LINK_LIBRARIES(libgstcef
   dmoguids
   wmcodecdspuuid
   msdmo
+  libcef_lib
+  libcef_dll_wrapper
 )
+
+if(USE_SANDBOX)
+  # Logical target used to link the cef_sandbox library.
+  ADD_LOGICAL_TARGET("cef_sandbox_lib" "${CEF_SANDBOX_LIB_DEBUG}" "${CEF_SANDBOX_LIB_RELEASE}")
+endif()

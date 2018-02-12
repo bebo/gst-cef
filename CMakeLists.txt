@@ -88,7 +88,9 @@ endif()
 #
 
 # Allow includes relative to the current source directory.
+add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src)
+
 
 # Display configuration settings.
 PRINT_CEF_CONFIG()
