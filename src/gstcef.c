@@ -35,14 +35,13 @@
 #include "config.h"
 #endif
 
-#include <pthread.h>
+// #include <pthread.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+// #include <unistd.h>
 #include <errno.h>
 #include <ctype.h>
-#include <pthread.h>
 #include <gst/gst.h>
 #include <gst/base/gstpushsrc.h>
 #include "gstcef.h"
