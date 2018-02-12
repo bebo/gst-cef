@@ -1,10 +1,7 @@
-// #include <sys/auxv.h>
-
 #include <ctime>
 #include <iostream>
 #include <list>
 #include <glib.h>
-// #include <unistd.h>
 #include <Windows.h>
 #include <include/cef_app.h>
 #include <include/cef_client.h>
@@ -18,32 +15,11 @@
 
 
 namespace {
-
-int XErrorHandlerImpl(Display *display, XErrorEvent *event) {
-  GST_ERROR("X error received: "
-            "type %d "
-            "serial %lu "
-            "error_code %d "
-            "request_code %d "
-            "minor_code %d",
-            event->type,
-            event->serial,
-            static_cast<int>(event->error_code),
-            static_cast<int>(event->request_code),
-            static_cast<int>(event->minor_code));
-  return 0;
-}
-
-int XIOErrorHandlerImpl(Display *display) {
-  return 0;
-}
-
 static gint loop_live = 0;
 static CefRefPtr<Browser> app;
 static GMutex cef_start_mutex;
 static GCond cef_start_cond;
 static guint browser_loop_index = 0;
-
 }  // namespace
 
 static void doStart(gpointer data) {
@@ -53,17 +29,14 @@ static void doStart(gpointer data) {
   struct gstCb *cb = (struct gstCb*) data;
   CefMainArgs main_args(0, nullptr);
 
-  // Install xlib error handlers so that the application won't be terminated
-  // on non-fatal errors.
-  XInitThreads();
-  XSetErrorHandler(XErrorHandlerImpl);
-  XSetIOErrorHandler(XIOErrorHandlerImpl);
-
   // Specify CEF global settings here.
   CefSettings settings;
 
-  char * exe = (char *) getauxval(AT_EXECFN);
-  gchar * dirname = g_path_get_dirname(exe);
+  HMODULE hModule = GetModuleHandleW(NULL);
+  WCHAR path[MAX_PATH];
+  GetModuleFileNameW(hModule, path, MAX_PATH);
+  // TODO: Determine if this correctly retrieves the path.
+  gchar * dirname = g_path_get_dirname((const gchar*) path);
   gchar * subprocess_exe = g_strconcat(dirname, "/subprocess", NULL);
   g_free(dirname);
 
