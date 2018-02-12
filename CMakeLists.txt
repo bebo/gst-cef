@@ -21,31 +21,14 @@ set_property(GLOBAL PROPERTY OS_FOLDERS ON)
 #
 
 # Specify the CEF distribution version.
-set(CEF_VERSION "3.3202.1680.g700054b")
-
-# Determine the platform.
-if("${CMAKE_SYSTEM_NAME}" STREQUAL "Darwin")
-  set(CEF_PLATFORM "macosx64")
-elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
-  if(CMAKE_SIZEOF_VOID_P MATCHES 8)
-    set(CEF_PLATFORM "linux64")
-  else()
-    set(CEF_PLATFORM "linux32")
-  endif()
-elseif("${CMAKE_SYSTEM_NAME}" STREQUAL "Windows")
-  if(CMAKE_SIZEOF_VOID_P MATCHES 8)
-    set(CEF_PLATFORM "windows64")
-  else()
-    set(CEF_PLATFORM "windows32")
-  endif()
-endif()
+set(CEF_VERSION "3.3282.1732.g973997f")
 
 # Add this project's cmake/ directory to the module path.
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 # Download and extract the CEF binary distribution (executes DownloadCEF.cmake).
 include(DownloadCEF)
-DownloadCEF("${CEF_PLATFORM}" "${CEF_VERSION}" "${CMAKE_SOURCE_DIR}/third_party/cef")
+DownloadCEF("windows64" "${CEF_VERSION}" "${CMAKE_SOURCE_DIR}/third_party/cef")
 
 # Add the CEF binary distribution's cmake/ directory to the module path.
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CEF_ROOT}/cmake")

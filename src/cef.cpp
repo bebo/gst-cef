@@ -4,7 +4,7 @@
 #include <iostream>
 #include <list>
 #include <glib.h>
-#include <unistd.h>
+// #include <unistd.h>
 #include <include/cef_app.h>
 #include <include/cef_client.h>
 #include <include/cef_render_handler.h>
@@ -13,7 +13,7 @@
 #include "cef.h"
 #include "cef_app.h"
 
-#include <X11/Xlib.h>
+// #include <X11/Xlib.h>
 
 
 namespace {
