@@ -87,11 +87,8 @@ endif()
 # Target configuration.
 #
 
-# Include the libcef_dll_wrapper target (executes libcef_dll/CMakeLists.txt).
-add_subdirectory(${CEF_LIBCEF_DLL_WRAPPER_PATH} libcef_dll_wrapper)
-
 # Allow includes relative to the current source directory.
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 # Display configuration settings.
 PRINT_CEF_CONFIG()
