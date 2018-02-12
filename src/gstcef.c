@@ -183,8 +183,6 @@ void * pop_frame(GstCef *cef)
 
 void new_browser(GstCef *cef) {
   const GstStructure *structure;
-  int width;
-  int height;
   struct gstCb *cb = g_malloc(sizeof(struct gstCb));
 
   GST_INFO("actual new browser");
@@ -219,6 +217,13 @@ void gst_cef_init(GstCef *cef)
   gst_base_src_set_format (GST_BASE_SRC (cef), GST_FORMAT_TIME);
   gst_base_src_set_live (GST_BASE_SRC (cef), DEFAULT_IS_LIVE);
   gst_base_src_set_do_timestamp (GST_BASE_SRC (cef), TRUE);
+}
+
+void gst_cef_set_hidden(GstCef *cef, gboolean hidden) {
+	struct gstHiddenArgs *args = g_malloc(sizeof(struct gstHiddenArgs));
+	args->gstCef = cef;
+	args->hidden = hidden;
+	set_hidden(args);
 }
 
 void
@@ -274,13 +279,6 @@ void gst_cef_set_size (GObject *object, int width, int height) {
 
   set_size(args);
   GST_INFO("setting size");
-}
-
-void gst_cef_set_hidden(GstCef *cef, gboolean hidden) {
-  struct gstHiddenArgs *args = g_malloc(sizeof(struct gstHiddenArgs));
-  args->gstCef = cef;
-  args->hidden = hidden;
-  set_hidden(args);
 }
 
 void
