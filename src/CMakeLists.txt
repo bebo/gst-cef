@@ -67,7 +67,11 @@ if(USE_SANDBOX)
   )
 endif()
 
-ADD_EXECUTABLE(subprocess subprocess.cpp)
+ADD_EXECUTABLE(subprocess
+  subprocess.cpp
+  cef_app.h
+)
+
 TARGET_LINK_LIBRARIES(subprocess
   libcef_lib
   libcef_dll_wrapper
