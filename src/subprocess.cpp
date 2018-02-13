@@ -1,13 +1,12 @@
+#include <Windows.h>
+
 #include <include/cef_app.h>
-#include <include/cef_client.h>
-#include <include/cef_render_handler.h>
-#include <include/wrapper/cef_helpers.h>
-/* #include "cef.h" */
+
 // Program entry-point function.
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   // Structure for passing command-line arguments.
   // The definition of this structure is platform-specific.
-  CefMainArgs main_args(argc, argv);
+  CefMainArgs main_args(GetModuleHandle(NULL));
 
   // Optional implementation of the CefApp interface.
   /* CefRefPtr<Browser> app(new Browser); */
