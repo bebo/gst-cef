@@ -47,6 +47,7 @@ static void doStart(gpointer data) {
   g_free(subprocess_exe);
   settings.windowless_rendering_enabled = true;
   settings.no_sandbox = true;
+  settings.log_severity = LOGSEVERITY_VERBOSE;
   // TODO: We can do this on windows
   settings.multi_threaded_message_loop = false;
 
@@ -65,8 +66,6 @@ static void doStart(gpointer data) {
 	  CefScopedSandboxInfo scoped_sandbox;
 	  sandbox_info = scoped_sandbox.sandbox_info();
   #endif
-  //  TODO: Use the sandbox.
-  settings.no_sandbox = true;
   CefInitialize(main_args, settings, app.get(), sandbox_info);
 
   g_cond_signal(&cef_start_cond);
