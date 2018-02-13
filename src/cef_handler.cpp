@@ -11,6 +11,8 @@
 #include <iostream>
 #include <string>
 
+#include <windows.h>
+
 #include "include/base/cef_bind.h"
 #include "include/cef_app.h"
 #include "include/views/cef_browser_view.h"
@@ -96,6 +98,12 @@ void BrowserClient::OnTitleChange(CefRefPtr<CefBrowser> browser,
     // Set the title of the window using platform APIs.
     PlatformTitleChange(browser, title);
   }
+}
+
+void BrowserClient::PlatformTitleChange(CefRefPtr<CefBrowser> browser,
+	const CefString& title) {
+	// CefWindowHandle hwnd = browser->GetHost()->GetWindowHandle();
+	// SetWindowText(hwnd, std::wstring(title).c_str());
 }
 
 void BrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser) {
