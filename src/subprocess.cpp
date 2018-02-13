@@ -5,9 +5,11 @@
 #include "cef_app.h"
 
 int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-	LPSTR lpCmdLine, int nCmdShow)
+	PWSTR pCmdLine, int nCmdShow)
 {
 	CefMainArgs mainArgs(hInstance);
-	// CefRefPtr<Browser> app(new Browser);
+	// CefRefPtr<Browser> app(new Browser());
+	// return CefExecuteProcess(mainArgs, app.get(), NULL);
+	// TODO: Disable GPU
 	return CefExecuteProcess(mainArgs, NULL, NULL);
 }

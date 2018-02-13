@@ -67,7 +67,7 @@ if(USE_SANDBOX)
   )
 endif()
 
-ADD_EXECUTABLE(subprocess
+ADD_EXECUTABLE(subprocess WIN32
   subprocess.cpp
   cef_app.h
 )
