@@ -70,6 +70,7 @@ static void doStart(gpointer data) {
 
   g_cond_signal(&cef_start_cond);
   g_mutex_unlock(&cef_start_mutex);
+  CefRunMessageLoop();
 }
 
 static bool doOpen(gpointer data) {

@@ -76,6 +76,8 @@ void Browser::Open(void *gstCef, void *push_data, char* url, int width, int heig
   // CEF Browser Settings
   CefBrowserSettings browser_settings;
   browser_settings.windowless_frame_rate = 30;
+  // TODO: Get GPU working again.
+  browser_settings.webgl = STATE_DISABLED;
 
   CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(window_info, browserClient, url, browser_settings, NULL);
   browserClient->AddBrowserGstMap(browser, gstCef, push_data, width, height);
@@ -103,4 +105,13 @@ void Browser::OnContextInitialized() {
   browserClient = new BrowserClient();
 
   Open(gstCef, push_data, url, this->width, this->height);
+}
+
+void Browser::OnBeforeCommandLineProcessing(
+	const CefString& process_type,
+	CefRefPtr<CefCommandLine> command_line) {
+	command_line->AppendSwitch("disable-gpu");
+	command_line->AppendSwitch("disable-gpu-compositing");
+	command_line->AppendSwitch("enable-begin-frame-scheduling");
+	command_line->AppendSwitch("enable-system-flash");
 }

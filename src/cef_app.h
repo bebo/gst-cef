@@ -19,6 +19,10 @@ class Browser: public CefApp, public CefBrowserProcessHandler {
     return this;
   }
 
+  virtual void OnBeforeCommandLineProcessing(
+	  const CefString& process_type,
+	  CefRefPtr<CefCommandLine> command_line) OVERRIDE;
+
   // CefBrowserProcessHandler methods:
   virtual void OnContextInitialized() OVERRIDE;
   void CloseBrowser(void * gst_cef, bool force_close);
