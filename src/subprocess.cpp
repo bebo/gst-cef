@@ -11,5 +11,6 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	// CefRefPtr<Browser> app(new Browser());
 	// return CefExecuteProcess(mainArgs, app.get(), NULL);
 	// TODO: Disable GPU
+	// TODO: Write our own browser app.
 	return CefExecuteProcess(mainArgs, NULL, NULL);
 }

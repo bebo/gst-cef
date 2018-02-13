@@ -46,7 +46,8 @@ static void doStart(gpointer data) {
   CefString(&settings.browser_subprocess_path).FromASCII(subprocess_exe);
   g_free(subprocess_exe);
   settings.windowless_rendering_enabled = true;
-  settings.no_sandbox = false;
+  settings.no_sandbox = true;
+  // TODO: We can do this on windows
   settings.multi_threaded_message_loop = false;
 
   // Browser implements application-level callbacks for the browser process.
