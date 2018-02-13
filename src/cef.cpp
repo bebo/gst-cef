@@ -65,7 +65,7 @@ static void doStart(gpointer data) {
 	  sandbox_info = scoped_sandbox.sandbox_info();
   #endif
   //  TODO: Use the sandbox.
-	  settings.no_sandbox = true;
+  settings.no_sandbox = true;
   CefInitialize(main_args, settings, app.get(), sandbox_info);
 
   g_cond_signal(&cef_start_cond);

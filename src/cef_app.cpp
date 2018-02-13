@@ -69,13 +69,13 @@ void Browser::Open(void *gstCef, void *push_data, char* url, int width, int heig
   CEF_REQUIRE_UI_THREAD();
   GST_INFO("Open Url: %s", url);
 
-  // Specify CEF browser settings here.
-  CefBrowserSettings browser_settings;
-  browser_settings.windowless_frame_rate = 30;
-
-  // Information used when creating the native window.
+  // CEF Window Settings
   CefWindowInfo window_info;
   window_info.SetAsWindowless(0);
+
+  // CEF Browser Settings
+  CefBrowserSettings browser_settings;
+  browser_settings.windowless_frame_rate = 30;
 
   CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(window_info, browserClient, url, browser_settings, NULL);
   browserClient->AddBrowserGstMap(browser, gstCef, push_data, width, height);

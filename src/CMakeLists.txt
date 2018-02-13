@@ -37,7 +37,6 @@ ADD_LIBRARY(libgstcef SHARED
   cef_app.cpp
   cef_app.h
   cef_handler.cpp
-  cef_handler_linux.cpp
   cef_handler.h
 )
 
