@@ -72,8 +72,6 @@ void Browser::Open(void *gstCef, void *push_data, char* url, int width, int heig
   // CEF Window Settings
   CefWindowInfo window_info;
   // window_info.SetAsWindowless(0);
-  window_info.width = width;
-  window_info.height = height;
 
   // CEF Browser Settings
   CefBrowserSettings browser_settings;
@@ -82,11 +80,14 @@ void Browser::Open(void *gstCef, void *push_data, char* url, int width, int heig
   CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(window_info, browserClient, url, browser_settings, NULL);
   std::cout << "GOT PAST BROWSER SYNC" << std::endl;
   browserClient->AddBrowserGstMap(browser, gstCef, push_data, width, height);
+  std::cout << "Added browser to gst map" << std::endl;
   browser->GetHost()->WasResized();
+  std::cout << "Browser was resized." << std::endl;
 }
 
 void Browser::SetSize(void *gstCef, int width, int height) {
   CEF_REQUIRE_UI_THREAD();
+  std::cout << __func__ << std::endl;
   GST_INFO("Browser::SetSize");
   this->width = width;
   this->height = height;
@@ -95,6 +96,7 @@ void Browser::SetSize(void *gstCef, int width, int height) {
 
 void Browser::SetHidden(void *gstCef, bool hidden) {
   CEF_REQUIRE_UI_THREAD();
+  std::cout << __func__ << std::endl;
   browserClient->SetHidden(gstCef, hidden);
 }
 
@@ -104,15 +106,14 @@ void Browser::OnContextInitialized() {
 
   // BrowserClient implements browser-level callbacks.
   browserClient = new BrowserClient();
-
   Open(gstCef, push_data, url, this->width, this->height);
 }
 
 void Browser::OnBeforeCommandLineProcessing(
 	const CefString& process_type,
 	CefRefPtr<CefCommandLine> command_line) {
-	command_line->AppendSwitch("disable-gpu");
-	command_line->AppendSwitch("disable-gpu-compositing");
-	// command_line->AppendSwitch("enable-begin-frame-scheduling");
+	//command_line->AppendSwitch("disable-gpu");
+	//command_line->AppendSwitch("disable-gpu-compositing");
+	//command_line->AppendSwitch("enable-begin-frame-scheduling");
 	// command_line->AppendSwitch("enable-system-flash");
 }

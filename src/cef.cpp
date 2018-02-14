@@ -27,6 +27,7 @@ static guint browser_loop_index = 0;
 
 static void doStart(gpointer data) {
   GST_LOG("doStart");
+  g_mutex_init(&cef_start_mutex);
 
   // Provide CEF with command-line arguments.
   struct gstCb *cb = (struct gstCb*) data;
@@ -41,24 +42,24 @@ static void doStart(gpointer data) {
   // TODO: Determine if this correctly retrieves the path.
   gchar * dirname = g_path_get_dirname((const gchar*) path);
   gchar * subprocess_exe = g_strconcat(dirname, "/subprocess", NULL);
-  g_free(dirname);
+  // g_free(dirname);
 
   CefString(&settings.browser_subprocess_path).FromASCII(subprocess_exe);
-  g_free(subprocess_exe);
-  settings.windowless_rendering_enabled = true;
+  // g_free(subprocess_exe);
+  settings.windowless_rendering_enabled = false;
   settings.no_sandbox = true;
   settings.log_severity = LOGSEVERITY_VERBOSE;
-  // TODO: We can do this on windows
   settings.multi_threaded_message_loop = false;
 
   // Browser implements application-level callbacks for the browser process.
   // It will create the first browser instance in OnContextInitialized() after
   // CEF has initialized.
   app = new Browser(cb->gstCef, cb->push_frame, cb->url, cb->width, cb->height);
-  g_free(cb);
+  // g_free(cb);
 
   // Initialize CEF for the browser process.
   GST_LOG("CefInitialize");
+	
   CefInitialize(main_args, settings, app.get(), NULL);
 
   g_cond_signal(&cef_start_cond);
@@ -89,6 +90,7 @@ static bool doShutdown(gpointer data) {
 }
 
 void browser_loop(gpointer args) {
+  GST_INFO("Entering browser loop.");
   // TODO: this wont work
   if (app) {
     GST_INFO("have app");
@@ -100,16 +102,17 @@ void browser_loop(gpointer args) {
 
   g_atomic_int_set(&loop_live, 1);
   g_mutex_lock(&cef_start_mutex);
-
+  GST_INFO("Adding doStart to Bus.");
   g_idle_add((GSourceFunc) doStart, args);
 
-  // Run the CEF message loop. This will block until CefQuitMessageLoop() is
- Sleep(1000);
+  // Add doWork to the bus.
+  Sleep(1000);
   while(g_atomic_int_get(&loop_live)) {
-    Sleep(200);
+	GST_INFO("Adding the chromimu doWork to the message loop");
+    Sleep(20);
     g_idle_add((GSourceFunc) doWork, NULL);
   }
-  Sleep(500);
+  Sleep(5);
   GST_INFO("MessageLoop Ended");
 }
 
@@ -132,7 +135,7 @@ static bool doSetSize(void *args) {
   int width = sizeArgs->width;
   int height = sizeArgs->height;
   void *gstCef = sizeArgs->gstCef;
-  g_free(args);
+  // g_free(args);
   GST_INFO("set size to %u by %u", width, height);
 
   if(!app) {
@@ -149,10 +152,11 @@ void set_size(void *args) {
 }
 
 static bool doSetHidden(void *args) {
+  std::cout << __func__ << std::endl;
   gstHiddenArgs *hiddenArgs = (gstHiddenArgs *)args;
   bool hidden = hiddenArgs->hidden;
   void *gstCef = hiddenArgs->gstCef;
-  g_free(args);
+  // g_free(args);
 
   if(!app) {
     return false;
