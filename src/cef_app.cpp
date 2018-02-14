@@ -76,8 +76,6 @@ void Browser::Open(void *gstCef, void *push_data, char* url, int width, int heig
   // CEF Browser Settings
   CefBrowserSettings browser_settings;
   browser_settings.windowless_frame_rate = 30;
-  // TODO: Get GPU working again.
-  browser_settings.webgl = STATE_DISABLED;
 
   CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(window_info, browserClient, url, browser_settings, NULL);
   browserClient->AddBrowserGstMap(browser, gstCef, push_data, width, height);
