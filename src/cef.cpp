@@ -42,10 +42,10 @@ static void doStart(gpointer data) {
   // TODO: Determine if this correctly retrieves the path.
   gchar * dirname = g_path_get_dirname((const gchar*) path);
   gchar * subprocess_exe = g_strconcat(dirname, "/subprocess", NULL);
-  // g_free(dirname);
+  g_free(dirname);
 
   CefString(&settings.browser_subprocess_path).FromASCII(subprocess_exe);
-  // g_free(subprocess_exe);
+  g_free(subprocess_exe);
   settings.windowless_rendering_enabled = true;
   settings.no_sandbox = true;
   settings.log_severity = LOGSEVERITY_VERBOSE;
@@ -55,6 +55,7 @@ static void doStart(gpointer data) {
   // It will create the first browser instance in OnContextInitialized() after
   // CEF has initialized.
   app = new Browser(cb->gstCef, cb->push_frame, cb->url, cb->width, cb->height);
+  // TODO: Leaving this free in causes the process to crash.
   // g_free(cb);
 
   // Initialize CEF for the browser process.
@@ -134,7 +135,7 @@ static bool doSetSize(void *args) {
   int width = sizeArgs->width;
   int height = sizeArgs->height;
   void *gstCef = sizeArgs->gstCef;
-  // g_free(args);
+  g_free(args);
   GST_INFO("set size to %u by %u", width, height);
 
   if(!app) {
@@ -155,7 +156,7 @@ static bool doSetHidden(void *args) {
   gstHiddenArgs *hiddenArgs = (gstHiddenArgs *)args;
   bool hidden = hiddenArgs->hidden;
   void *gstCef = hiddenArgs->gstCef;
-  // g_free(args);
+  g_free(args);
 
   if(!app) {
     return false;
