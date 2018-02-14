@@ -58,8 +58,7 @@ static void doStart(gpointer data) {
   g_free(cb);
 
   // Initialize CEF for the browser process.
-  // GST_LOG("CefInitialize");
-
+  GST_LOG("CefInitialize");
   CefInitialize(main_args, settings, app.get(), NULL);
 
   g_cond_signal(&cef_start_cond);
@@ -100,7 +99,6 @@ void browser_loop(gpointer args) {
   browser_loop_index++;
 
   g_atomic_int_set(&loop_live, 1);
-
   g_mutex_lock(&cef_start_mutex);
 
   g_idle_add((GSourceFunc) doStart, args);
