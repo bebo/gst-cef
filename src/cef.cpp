@@ -22,13 +22,11 @@ static CefRefPtr<Browser> app;
 static GMutex cef_start_mutex;
 static GCond cef_start_cond;
 static guint browser_loop_index = 0;
-
 }  // namespace
 
 static void doStart(gpointer data) {
   GST_LOG("doStart");
-  g_mutex_init(&cef_start_mutex);
-  g_cond_init(&cef_start_cond);
+
   // Provide CEF with command-line arguments.
   struct gstCb *cb = (struct gstCb*) data;
   CefMainArgs main_args(GetModuleHandle(NULL));
@@ -63,6 +61,7 @@ static void doStart(gpointer data) {
 	
   CefInitialize(main_args, settings, app.get(), NULL);
 
+  g_mutex_lock(&cef_start_mutex);
   g_cond_signal(&cef_start_cond);
   g_mutex_unlock(&cef_start_mutex);
 }
@@ -102,7 +101,7 @@ void browser_loop(gpointer args) {
   browser_loop_index++;
 
   g_atomic_int_set(&loop_live, 1);
-  g_mutex_lock(&cef_start_mutex);
+  // g_mutex_lock(&cef_start_mutex);
   GST_INFO("Adding doStart to Bus.");
   g_idle_add((GSourceFunc) doStart, args);
 
