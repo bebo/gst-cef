@@ -93,6 +93,10 @@ G_DEFINE_TYPE_WITH_CODE (GstCef, gst_cef, GST_TYPE_PUSH_SRC,
 
 static GThread *browserLoop;
 
+
+/* 
+ * Initialization function that is called once.
+ */
 static void
 gst_cef_class_init (GstCefClass * klass)
 {
@@ -202,6 +206,9 @@ void new_browser(GstCef *cef) {
   }
 }
 
+/*
+ * Used to initialize a specific instance of cef.
+ */
 void gst_cef_init(GstCef *cef)
 {
   printf("gst_cef_init\n");
@@ -211,6 +218,8 @@ void gst_cef_init(GstCef *cef)
   cef->width=-1;
   cef->height=-1;
   cef->hidden=FALSE;
+  g_mutex_init(&cef->frame_mutex);
+  g_cond_init(&cef->frame_cond);
 
   gst_base_src_set_format (GST_BASE_SRC (cef), GST_FORMAT_TIME);
   gst_base_src_set_live (GST_BASE_SRC (cef), DEFAULT_IS_LIVE);
@@ -436,11 +445,9 @@ gst_cef_unlock_stop (GstBaseSrc * src)
 }
 
 static GstFlowReturn gst_cef_create (GstPushSrc *src, GstBuffer ** buf) {
+  GST_DEBUG("Creating Cef");
   GstCef *cef = GST_CEF (src);
-  // TODO: call g_mutex_clear() when we are done with this mutex.
-  g_mutex_init (&cef->frame_mutex);
-  // TODO: Not initializing the mutex results in segfaults but I'm not sure if the same is true for gcond.
-  g_cond_init(&cef->frame_cond);
+
   g_mutex_lock (&cef->frame_mutex);
 
   void *frame = pop_frame(cef);

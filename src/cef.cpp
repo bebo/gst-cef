@@ -24,8 +24,8 @@ static GCond cef_start_cond;
 static guint browser_loop_index = 0;
 }  // namespace
 
-static void doStart(gpointer data) {
-  GST_LOG("doStart");
+static bool doStart(gpointer data) {
+  GST_DEBUG("doStart");
 
   // Provide CEF with command-line arguments.
   struct gstCb *cb = (struct gstCb*) data;
@@ -55,15 +55,22 @@ static void doStart(gpointer data) {
   app = new Browser(cb->gstCef, cb->push_frame, cb->url, cb->width, cb->height);
   // TODO: Leaving this free in causes the process to crash.
   // g_free(cb);
+  if (!app) {
+	  GST_DEBUG("BROWSER IS NOT A THING");
+  }
+  else {
+	  GST_DEBUG("Start has app");
+  }
 
   // Initialize CEF for the browser process.
-  GST_LOG("CefInitialize");
+  GST_DEBUG("CefInitialize");
 	
   CefInitialize(main_args, settings, app.get(), NULL);
 
   g_mutex_lock(&cef_start_mutex);
   g_cond_signal(&cef_start_cond);
   g_mutex_unlock(&cef_start_mutex);
+  return false;
 }
 
 static bool doOpen(gpointer data) {
@@ -96,6 +103,9 @@ void browser_loop(gpointer args) {
     GST_INFO("have app");
     g_idle_add((GSourceFunc) doOpen, args);
     return;
+  }
+  else {
+	  GST_DEBUG("BROWSER LOOP DOESN'T HAVE APP");
   }
 
   browser_loop_index++;
