@@ -439,6 +439,7 @@ static GstFlowReturn gst_cef_create (GstPushSrc *src, GstBuffer ** buf) {
   GstCef *cef = GST_CEF (src);
   // TODO: call g_mutex_clear() when we are done with this mutex.
   g_mutex_init (&cef->frame_mutex);
+  // TODO: Not initializing the mutex results in segfaults but I'm not sure if the same is true for gcond.
   g_cond_init(&cef->frame_cond);
   g_mutex_lock (&cef->frame_mutex);
 
