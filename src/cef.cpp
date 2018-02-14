@@ -46,7 +46,7 @@ static void doStart(gpointer data) {
 
   CefString(&settings.browser_subprocess_path).FromASCII(subprocess_exe);
   // g_free(subprocess_exe);
-  settings.windowless_rendering_enabled = false;
+  settings.windowless_rendering_enabled = true;
   settings.no_sandbox = true;
   settings.log_severity = LOGSEVERITY_VERBOSE;
   settings.multi_threaded_message_loop = false;
