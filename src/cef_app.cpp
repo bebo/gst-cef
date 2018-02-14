@@ -71,6 +71,8 @@ void Browser::Open(void *gstCef, void *push_data, char* url, int width, int heig
 
   // CEF Window Settings
   CefWindowInfo window_info;
+  window_info.width = width;
+  window_info.height = height;
   // window_info.SetAsWindowless(0);
 
   // CEF Browser Settings
@@ -78,11 +80,11 @@ void Browser::Open(void *gstCef, void *push_data, char* url, int width, int heig
   browser_settings.windowless_frame_rate = 30;
 
   CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(window_info, browserClient, url, browser_settings, NULL);
-  std::cout << "GOT PAST BROWSER SYNC" << std::endl;
+  GST_DEBUG("Synchronously created the browser.");
   browserClient->AddBrowserGstMap(browser, gstCef, push_data, width, height);
-  std::cout << "Added browser to gst map" << std::endl;
-  browser->GetHost()->WasResized();
-  std::cout << "Browser was resized." << std::endl;
+  GST_DEBUG("Added browser to gst map.");
+  // browser->GetHost()->WasResized();
+  // GST_DEBUG("Browser was resized.");
 }
 
 void Browser::SetSize(void *gstCef, int width, int height) {

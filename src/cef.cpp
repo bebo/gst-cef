@@ -28,7 +28,7 @@ static guint browser_loop_index = 0;
 static void doStart(gpointer data) {
   GST_LOG("doStart");
   g_mutex_init(&cef_start_mutex);
-
+  g_cond_init(&cef_start_cond);
   // Provide CEF with command-line arguments.
   struct gstCb *cb = (struct gstCb*) data;
   CefMainArgs main_args(GetModuleHandle(NULL));
@@ -108,7 +108,6 @@ void browser_loop(gpointer args) {
   // Add doWork to the bus.
   Sleep(1000);
   while(g_atomic_int_get(&loop_live)) {
-	GST_INFO("Adding the chromimu doWork to the message loop");
     Sleep(20);
     g_idle_add((GSourceFunc) doWork, NULL);
   }
@@ -152,7 +151,7 @@ void set_size(void *args) {
 }
 
 static bool doSetHidden(void *args) {
-  std::cout << __func__ << std::endl;
+  GST_DEBUG("doSetHidden");
   gstHiddenArgs *hiddenArgs = (gstHiddenArgs *)args;
   bool hidden = hiddenArgs->hidden;
   void *gstCef = hiddenArgs->gstCef;
