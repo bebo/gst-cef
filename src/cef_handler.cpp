@@ -72,10 +72,10 @@ bool BrowserClient::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect) {
 
 void BrowserClient::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType paintType, const RectList &rects, 
                const void *buffer, int width, int height) {
-  std::cout << "Calling OnPaint" << std::endl;
+  GST_DEBUG("OnPaint");
   auto cef = getGstCef(browser);
   if (!cef->ready) {
-    GST_DEBUG("Not ready yet");
+    GST_DEBUG("Not ready for OnPaint yet");
     return;
   }
 
