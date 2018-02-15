@@ -77,6 +77,8 @@ TARGET_LINK_LIBRARIES(subprocess
   libcef_dll_wrapper
 )
 
+SET_TARGET_PROPERTIES(subprocess PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
+
 # Copy binary and resource files to the target output directory.
 set(TARGET_OUT_DIR "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}")
 COPY_FILES(libgstcef "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${TARGET_OUT_DIR}")
