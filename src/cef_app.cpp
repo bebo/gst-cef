@@ -76,7 +76,7 @@ void Browser::Open(void *gstCef, void *push_data, char* url, int width, int heig
   // Enabling windowless rendering causes Chrome to fail to get the view rect and hit a NOTREACHED();
   // Doing a release build will likely result in different behavior.
   // https://bitbucket.org/chromiumembedded/cef/src/fef43e07d688cb90381f7571f25b7912bded2b6e/libcef/browser/osr/render_widget_host_view_osr.cc?at=3112&fileviewer=file-view-default#render_widget_host_view_osr.cc-1120
-  // window_info.SetAsWindowless(0);
+  window_info.SetAsWindowless(0);
 
   // CEF Browser Settings
   CefBrowserSettings browser_settings;
@@ -86,7 +86,7 @@ void Browser::Open(void *gstCef, void *push_data, char* url, int width, int heig
   GST_DEBUG("Synchronously created the browser.");
   browserClient->AddBrowserGstMap(browser, gstCef, push_data, width, height);
   GST_DEBUG("Added browser to gst map.");
-  // browser->GetHost()->WasResized();
+  browser->GetHost()->WasResized();
   // GST_DEBUG("Browser was resized.");
 }
 
@@ -119,6 +119,14 @@ void Browser::OnBeforeCommandLineProcessing(
 	CefRefPtr<CefCommandLine> command_line) {
 	command_line->AppendSwitch("disable-gpu");
 	command_line->AppendSwitch("disable-gpu-compositing");
-	// command_line->AppendSwitch("enable-begin-frame-scheduling");
-	// command_line->AppendSwitch("enable-system-flash");
+	command_line->AppendSwitch("enable-begin-frame-scheduling");
+	 command_line->AppendSwitch("enable-system-flash");
+#if 0
+    command_line->AppendSwitch("off-screen-rendering-enabled");
+    //command_line->AppendSwitch("off-screen-frame-rate", "60");
+    command_line->AppendSwitch("disable-gpu");
+    command_line->AppendSwitch("disable-gpu-compositing");
+    command_line->AppendSwitch("enable-begin-frame-scheduling");
+    command_line->AppendSwitch("enable-media-stream");
+#endif
 }
