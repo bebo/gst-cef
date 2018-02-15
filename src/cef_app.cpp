@@ -73,6 +73,9 @@ void Browser::Open(void *gstCef, void *push_data, char* url, int width, int heig
   CefWindowInfo window_info;
   window_info.width = width;
   window_info.height = height;
+  // Enabling windowless rendering causes Chrome to fail to get the view rect and hit a NOTREACHED();
+  // Doing a release build will likely result in different behavior.
+  // https://bitbucket.org/chromiumembedded/cef/src/fef43e07d688cb90381f7571f25b7912bded2b6e/libcef/browser/osr/render_widget_host_view_osr.cc?at=3112&fileviewer=file-view-default#render_widget_host_view_osr.cc-1120
   // window_info.SetAsWindowless(0);
 
   // CEF Browser Settings
@@ -114,8 +117,8 @@ void Browser::OnContextInitialized() {
 void Browser::OnBeforeCommandLineProcessing(
 	const CefString& process_type,
 	CefRefPtr<CefCommandLine> command_line) {
-	// command_line->AppendSwitch("disable-gpu");
-	// command_line->AppendSwitch("disable-gpu-compositing");
+	command_line->AppendSwitch("disable-gpu");
+	command_line->AppendSwitch("disable-gpu-compositing");
 	// command_line->AppendSwitch("enable-begin-frame-scheduling");
 	// command_line->AppendSwitch("enable-system-flash");
 }
