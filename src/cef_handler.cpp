@@ -176,6 +176,7 @@ void BrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   GstCefInfo_T* gstcefinfo = browser_gst_map[browser->GetIdentifier()];
   browser_gst_map.erase(browser->GetIdentifier());
   delete gstcefinfo;
+
 }
 
 void BrowserClient::OnLoadError(CefRefPtr<CefBrowser> browser,
@@ -249,6 +250,7 @@ void BrowserClient::OnLoadEnd(CefRefPtr< CefBrowser > browser,
 }
 
 void BrowserClient::CloseBrowser(void * gst_cef, bool force_close) {
+  GST_DEBUG("CloseBrowser. force_close: %d", force_close);
   if (!CefCurrentlyOn(TID_UI)) {
     // Execute on the UI thread.
     CefPostTask(TID_UI, base::Bind(&BrowserClient::CloseBrowser, this,
