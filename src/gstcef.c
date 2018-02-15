@@ -143,7 +143,7 @@ gst_cef_class_init (GstCefClass * klass)
 }
 
 static void push_frame(void *gstCef, const void *buffer, int width, int height) {
-
+  GST_DEBUG("Pushing Frame");
   GstCef *cef = (GstCef *) gstCef;
   int size = width * height * 4;
   if(size != (cef->width * cef->height * 4)) {
@@ -445,16 +445,17 @@ gst_cef_unlock_stop (GstBaseSrc * src)
 }
 
 static GstFlowReturn gst_cef_create (GstPushSrc *src, GstBuffer ** buf) {
-  GST_DEBUG("Creating Cef");
   GstCef *cef = GST_CEF (src);
 
   g_mutex_lock (&cef->frame_mutex);
-
+  GST_DEBUG("Popping Cef Frame");
   void *frame = pop_frame(cef);
   if(!frame) {
+	  GST_DEBUG("No frame returned");
     g_mutex_unlock (&cef->frame_mutex);
     return GST_FLOW_FLUSHING;
   }
+  GST_DEBUG("Successfully popped frame.");
 
   gsize my_size = cef->width * cef->height * 4;
   GstBuffer *buffer = gst_buffer_new_allocate(NULL, my_size, NULL);

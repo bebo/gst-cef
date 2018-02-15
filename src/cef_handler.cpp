@@ -173,13 +173,9 @@ void BrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser) {
   GST_INFO("OnBeforeClose, browser id: %d", browser->GetIdentifier());
 
   // Remove from the browser from the map.
-  for (auto it = browser_gst_map.begin(); it != browser_gst_map.end(); ++it) {
-    if ((it->first) == browser->GetIdentifier()) {
-      browser_gst_map.erase(it);
-      delete it->second;
-      break;
-    }
-  }
+  GstCefInfo_T* gstcefinfo = browser_gst_map[browser->GetIdentifier()];
+  browser_gst_map.erase(browser->GetIdentifier());
+  delete gstcefinfo;
 }
 
 void BrowserClient::OnLoadError(CefRefPtr<CefBrowser> browser,
