@@ -22,7 +22,7 @@ INCLUDE_DIRECTORIES(
   ${GST_INSTALL_BASE}/include/glib-2.0
   ${GST_INSTALL_BASE}/lib/glib-2.0/include
   ${PROJECT_SOURCE_DIR}/../../win32/common
-  ${CMAKE_SOURCE_DIR}/third_party/cef/cef_binary_3.3112.1659.gfef43e0_windows64
+  ${CMAKE_SOURCE_DIR}/third_party/cef/cef_binary_${CEF_VERSION}_windows64
 )
 
 LINK_DIRECTORIES(
