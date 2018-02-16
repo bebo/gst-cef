@@ -5,7 +5,7 @@ require 'optparse'
 require 'open3'
 include Open3
 
-JENKINS_URL = "https://usw1-jenkins-001.blab.im/job/gst-cef/"
+JENKINS_URL = "https://usw1-jenkins-002.blab.im/job/gst-cef/"
 
 def bump_version(t)
     elems = t.split(".").map{|x| x.to_i}
