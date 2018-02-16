@@ -104,7 +104,7 @@ void browser_loop(gpointer args) {
 
   // Add doWork to the bus.
   while(g_atomic_int_get(&loop_live)) {
-    Sleep(34);
+    Sleep(32);
     g_idle_add((GSourceFunc) doWork, NULL);
   }
   GST_INFO("MessageLoop Ended");
