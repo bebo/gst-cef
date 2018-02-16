@@ -10,8 +10,8 @@ include Open3
 JENKINS_URL = "https://usw1-jenkins-002.blab.im/job/gst-cef/"
 IS_WINDOWS = (RbConfig::CONFIG['host_os'] =~ /mswin|mingw|cygwin/)
 
-curl = IS_WINDOWS ? "./node_modules/curl/bin/curl.exe -L --write-out %{http_code}" : "curl -s --write-out %{http_code}"
-curl_test = IS_WINDOWS ? "./node_modules/curl/bin/curl.exe -L --write-out %{http_code} -so nul" : "curl --write-out %{http_code} -so /dev/null"
+curl = IS_WINDOWS ? "./curl/bin/curl.exe -L --write-out %{http_code}" : "curl -s --write-out %{http_code}"
+curl_test = IS_WINDOWS ? "./curl/bin/curl.exe -L --write-out %{http_code} -so nul" : "curl --write-out %{http_code} -so /dev/null"
 
 def bump_version(t)
     elems = t.split(".").map{|x| x.to_i}
