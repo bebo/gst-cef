@@ -1,7 +1,11 @@
 
 
 # CEF Plugin 
-
+### Requirements
+* MSVC command line tools
+* GStreamer 1.0
+* GStreamer 1.0 development tools
+* CMake
 ### Building 
 
 1. Point the CMake GUI at the project source code.  
