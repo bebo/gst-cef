@@ -80,7 +80,24 @@ TARGET_LINK_LIBRARIES(subprocess
 SET_TARGET_PROPERTIES(subprocess PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
 
 # Copy binary and resource files to the target output directory.
-set(TARGET_OUT_DIR "${CMAKE_BINARY_DIR}/${CMAKE_BUILD_TYPE}")
-COPY_FILES(libgstcef "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${TARGET_OUT_DIR}")
-COPY_FILES(libgstcef "${CEF_RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${TARGET_OUT_DIR}")
+set(DIST_DIR "${CMAKE_BINARY_DIR}/dist")
+file(MAKE_DIRECTORY ${DIST_DIR}/locales)
+COPY_FILES(libgstcef "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${DIST_DIR}")
 
+set(RESOURCE_FILES 
+  cef.pak
+  cef_100_percent.pak
+  cef_200_percent.pak
+  cef_extensions.pak
+  devtools_resources.pak
+  icudtl.dat
+)
+COPY_FILES(libgstcef "${RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${DIST_DIR}")
+
+set(ENGLISH_FILES 
+  en-US.pak
+  en-US.pak.info
+)
+COPY_FILES(libgstcef "${ENGLISH_FILES}" "${CEF_RESOURCE_DIR}/locales" "${DIST_DIR}/locales")
+COPY_FILES(libgstcef "libgstcef.dll" "${CMAKE_BINARY_DIR}/src/$<CONFIGURATION>" "${DIST_DIR}")
+COPY_FILES(subprocess "subprocess.exe" "${CMAKE_BINARY_DIR}/src/$<CONFIGURATION>" "${DIST_DIR}")
