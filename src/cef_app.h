@@ -9,38 +9,40 @@
 #include "cef_handler.h"
 
 // Implement application-level callbacks for the browser process.
-class Browser: public CefApp, public CefBrowserProcessHandler {
- public:
-  Browser(void * gstCef, void * push_data, char* url, int width, int height);
+class Browser : public CefApp, public CefBrowserProcessHandler
+{
+public:
+  Browser(void *gstCef, void *push_data, char *url, int width, int height);
 
   // CefApp methods:
   virtual CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler()
-      OVERRIDE {
+      OVERRIDE
+  {
     return this;
   }
 
   virtual void OnBeforeCommandLineProcessing(
-	  const CefString& process_type,
-	  CefRefPtr<CefCommandLine> command_line) OVERRIDE;
+      const CefString &process_type,
+      CefRefPtr<CefCommandLine> command_line) OVERRIDE;
 
   // CefBrowserProcessHandler methods:
   virtual void OnContextInitialized() OVERRIDE;
-  void CloseBrowser(void * gst_cef, bool force_close);
-  void Open(void *gstCef, void *push_data, char* url, int width, int height);
+  void CloseBrowser(void *gst_cef, bool force_close);
+  void Open(void *gstCef, void *push_data, char *url, int width, int height);
   void SetSize(void *gstCef, int width, int height);
   void SetHidden(void *gstCef, bool hidden);
 
- private: 
+private:
   CefRefPtr<BrowserClient> browserClient;
-  
-  void * gstCef;
-  void * push_data;
+
+  void *gstCef;
+  void *push_data;
   int height;
   int width;
-  char * url;
+  char *url;
 
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(Browser);
 };
 
-#endif  // CEF_TESTS_CEFSIMPLE_SIMPLE_APP_H_
+#endif // CEF_TESTS_CEFSIMPLE_SIMPLE_APP_H_

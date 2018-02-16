@@ -57,7 +57,7 @@ static bool doStart(gpointer data) {
   // g_free(cb);
 
   // Initialize CEF for the browser process.
-  GST_DEBUG("CefInitialize");	
+  GST_DEBUG("CefInitialize");
   CefInitialize(main_args, settings, app.get(), NULL);
 
   g_mutex_lock(&cef_start_mutex);
@@ -78,7 +78,7 @@ static bool doOpen(gpointer data) {
 
 static bool doWork(gpointer data) {
   if (g_atomic_int_get(&loop_live)) {
-      CefDoMessageLoopWork();
+    CefDoMessageLoopWork();
   }
   return false;
 }
@@ -169,7 +169,7 @@ bool doClose(gpointer args) {
   if(app) {
     app->CloseBrowser(args, true);
   } else {
-        GST_ERROR("ERROR: no app");
+    GST_ERROR("ERROR: no app");
   }
   return false;
 }

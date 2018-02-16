@@ -9,9 +9,10 @@
 #include <list>
 #include <map>
 
-typedef struct GstCefInfo {
-  void * gst_cef;
-  void (* push_frame)(void *gstCef, const void *buffer, int width, int height);
+typedef struct GstCefInfo
+{
+  void *gst_cef;
+  void (*push_frame)(void *gstCef, const void *buffer, int width, int height);
   CefRefPtr<CefBrowser> browser;
 
   int width;
@@ -19,14 +20,15 @@ typedef struct GstCefInfo {
   int retry_count;
   bool ready;
   struct timeval last_tv;
-}GstCefInfo_T;
+} GstCefInfo_T;
 
 class BrowserClient : public CefClient,
                       public CefDisplayHandler,
                       public CefLifeSpanHandler,
                       public CefLoadHandler,
-                      public CefRenderHandler {
- public:
+                      public CefRenderHandler
+{
+public:
   explicit BrowserClient();
   ~BrowserClient();
 
@@ -41,7 +43,7 @@ class BrowserClient : public CefClient,
 
   // CefDisplayHandler methods:
   virtual void OnTitleChange(CefRefPtr<CefBrowser> browser,
-                             const CefString& title) OVERRIDE;
+                             const CefString &title) OVERRIDE;
 
   // CefLifeSpanHandler methods:
   virtual void OnAfterCreated(CefRefPtr<CefBrowser> browser) OVERRIDE;
@@ -52,34 +54,34 @@ class BrowserClient : public CefClient,
   virtual void OnLoadError(CefRefPtr<CefBrowser> browser,
                            CefRefPtr<CefFrame> frame,
                            ErrorCode errorCode,
-                           const CefString& errorText,
-                           const CefString& failedUrl) OVERRIDE;
+                           const CefString &errorText,
+                           const CefString &failedUrl) OVERRIDE;
 
-  virtual void OnLoadingStateChange(CefRefPtr< CefBrowser > browser,
-          bool isLoading,
-          bool canGoBack,
-          bool canGoForward) OVERRIDE;
+  virtual void OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
+                                    bool isLoading,
+                                    bool canGoBack,
+                                    bool canGoForward) OVERRIDE;
 
-  virtual void OnLoadEnd(CefRefPtr< CefBrowser > browser,
-          CefRefPtr< CefFrame > frame,
-          int httpStatusCode) OVERRIDE;
+  virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser,
+                         CefRefPtr<CefFrame> frame,
+                         int httpStatusCode) OVERRIDE;
 
   bool GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect);
   void OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType paintType,
-      const RectList &rects, const void *buffer, int width, int height) OVERRIDE;
+               const RectList &rects, const void *buffer, int width, int height) OVERRIDE;
 
   // Request that all existing browser windows close.
-  void CloseBrowser(void * gst_cef, bool force_close);
-  void SetSize(void * gst_cef, int width, int height);
-  void SetHidden(void * gst_cef, bool hidden);
-  void AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void * gstCef, void * push_frame, int width, int height);
+  void CloseBrowser(void *gst_cef, bool force_close);
+  void SetSize(void *gst_cef, int width, int height);
+  void SetHidden(void *gst_cef, bool hidden);
+  void AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void *gstCef, void *push_frame, int width, int height);
 
   bool IsClosing() const { return is_closing_; }
 
- private:
+private:
   // Platform-specific implementation.
   void PlatformTitleChange(CefRefPtr<CefBrowser> browser,
-                           const CefString& title);
+                           const CefString &title);
 
   // True if the application is using the Views framework.
   const bool use_views_;
@@ -87,9 +89,9 @@ class BrowserClient : public CefClient,
   bool is_closing_;
 
   // List of existing browser windows. Only accessed on the CEF UI thread.
-  std::map<int, GstCefInfo_T*> browser_gst_map;
+  std::map<int, GstCefInfo_T *> browser_gst_map;
 
-  GstCefInfo_T * getGstCef(CefRefPtr<CefBrowser> browser);
+  GstCefInfo_T *getGstCef(CefRefPtr<CefBrowser> browser);
 
   void Refresh(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame);
 
@@ -97,5 +99,4 @@ class BrowserClient : public CefClient,
   IMPLEMENT_REFCOUNTING(BrowserClient);
 };
 
-
-#endif  // CEF_TESTS_CEFSIMPLE_SIMPLE_HANDLER_H_
+#endif // CEF_TESTS_CEFSIMPLE_SIMPLE_HANDLER_H_

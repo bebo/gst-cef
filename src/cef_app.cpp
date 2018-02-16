@@ -16,16 +16,19 @@
 #include "include/wrapper/cef_helpers.h"
 #include "cef_handler.h"
 
-namespace {
+namespace
+{
 
 // When using the Views framework this object provides the delegate
 // implementation for the CefWindow that hosts the Views-based browser.
-class BrowserWindowDelegate : public CefWindowDelegate {
- public:
+class BrowserWindowDelegate : public CefWindowDelegate
+{
+public:
   explicit BrowserWindowDelegate(CefRefPtr<CefBrowserView> browser_view)
       : browser_view_(browser_view) {}
 
-  void OnWindowCreated(CefRefPtr<CefWindow> window) OVERRIDE {
+  void OnWindowCreated(CefRefPtr<CefWindow> window) OVERRIDE
+  {
     // Add the browser view and show the window.
     window->AddChildView(browser_view_);
     window->Show();
@@ -34,11 +37,13 @@ class BrowserWindowDelegate : public CefWindowDelegate {
     browser_view_->RequestFocus();
   }
 
-  void OnWindowDestroyed(CefRefPtr<CefWindow> window) OVERRIDE {
+  void OnWindowDestroyed(CefRefPtr<CefWindow> window) OVERRIDE
+  {
     browser_view_ = NULL;
   }
 
-  bool CanClose(CefRefPtr<CefWindow> window) OVERRIDE {
+  bool CanClose(CefRefPtr<CefWindow> window) OVERRIDE
+  {
     // Allow the window to close if the browser says it's OK.
     CefRefPtr<CefBrowser> browser = browser_view_->GetBrowser();
     if (browser)
@@ -46,26 +51,27 @@ class BrowserWindowDelegate : public CefWindowDelegate {
     return true;
   }
 
- private:
+private:
   CefRefPtr<CefBrowserView> browser_view_;
 
   IMPLEMENT_REFCOUNTING(BrowserWindowDelegate);
   DISALLOW_COPY_AND_ASSIGN(BrowserWindowDelegate);
 };
 
-}  // namespace
+} // namespace
 
-Browser::Browser(void *gstCef, void *push_data, char* url, int width, int height): 
-  gstCef(gstCef), push_data(push_data), url(url), width(width), height(height) {};
+Browser::Browser(void *gstCef, void *push_data, char *url, int width, int height) : gstCef(gstCef), push_data(push_data), url(url), width(width), height(height){};
 
-void Browser::CloseBrowser(void * gst_cef, bool force_close) {
+void Browser::CloseBrowser(void *gst_cef, bool force_close)
+{
   CEF_REQUIRE_UI_THREAD();
 
   GST_LOG("Browser::CloseBrowser");
   browserClient->CloseBrowser(gst_cef, force_close);
 }
 
-void Browser::Open(void *gstCef, void *push_data, char* url, int width, int height) {
+void Browser::Open(void *gstCef, void *push_data, char *url, int width, int height)
+{
   CEF_REQUIRE_UI_THREAD();
   GST_INFO("Open Url: %s", url);
 
@@ -90,7 +96,8 @@ void Browser::Open(void *gstCef, void *push_data, char* url, int width, int heig
   browser->GetHost()->WasResized();
 }
 
-void Browser::SetSize(void *gstCef, int width, int height) {
+void Browser::SetSize(void *gstCef, int width, int height)
+{
   CEF_REQUIRE_UI_THREAD();
   GST_INFO("Browser::SetSize");
   this->width = width;
@@ -98,12 +105,14 @@ void Browser::SetSize(void *gstCef, int width, int height) {
   browserClient->SetSize(gstCef, width, height);
 }
 
-void Browser::SetHidden(void *gstCef, bool hidden) {
+void Browser::SetHidden(void *gstCef, bool hidden)
+{
   CEF_REQUIRE_UI_THREAD();
   browserClient->SetHidden(gstCef, hidden);
 }
 
-void Browser::OnContextInitialized() {
+void Browser::OnContextInitialized()
+{
   CEF_REQUIRE_UI_THREAD();
   GST_INFO("OnContextInitialized");
 
@@ -113,10 +122,11 @@ void Browser::OnContextInitialized() {
 }
 
 void Browser::OnBeforeCommandLineProcessing(
-	const CefString& process_type,
-	CefRefPtr<CefCommandLine> command_line) {
-	command_line->AppendSwitch("disable-gpu");
-	command_line->AppendSwitch("disable-gpu-compositing");
-	command_line->AppendSwitch("enable-begin-frame-scheduling");
-	command_line->AppendSwitch("enable-system-flash");
+    const CefString &process_type,
+    CefRefPtr<CefCommandLine> command_line)
+{
+  command_line->AppendSwitch("disable-gpu");
+  command_line->AppendSwitch("disable-gpu-compositing");
+  command_line->AppendSwitch("enable-begin-frame-scheduling");
+  command_line->AppendSwitch("enable-system-flash");
 }

@@ -27,11 +27,11 @@
 
 G_BEGIN_DECLS
 
-#define GST_TYPE_CEF   (gst_cef_get_type())
-#define GST_CEF(obj)   (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_CEF,GstCef))
-#define GST_CEF_CLASS(klass)   (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_CEF,GstCefClass))
-#define GST_IS_CEF(obj)   (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_CEF))
-#define GST_IS_CEF_CLASS(obj)   (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_CEF))
+#define GST_TYPE_CEF (gst_cef_get_type())
+#define GST_CEF(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GST_TYPE_CEF, GstCef))
+#define GST_CEF_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST((klass), GST_TYPE_CEF, GstCefClass))
+#define GST_IS_CEF(obj) (G_TYPE_CHECK_INSTANCE_TYPE((obj), GST_TYPE_CEF))
+#define GST_IS_CEF_CLASS(obj) (G_TYPE_CHECK_CLASS_TYPE((klass), GST_TYPE_CEF))
 
 typedef struct _GstCef GstCef;
 typedef struct _GstCefClass GstCefClass;
@@ -57,7 +57,7 @@ struct _GstCefClass
   GstPushSrcClass base_cef_class;
 };
 
-GType gst_cef_get_type (void);
+GType gst_cef_get_type(void);
 
 G_END_DECLS
 
