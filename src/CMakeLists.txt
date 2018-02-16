@@ -84,7 +84,7 @@ set(DIST_DIR "${CMAKE_BINARY_DIR}/dist")
 file(MAKE_DIRECTORY ${DIST_DIR}/locales)
 COPY_FILES(libgstcef "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${DIST_DIR}")
 
-set(RESOURCE_FILES 
+set(RESOURCE_FILES
   cef.pak
   cef_100_percent.pak
   cef_200_percent.pak
@@ -94,7 +94,7 @@ set(RESOURCE_FILES
 )
 COPY_FILES(libgstcef "${RESOURCE_FILES}" "${CEF_RESOURCE_DIR}" "${DIST_DIR}")
 
-set(ENGLISH_FILES 
+set(ENGLISH_FILES
   en-US.pak
   en-US.pak.info
 )
