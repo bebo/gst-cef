@@ -116,7 +116,7 @@ void browser_loop(gpointer args) {
   g_idle_add((GSourceFunc) doStart, args);
 
   // Add doWork to the bus.
-  Sleep(1000);
+  Sleep(100);
   while(g_atomic_int_get(&loop_live)) {
     Sleep(20);
     g_idle_add((GSourceFunc) doWork, NULL);
@@ -196,6 +196,6 @@ void close_browser(gpointer args) {
 void shutdown_browser() {
   GST_WARNING("shutdown browser");
   g_atomic_int_set(&loop_live, 0);
-  Sleep(3000);
+  Sleep(2000);
   g_idle_add((GSourceFunc) doShutdown, NULL);
 }
