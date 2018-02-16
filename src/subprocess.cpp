@@ -22,7 +22,7 @@ void BrowserApp::OnBeforeCommandLineProcessing(
 	command_line->AppendSwitch("disable-gpu");
 	command_line->AppendSwitch("disable-gpu-compositing");
 	command_line->AppendSwitch("enable-begin-frame-scheduling");
-	// command_line->AppendSwitch("enable-system-flash");
+	command_line->AppendSwitch("enable-system-flash");
 }
 
 int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
@@ -31,7 +31,4 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 	CefMainArgs mainArgs(hInstance);
 	CefRefPtr<BrowserApp> app(new BrowserApp());
 	return CefExecuteProcess(mainArgs, app.get(), NULL);
-	// TODO: Disable GPU
-	// TODO: Write our own browser app.
-	return CefExecuteProcess(mainArgs, NULL, NULL);
 }

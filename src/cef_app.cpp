@@ -120,13 +120,5 @@ void Browser::OnBeforeCommandLineProcessing(
 	command_line->AppendSwitch("disable-gpu");
 	command_line->AppendSwitch("disable-gpu-compositing");
 	command_line->AppendSwitch("enable-begin-frame-scheduling");
-	 command_line->AppendSwitch("enable-system-flash");
-#if 0
-    command_line->AppendSwitch("off-screen-rendering-enabled");
-    //command_line->AppendSwitch("off-screen-frame-rate", "60");
-    command_line->AppendSwitch("disable-gpu");
-    command_line->AppendSwitch("disable-gpu-compositing");
-    command_line->AppendSwitch("enable-begin-frame-scheduling");
-    command_line->AppendSwitch("enable-media-stream");
-#endif
+	command_line->AppendSwitch("enable-system-flash");
 }
