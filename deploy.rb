@@ -112,15 +112,6 @@ end
 puts "current branch: #{current_branch}" if options[:verbose]
 puts "new tag: #{new_tag}" if options[:verbose]
 unless options[:dryrun]
-
-    Dir.chdir("app") {
-        version=%x(npm version patch).chomp
-        system("git add package.json") or raise "Can not add package.json"
-        system("git commit -m \"bump version\"") or raise "Can not commit bump version"
-        system("git tag #{version}") or raise "Cannot set tag: #{version}"
-    }
-    system("git push") or raise "Can not push package.json"
-    
     system("git tag #{new_tag}") or raise "Cannot set tag: #{new_tag}"
     system("git push --tags") or raise "Cannot push tags, something went wrong"
 end
