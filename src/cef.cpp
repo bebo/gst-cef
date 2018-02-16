@@ -53,8 +53,7 @@ static bool doStart(gpointer data) {
   // It will create the first browser instance in OnContextInitialized() after
   // CEF has initialized.
   app = new Browser(cb->gstCef, cb->push_frame, cb->url, cb->width, cb->height);
-  // TODO: Leaving this free in causes the process to crash.
-  // g_free(cb);
+  g_free(cb);
 
   // Initialize CEF for the browser process.
   GST_DEBUG("CefInitialize");
@@ -70,9 +69,7 @@ static bool doOpen(gpointer data) {
   GST_INFO("doOpen");
   struct gstCb *cb = (struct gstCb*) data;
   app.get()->Open(cb->gstCef, cb->push_frame, cb->url, cb->width, cb->height);
-
-  //FIXME: figure out why we can't free cb
-  /* g_free(cb); */
+  g_free(cb);
   return false;
 }
 

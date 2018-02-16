@@ -19,10 +19,8 @@
 #include "include/views/cef_window.h"
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_helpers.h"
-//#include <sys/time.h>
 
 // POSTGRESQL gettimeofday windows.
-
 /* FILETIME of Jan 1 1970 00:00:00. */
 static const unsigned __int64 epoch = 116444736000000000;
 /*
