@@ -49,6 +49,7 @@ ABOUT-NLS
 /INSTALL
 _stdint.h
 gst-plugins-bad-*.tar.*
+.vs
 
 .deps
 .libs
