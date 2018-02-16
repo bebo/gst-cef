@@ -73,8 +73,9 @@ void Browser::Open(void *gstCef, void *push_data, char* url, int width, int heig
   CefWindowInfo window_info;
   window_info.width = width;
   window_info.height = height;
+
   // Enabling windowless rendering causes Chrome to fail to get the view rect and hit a NOTREACHED();
-  // Doing a release build will likely result in different behavior.
+  // Doing a release build fixes this issue.
   // https://bitbucket.org/chromiumembedded/cef/src/fef43e07d688cb90381f7571f25b7912bded2b6e/libcef/browser/osr/render_widget_host_view_osr.cc?at=3112&fileviewer=file-view-default#render_widget_host_view_osr.cc-1120
   window_info.SetAsWindowless(0);
 
@@ -87,12 +88,10 @@ void Browser::Open(void *gstCef, void *push_data, char* url, int width, int heig
   browserClient->AddBrowserGstMap(browser, gstCef, push_data, width, height);
   GST_DEBUG("Added browser to gst map.");
   browser->GetHost()->WasResized();
-  // GST_DEBUG("Browser was resized.");
 }
 
 void Browser::SetSize(void *gstCef, int width, int height) {
   CEF_REQUIRE_UI_THREAD();
-  std::cout << __func__ << std::endl;
   GST_INFO("Browser::SetSize");
   this->width = width;
   this->height = height;
@@ -101,7 +100,6 @@ void Browser::SetSize(void *gstCef, int width, int height) {
 
 void Browser::SetHidden(void *gstCef, bool hidden) {
   CEF_REQUIRE_UI_THREAD();
-  std::cout << __func__ << std::endl;
   browserClient->SetHidden(gstCef, hidden);
 }
 

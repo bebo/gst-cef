@@ -37,7 +37,7 @@ static bool doStart(gpointer data) {
   HMODULE hModule = GetModuleHandleW(NULL);
   WCHAR path[MAX_PATH];
   GetModuleFileNameW(hModule, path, MAX_PATH);
-  // TODO: Determine if this correctly retrieves the path.
+
   gchar * dirname = g_path_get_dirname((const gchar*) path);
   gchar * subprocess_exe = g_strconcat(dirname, "/subprocess", NULL);
   g_free(dirname);
@@ -103,12 +103,10 @@ void browser_loop(gpointer args) {
   g_idle_add((GSourceFunc) doStart, args);
 
   // Add doWork to the bus.
-  Sleep(100);
   while(g_atomic_int_get(&loop_live)) {
-    Sleep(20);
+    Sleep(34);
     g_idle_add((GSourceFunc) doWork, NULL);
   }
-  Sleep(5);
   GST_INFO("MessageLoop Ended");
 }
 
