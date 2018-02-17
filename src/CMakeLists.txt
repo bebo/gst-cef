@@ -82,7 +82,20 @@ SET_TARGET_PROPERTIES(subprocess PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
 # Copy binary and resource files to the target output directory.
 set(DIST_DIR "${CMAKE_BINARY_DIR}/dist")
 file(MAKE_DIRECTORY ${DIST_DIR}/locales)
-COPY_FILES(libgstcef "${CEF_BINARY_FILES}" "${CEF_BINARY_DIR}" "${DIST_DIR}")
+
+set(BINARY_DIST_FILES 
+  chrome_elf.dll
+  d3dcompiler_47.dll
+  libcef.dll
+  libEGL.dll
+  libGLESv2.dll
+  natives_blob.bin
+  snapshot_blob.bin
+  v8_context_snapshot.bin
+  swiftshader
+)
+
+COPY_FILES(libgstcef "${BINARY_DIST_FILES}" "${CEF_BINARY_DIR}" "${DIST_DIR}")
 
 set(RESOURCE_FILES
   cef.pak
