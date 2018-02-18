@@ -68,7 +68,7 @@ set(GS_HASHPATH "win/clang-format.exe.sha1")
 
 message(STATUS "Downloading clang-format from Google Storage...")
 execute_process(
-  COMMAND "python"
+  COMMAND "${PYTHON_EXECUTABLE}"
           "tools/buildtools/download_from_google_storage.py"
           "--no_resume"
           "--platform=${GS_PLATFORM}"
