@@ -40,13 +40,14 @@ static bool doStart(gpointer data) {
 
   gchar * dirname = g_path_get_dirname((const gchar*) path);
   gchar * subprocess_exe = g_strconcat(dirname, "/subprocess", NULL);
+  GST_INFO("subprocess location %s", subprocess_exe);
   g_free(dirname);
 
   CefString(&settings.browser_subprocess_path).FromASCII(subprocess_exe);
   g_free(subprocess_exe);
   settings.windowless_rendering_enabled = true;
   settings.no_sandbox = true;
-  settings.log_severity = LOGSEVERITY_VERBOSE;
+  // settings.log_severity = LOGSEVERITY_VERBOSE;
   settings.multi_threaded_message_loop = false;
 
   // Browser implements application-level callbacks for the browser process.
