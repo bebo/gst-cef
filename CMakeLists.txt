@@ -7,7 +7,7 @@
 cmake_minimum_required(VERSION 2.8.12.1)
 
 # Only generate Debug and Release configuration types.
-set(CMAKE_CONFIGURATION_TYPES Debug Release)
+set(CMAKE_CONFIGURATION_TYPES Release)
 
 # Project name.
 project(gst-cef)
@@ -68,7 +68,7 @@ set(GS_HASHPATH "win/clang-format.exe.sha1")
 
 message(STATUS "Downloading clang-format from Google Storage...")
 execute_process(
-  COMMAND "${PYTHON_EXECUTABLE}"
+  COMMAND "python"
           "tools/buildtools/download_from_google_storage.py"
           "--no_resume"
           "--platform=${GS_PLATFORM}"

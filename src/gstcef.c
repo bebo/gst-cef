@@ -63,6 +63,10 @@ static GstFlowReturn gst_cef_create(GstPushSrc *src, GstBuffer **buf);
 static gboolean gst_cef_start(GstBaseSrc *src);
 static gboolean gst_cef_stop(GstBaseSrc *src);
 
+#define DEFAULT_URL "https://bebo.com"
+#define DEFAULT_HEIGHT 720
+#define DEFAULT_WIDTH 1280
+
 enum
 {
   PROP_0,
@@ -125,15 +129,15 @@ gst_cef_class_init(GstCefClass *klass)
 
   g_object_class_install_property(gobject_class, PROP_URL,
                                   g_param_spec_string("url", "url", "website to render into video",
-                                                      "", G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+                                                      DEFAULT_URL, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
   g_object_class_install_property(gobject_class, PROP_WIDTH,
                                   g_param_spec_uint("width", "width", "website to render into video",
-                                                    0, G_MAXUINT, 1920, G_PARAM_READWRITE));
+                                                    0, G_MAXUINT, DEFAULT_WIDTH, G_PARAM_READWRITE));
 
   g_object_class_install_property(gobject_class, PROP_HEIGHT,
                                   g_param_spec_uint("height", "height", "website to render into video",
-                                                    0, G_MAXUINT, 1080, G_PARAM_READWRITE));
+                                                    0, G_MAXUINT, DEFAULT_HEIGHT, G_PARAM_READWRITE));
 
   g_object_class_install_property(gobject_class, PROP_HIDDEN,
                                   g_param_spec_boolean("hidden", "hidden", "set the cef browser to hidden for throttling", FALSE, G_PARAM_READWRITE));
@@ -222,8 +226,9 @@ void gst_cef_init(GstCef *cef)
 
   g_atomic_int_set(&cef->unlocked, 0);
   cef->has_opened_browser = FALSE;
-  cef->width = -1;
-  cef->height = -1;
+  cef->width = DEFAULT_WIDTH;
+  cef->height = DEFAULT_HEIGHT;
+  cef->url = g_strdup(DEFAULT_URL);
   cef->hidden = FALSE;
   g_mutex_init(&cef->frame_mutex);
   g_cond_init(&cef->frame_cond);
