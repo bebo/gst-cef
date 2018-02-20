@@ -13,22 +13,21 @@
 #include "cef.h"
 #include "cef_app.h"
 
-// #include <X11/Xlib.h>
-
-
-namespace {
+namespace
+{
 static gint loop_live = 0;
 static CefRefPtr<Browser> app;
 static GMutex cef_start_mutex;
 static GCond cef_start_cond;
 static guint browser_loop_index = 0;
-}  // namespace
+} // namespace
 
-static bool doStart(gpointer data) {
+static bool doStart(gpointer data)
+{
   GST_DEBUG("doStart");
 
   // Provide CEF with command-line arguments.
-  struct gstCb *cb = (struct gstCb*) data;
+  struct gstCb *cb = (struct gstCb *)data;
   CefMainArgs main_args(GetModuleHandle(NULL));
 
   // Specify CEF global settings here.
@@ -38,8 +37,8 @@ static bool doStart(gpointer data) {
   WCHAR path[MAX_PATH];
   GetModuleFileNameW(hModule, path, MAX_PATH);
 
-  gchar * dirname = g_path_get_dirname((const gchar*) path);
-  gchar * subprocess_exe = g_strconcat(dirname, "/subprocess", NULL);
+  gchar *dirname = g_path_get_dirname((const gchar *)path);
+  gchar *subprocess_exe = g_strconcat(dirname, "/subprocess", NULL);
   GST_INFO("subprocess location %s", subprocess_exe);
   g_free(dirname);
 
@@ -66,63 +65,76 @@ static bool doStart(gpointer data) {
   return false;
 }
 
-static bool doOpen(gpointer data) {
+static bool doOpen(gpointer data)
+{
   GST_INFO("doOpen");
-  struct gstCb *cb = (struct gstCb*) data;
+  struct gstCb *cb = (struct gstCb *)data;
   app.get()->Open(cb->gstCef, cb->push_frame, cb->url, cb->width, cb->height);
   g_free(cb);
   return false;
 }
 
-static bool doWork(gpointer data) {
-  if (g_atomic_int_get(&loop_live)) {
+static bool doWork(gpointer data)
+{
+  if (g_atomic_int_get(&loop_live))
+  {
     CefDoMessageLoopWork();
   }
   return false;
 }
 
-static bool doShutdown(gpointer data) {
+static bool doShutdown(gpointer data)
+{
   GST_LOG("doShutdown");
   CefShutdown();
   return false;
 }
 
-void browser_loop(gpointer args) {
+void browser_loop(gpointer args)
+{
   GST_INFO("Entering browser loop.");
-  if (app) {
+  if (app)
+  {
     GST_INFO("have app");
-    g_idle_add((GSourceFunc) doOpen, args);
+    g_idle_add((GSourceFunc)doOpen, args);
     return;
   }
   browser_loop_index++;
 
   g_atomic_int_set(&loop_live, 1);
   GST_INFO("Adding doStart to Bus.");
-  g_idle_add((GSourceFunc) doStart, args);
+  g_idle_add((GSourceFunc)doStart, args);
 
-  // Add doWork to the bus.
-  while(g_atomic_int_get(&loop_live)) {
+  // Add doWork to the bus.  We don't really have a main function which is why
+  // we need to do doWork here.  This is less efficient than
+  // CefRunMessageLoop(), but we need the UI thread unblocked.
+  while (g_atomic_int_get(&loop_live))
+  {
     Sleep(32);
-    g_idle_add((GSourceFunc) doWork, NULL);
+    g_idle_add((GSourceFunc)doWork, NULL);
   }
   GST_INFO("MessageLoop Ended");
 }
 
-void doOpenBrowser(gpointer args) {
+void doOpenBrowser(gpointer args)
+{
   GST_INFO("doOpenBrowser");
   g_mutex_lock(&cef_start_mutex);
-  while(!app) {
+  while (!app)
+  {
     g_cond_wait(&cef_start_cond, &cef_start_mutex);
   }
   g_mutex_unlock(&cef_start_mutex);
-  g_idle_add((GSourceFunc) doOpen, args);
+  g_idle_add((GSourceFunc)doOpen, args);
 }
 
-void open_browser(gpointer args) {
-  g_thread_new("open_browser", (GThreadFunc) doOpenBrowser, args);
+void open_browser(gpointer args)
+{
+  g_thread_new("open_browser", (GThreadFunc)doOpenBrowser, args);
 }
 
-static bool doSetSize(void *args) {
+static bool doSetSize(void *args)
+{
   gstSizeArgs *sizeArgs = (gstSizeArgs *)args;
   int width = sizeArgs->width;
   int height = sizeArgs->height;
@@ -130,7 +142,8 @@ static bool doSetSize(void *args) {
   g_free(args);
   GST_INFO("set size to %u by %u", width, height);
 
-  if(!app) {
+  if (!app)
+  {
     return false;
   }
 
@@ -138,19 +151,22 @@ static bool doSetSize(void *args) {
   return false;
 }
 
-void set_size(void *args) {
+void set_size(void *args)
+{
   GST_INFO("set_size");
-  g_idle_add((GSourceFunc) doSetSize, args);
+  g_idle_add((GSourceFunc)doSetSize, args);
 }
 
-static bool doSetHidden(void *args) {
+static bool doSetHidden(void *args)
+{
   GST_DEBUG("doSetHidden");
   gstHiddenArgs *hiddenArgs = (gstHiddenArgs *)args;
   bool hidden = hiddenArgs->hidden;
   void *gstCef = hiddenArgs->gstCef;
   g_free(args);
 
-  if(!app) {
+  if (!app)
+  {
     return false;
   }
 
@@ -158,27 +174,34 @@ static bool doSetHidden(void *args) {
   return false;
 }
 
-void set_hidden(void * args) {
+void set_hidden(void *args)
+{
   GST_INFO("set_hidden");
-  g_idle_add((GSourceFunc) doSetHidden, args);
+  g_idle_add((GSourceFunc)doSetHidden, args);
 }
 
-bool doClose(gpointer args) {
-  if(app) {
+bool doClose(gpointer args)
+{
+  if (app)
+  {
     app->CloseBrowser(args, true);
-  } else {
+  }
+  else
+  {
     GST_ERROR("ERROR: no app");
   }
   return false;
 }
 
-void close_browser(gpointer args) {
-  g_idle_add((GSourceFunc) doClose, args);
+void close_browser(gpointer args)
+{
+  g_idle_add((GSourceFunc)doClose, args);
 }
 
-void shutdown_browser() {
+void shutdown_browser()
+{
   GST_WARNING("shutdown browser");
   g_atomic_int_set(&loop_live, 0);
   Sleep(2000);
-  g_idle_add((GSourceFunc) doShutdown, NULL);
+  g_idle_add((GSourceFunc)doShutdown, NULL);
 }

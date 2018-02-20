@@ -63,7 +63,6 @@ static GstFlowReturn gst_cef_create(GstPushSrc *src, GstBuffer **buf);
 static gboolean gst_cef_start(GstBaseSrc *src);
 static gboolean gst_cef_stop(GstBaseSrc *src);
 
-
 // https://bebo.com is way too heavy to use as the default.
 #define DEFAULT_URL "https://google.com"
 #define DEFAULT_HEIGHT 720
