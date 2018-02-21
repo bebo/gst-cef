@@ -3,6 +3,7 @@
 #include <list>
 #include <glib.h>
 #include <Windows.h>
+#include <cwchar>
 
 #include <include/cef_app.h>
 #include <include/cef_client.h>
@@ -34,18 +35,28 @@ static bool doStart(gpointer data)
   CefSettings settings;
 
   HMODULE hModule = GetModuleHandleW(NULL);
-  WCHAR path[MAX_PATH];
+  WCHAR path[MAX_PATH + 50];
   GetModuleFileNameW(hModule, path, MAX_PATH);
+  int slash_index = 0;
+  for (int i = 0; i < MAX_PATH; i++)
+  {
+    if (path[i] == L"\\"[0])
+    {
+      slash_index = i;
+    }
+  }
+  path[slash_index + 1] = L"\0"[0];
+  CefString(&settings.resources_dir_path).FromWString(path);
+  std::wstring subprocess = L"\\subprocess";
+  for (int i = slash_index; i < slash_index + 12; i++)
+  {
+    path[i] = subprocess[i - slash_index];
+  }
+  CefString(&settings.browser_subprocess_path).FromWString(path);
 
-  gchar *dirname = g_path_get_dirname((const gchar *)path);
-  gchar *subprocess_exe = g_strconcat(dirname, "/subprocess", NULL);
-  GST_INFO("subprocess location %s", subprocess_exe);
-  g_free(dirname);
-
-  CefString(&settings.browser_subprocess_path).FromASCII(subprocess_exe);
-  g_free(subprocess_exe);
   settings.windowless_rendering_enabled = true;
   settings.no_sandbox = true;
+
   // settings.log_severity = LOGSEVERITY_VERBOSE;
   settings.multi_threaded_message_loop = false;
 
