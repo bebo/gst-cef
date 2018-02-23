@@ -16,6 +16,7 @@ stamp-*
 my-plugin-*.tar.*
 compile
 build/
+GPUCache/
 package/
 *~
 
