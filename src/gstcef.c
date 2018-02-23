@@ -74,7 +74,8 @@ enum
   PROP_URL,
   PROP_WIDTH,
   PROP_HEIGHT,
-  PROP_HIDDEN
+  PROP_HIDDEN,
+  PROP_JS
 };
 
 /* pad templates */
@@ -142,6 +143,9 @@ gst_cef_class_init(GstCefClass *klass)
 
   g_object_class_install_property(gobject_class, PROP_HIDDEN,
                                   g_param_spec_boolean("hidden", "hidden", "set the cef browser to hidden for throttling", FALSE, G_PARAM_READWRITE));
+  g_object_class_install_property(gobject_class, PROP_JS,
+	  g_param_spec_string("javascript", "javascript", "javascript to be executed by window.",
+		  NULL, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 }
 
 static void push_frame(void *gstCef, const void *buffer, int width, int height)
@@ -247,6 +251,15 @@ void gst_cef_set_hidden(GstCef *cef, gboolean hidden)
   set_hidden(args);
 }
 
+void gst_cef_execute_js(GstCef *cef)
+{
+	struct gstExecuteJSArgs *args = g_malloc(sizeof(struct gstExecuteJSArgs));
+	args->gstCef = cef;
+	args->js = g_strdup(cef->js);
+	execute_js(args);
+}
+
+
 void gst_cef_set_property(GObject *object, guint property_id,
                           const GValue *value, GParamSpec *pspec)
 {
@@ -258,8 +271,7 @@ void gst_cef_set_property(GObject *object, guint property_id,
   {
   case PROP_URL:
   {
-    const gchar *url;
-    url = g_value_get_string(value);
+    const gchar *url = g_value_get_string(value);
     g_free(cef->url);
     cef->url = g_strdup(url);
     break;
@@ -275,6 +287,14 @@ void gst_cef_set_property(GObject *object, guint property_id,
     const guint height = g_value_get_uint(value);
     cef->height = height;
     break;
+  }
+  case PROP_JS:
+  {
+	  const gchar* js = g_value_get_string(value);
+	  g_free(cef->js);
+	  cef->js = g_strdup(js);
+	  gst_cef_execute_js(cef);
+	  break;
   }
   case PROP_HIDDEN:
   {
@@ -324,6 +344,9 @@ void gst_cef_get_property(GObject *object, guint property_id,
   case PROP_HIDDEN:
     g_value_set_boolean(value, cef->hidden);
     break;
+  case PROP_JS:
+	g_value_set_string(value, cef->js);
+	break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
     break;

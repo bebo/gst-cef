@@ -111,6 +111,12 @@ void Browser::SetHidden(void *gstCef, bool hidden)
   browserClient->SetHidden(gstCef, hidden);
 }
 
+void Browser::ExecuteJS(void *gstCef, char* js)
+{
+	CEF_REQUIRE_UI_THREAD();
+  browserClient->ExecuteJS(gstCef, js);
+}
+
 void Browser::OnContextInitialized()
 {
   CEF_REQUIRE_UI_THREAD();

@@ -32,10 +32,17 @@ struct gstHiddenArgs
   gboolean hidden;
 };
 
+struct gstExecuteJSArgs
+{
+	void *gstCef;
+	char *js;
+};
+
 void browser_loop(void *args);
 void open_browser(void *args);
 void set_size(void *args);
 void set_hidden(void *args);
+void execute_js(void *args);
 void close_browser(void *args);
 void shutdown_browser();
 

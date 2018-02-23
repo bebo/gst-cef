@@ -187,10 +187,34 @@ static bool doSetHidden(void *args)
   return false;
 }
 
+static bool doExecuteJS(void *args)
+{
+	GST_DEBUG("doExecuteJS");
+    struct gstExecuteJSArgs *exec_js_args = (gstExecuteJSArgs* )args;
+	void *gstCef = exec_js_args->gstCef;
+	char* js = exec_js_args->js;
+	g_free(args);
+
+	if (!app)
+	{
+		g_free(js);
+		return false;
+	}
+
+	app->ExecuteJS(gstCef, js);
+	return false;
+}
+
 void set_hidden(void *args)
 {
   GST_INFO("set_hidden");
   g_idle_add((GSourceFunc)doSetHidden, args);
+}
+
+void execute_js(void *args)
+{
+	GST_INFO("Adding doExecuteJS to work loop");
+	g_idle_add((GSourceFunc)doExecuteJS, args);
 }
 
 bool doClose(gpointer args)

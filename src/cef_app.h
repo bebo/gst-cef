@@ -31,6 +31,7 @@ public:
   void Open(void *gstCef, void *push_data, char *url, int width, int height);
   void SetSize(void *gstCef, int width, int height);
   void SetHidden(void *gstCef, bool hidden);
+  void ExecuteJS(void *gstCef, char* js);
 
 private:
   CefRefPtr<BrowserClient> browserClient;

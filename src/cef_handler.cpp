@@ -305,7 +305,7 @@ void BrowserClient::CloseBrowser(void *gst_cef, bool force_close)
 
 void BrowserClient::SetHidden(void *gst_cef, bool hidden)
 {
-  GST_INFO("Set Size Any Thread");
+  GST_INFO("Set Hidden");
 
   if (!CefCurrentlyOn(TID_UI))
   {
@@ -337,6 +337,45 @@ void BrowserClient::SetHidden(void *gst_cef, bool hidden)
   }
 
   GST_INFO("Didn't get gst_cef");
+}
+
+void BrowserClient::ExecuteJS(void *gst_cef, char* js)
+{
+	// We need the UI thread because we are accessing the browser map.
+	GST_INFO("Execute JS any thread");
+
+	if (!CefCurrentlyOn(TID_UI))
+	{
+		// Execute on the UI thread.
+		CefPostTask(TID_UI, base::Bind(&BrowserClient::SetHidden, this,
+			gst_cef, js));
+		return;
+	}
+	CEF_REQUIRE_UI_THREAD();
+
+	GST_DEBUG("BrowserClient::ExecuteJS %s", js);
+
+	for (auto it = browser_gst_map.begin(); it != browser_gst_map.end(); ++it)
+	{
+		if (!it->second)
+		{
+			GST_ERROR("BrowserClient::ExecuteJS, browser id: %d. UNABLE TO FIND it->second", it->first);
+			continue;
+		}
+
+		if (it->second->gst_cef == gst_cef)
+		{
+			GstCefInfo_T *info = (GstCefInfo_T *)it->second;
+			CefRefPtr<CefBrowser> browser = info->browser;
+			CefRefPtr<CefFrame> frame = browser->GetMainFrame();
+			frame->ExecuteJavaScript(CefString(js), frame->GetURL(), 0);
+			g_free(js);
+			return;
+		}
+	}
+
+	g_free(js);
+	GST_WARNING("Failed to execute javascript because we couldn't find the browser: %s", js);
 }
 
 void BrowserClient::SetSize(void *gst_cef, int width, int height)
