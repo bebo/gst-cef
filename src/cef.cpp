@@ -219,6 +219,7 @@ void execute_js(void *args)
 
 bool doClose(gpointer args)
 {
+  GST_INFO("doClose");
   if (app)
   {
     app->CloseBrowser(args, true);
