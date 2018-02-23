@@ -1,11 +1,21 @@
 import sys
 import gi
 gi.require_version('Gst', '1.0')
-from gi.repository import Gst
+from gi.repository import Gst, GObject
 Gst.init(None)
- 
+
+import threading
+
+
+def run_main_loop():
+    loop = GObject.MainLoop()
+    loop.run()
+
+runner = threading.Thread(target=run_main_loop)
+runner.start()
+
 # Create the elements
-source = Gst.ElementFactory.make("videotestsrc")
+source = Gst.ElementFactory.make("cef")
 sink = Gst.ElementFactory.make("autovideosink")
 
 # Create the empty pipeline
