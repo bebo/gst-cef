@@ -83,7 +83,7 @@ SET_TARGET_PROPERTIES(subprocess PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
 set(DIST_DIR "${CMAKE_BINARY_DIR}/dist")
 file(MAKE_DIRECTORY ${DIST_DIR}/locales)
 
-set(BINARY_DIST_FILES 
+set(BINARY_DIST_FILES
   chrome_elf.dll
   d3dcompiler_47.dll
   libcef.dll

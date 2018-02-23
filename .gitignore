@@ -53,6 +53,7 @@ gst-plugins-bad-*.tar.*
 .vs
 
 .deps
+.idea
 .libs
 .dirstamp
 *.lo

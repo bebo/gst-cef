@@ -67,6 +67,7 @@ static gboolean gst_cef_stop(GstBaseSrc *src);
 #define DEFAULT_URL "https://google.com"
 #define DEFAULT_HEIGHT 720
 #define DEFAULT_WIDTH 1280
+#define DEFAULT_JS ""
 
 enum
 {
@@ -145,7 +146,7 @@ gst_cef_class_init(GstCefClass *klass)
                                   g_param_spec_boolean("hidden", "hidden", "set the cef browser to hidden for throttling", FALSE, G_PARAM_READWRITE));
   g_object_class_install_property(gobject_class, PROP_JS,
 	  g_param_spec_string("javascript", "javascript", "javascript to be executed by window.",
-		  NULL, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+		  DEFAULT_JS, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 }
 
 static void push_frame(void *gstCef, const void *buffer, int width, int height)
