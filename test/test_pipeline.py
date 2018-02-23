@@ -43,7 +43,12 @@ def main():
     # Modify the source's properties
     time.sleep(2)
     source.set_property('javascript', 'alert("test");')
-
+    time.sleep(2)
+    source.set_property('javascript', 'alert("test");')
+    time.sleep(2)
+    source.set_property('javascript', 'alert("test");')
+    time.sleep(2)
+    source.set_property('javascript', 'alert("test");')
     # Wait until error or EOS
     bus = pipeline.get_bus()
     msg = bus.timed_pop_filtered(
