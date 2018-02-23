@@ -15,7 +15,9 @@ missing
 stamp-*
 my-plugin-*.tar.*
 compile
+
 build/
+CMakeFiles/
 GPUCache/
 package/
 *~
