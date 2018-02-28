@@ -346,8 +346,8 @@ void gst_cef_get_property(GObject *object, guint property_id,
     g_value_set_boolean(value, cef->hidden);
     break;
   case PROP_JS:
-	g_value_set_string(value, cef->js);
-	break;
+	  g_value_set_string(value, cef->js);
+	  break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
     break;
