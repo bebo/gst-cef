@@ -65,7 +65,7 @@ static bool doStart(gpointer data)
   // Browser implements application-level callbacks for the browser process.
   // It will create the first browser instance in OnContextInitialized() on the 
   // browser UI thread after the CEF has initialized.
-  app = new Browser(cb->gstCef, cb->push_frame, cb->url, cb->width, cb->height, cb->initialization_data);
+  app = new Browser(cb->gstCef, cb->push_frame, cb->url, cb->width, cb->height, cb->initialization_js);
   g_free(cb);
 
   // Initialize CEF for the browser process.
@@ -82,7 +82,7 @@ static bool doOpen(gpointer data)
 {
   GST_INFO("doOpen");
   struct gstCb *cb = (struct gstCb *)data;
-  app.get()->Open(cb->gstCef, cb->push_frame, cb->url, cb->width, cb->height, cb->initialization_data);
+  app.get()->Open(cb->gstCef, cb->push_frame, cb->url, cb->width, cb->height, cb->initialization_js);
   g_free(cb);
   return false;
 }

@@ -61,7 +61,7 @@ private:
 } // namespace
 
 Browser::Browser(void *gstCef, void *push_data, char *url, int width,
-                 int height, char *initialization_data) : gstCef(gstCef),
+                 int height, char *initialization_js) : gstCef(gstCef),
                                                           push_data(push_data),
                                                           url(url), width(width),
                                                           height(height){};
@@ -74,7 +74,7 @@ void Browser::CloseBrowser(void *gst_cef, bool force_close)
   browserClient->CloseBrowser(gst_cef, force_close);
 }
 
-void Browser::Open(void *gstCef, void *push_data, char *open_url, int width, int height, char *initialization_data)
+void Browser::Open(void *gstCef, void *push_data, char *open_url, int width, int height, char *initialization_js)
 {
   CEF_REQUIRE_UI_THREAD();
   GST_INFO("Open Url: %s", open_url);
@@ -95,7 +95,7 @@ void Browser::Open(void *gstCef, void *push_data, char *open_url, int width, int
 
   CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(window_info, browserClient, open_url, browser_settings, NULL);
   GST_DEBUG("Synchronously created the browser.");
-  browserClient->AddBrowserGstMap(browser, gstCef, push_data, width, height, initialization_data);
+  browserClient->AddBrowserGstMap(browser, gstCef, push_data, width, height, initialization_js);
   GST_DEBUG("Added browser to gst map.");
   browser->GetHost()->WasResized();
 }
@@ -128,7 +128,7 @@ void Browser::OnContextInitialized()
 
   // BrowserClient implements browser-level callbacks.
   browserClient = new BrowserClient();
-  Open(gstCef, push_data, url, this->width, this->height, this->initialization_data);
+  Open(gstCef, push_data, url, this->width, this->height, this->initialization_js);
 }
 
 void Browser::OnBeforeCommandLineProcessing(

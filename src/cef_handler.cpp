@@ -121,7 +121,7 @@ void BrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
   GST_DEBUG("OnAfterCreated: %d", browser->GetIdentifier());
 }
 
-void BrowserClient::AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void *gstCef, void *push_frame, int width, int height, char* initialization_data)
+void BrowserClient::AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void *gstCef, void *push_frame, int width, int height, char* initialization_js)
 {
   CEF_REQUIRE_UI_THREAD();
 
@@ -133,7 +133,7 @@ void BrowserClient::AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void *gstCef
   gst_cef_info->width = width;
   gst_cef_info->height = height;
   gst_cef_info->browser = browser;
-  gst_cef_info->initialization_data = initialization_data;
+  gst_cef_info->initialization_js = initialization_js;
   gettimeofday(&gst_cef_info->last_tv, NULL);
 
   int id = browser->GetIdentifier();
@@ -255,7 +255,8 @@ void BrowserClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
   {
     if (httpStatusCode == 200)
     { // 200 ~ 499?
-      frame->ExecuteJavaScript(CefString(cef->initialization_data), frame->GetURL(), 0);
+      GST_INFO("Cef Initialization JavaScript: %s", cef->initialization_js);
+      frame->ExecuteJavaScript(CefString(cef->initialization_js), frame->GetURL(), 0);
       GST_INFO("Executed startup javascript.");
       cef->retry_count = 0;
       cef->ready = true;

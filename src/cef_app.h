@@ -12,7 +12,7 @@
 class Browser : public CefApp, public CefBrowserProcessHandler, public CefRenderProcessHandler
 {
 public:
-  Browser(void *gstCef, void *push_data, char *url, int width, int height, char *initialization_data);
+  Browser(void *gstCef, void *push_data, char *url, int width, int height, char *initialization_js);
 
   // CefApp methods:
   virtual CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler()
@@ -28,7 +28,7 @@ public:
   // CefBrowserProcessHandler methods:
   virtual void OnContextInitialized() OVERRIDE;
   void CloseBrowser(void *gst_cef, bool force_close);
-  void Open(void *gstCef, void *push_data, char *open_url, int width, int height, char *initialization_data);
+  void Open(void *gstCef, void *push_data, char *open_url, int width, int height, char *initialization_js);
   void SetSize(void *gstCef, int width, int height);
   void SetHidden(void *gstCef, bool hidden);
   void ExecuteJS(void *gstCef, char* js);
@@ -43,7 +43,7 @@ private:
   int width;
   // TODO: Memory leak.  Call g_free on these parameters.
   char *url;
-  char *initialization_data;
+  char *initialization_js;
 
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(Browser);

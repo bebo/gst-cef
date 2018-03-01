@@ -15,7 +15,7 @@ struct gstCb
   void *gstCef;
   void *push_frame;
   char *url;
-  char *initialization_data;
+  char *initialization_js;
   int width;
   int height;
 };

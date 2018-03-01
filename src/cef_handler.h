@@ -19,7 +19,7 @@ typedef struct GstCefInfo
   int height;
   int retry_count;
   bool ready;
-  char *initialization_data;
+  char *initialization_js;
   struct timeval last_tv;
 } GstCefInfo_T;
 
@@ -76,7 +76,7 @@ public:
   void SetSize(void *gst_cef, int width, int height);
   void SetHidden(void *gst_cef, bool hidden);
   void ExecuteJS(void *gst_cef, char* js);
-  void AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void *gstCef, void *push_frame, int width, int height, char *initialization_data);
+  void AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void *gstCef, void *push_frame, int width, int height, char *initialization_js);
 
   bool IsClosing() const { return is_closing_; }
 
