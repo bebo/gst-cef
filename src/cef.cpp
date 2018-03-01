@@ -63,9 +63,9 @@ static bool doStart(gpointer data)
   settings.multi_threaded_message_loop = false;
 
   // Browser implements application-level callbacks for the browser process.
-  // It will create the first browser instance in OnContextInitialized() after
-  // CEF has initialized.
-  app = new Browser(cb->gstCef, cb->push_frame, cb->url, cb->width, cb->height);
+  // It will create the first browser instance in OnContextInitialized() on the 
+  // browser UI thread after the CEF has initialized.
+  app = new Browser(cb->gstCef, cb->push_frame, cb->url, cb->width, cb->height, cb->initialization_data);
   g_free(cb);
 
   // Initialize CEF for the browser process.

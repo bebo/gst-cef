@@ -41,6 +41,7 @@ struct _GstCef
   GstPushSrc src;
   const char *url;
   const char *js;
+  const char *initialization_data;
   void *current_buffer;
   GMutex frame_mutex;
   GCond frame_cond;

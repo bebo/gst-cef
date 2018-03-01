@@ -19,6 +19,7 @@ def main():
     # Create the elements
     source = Gst.ElementFactory.make("cef")
     sink = Gst.ElementFactory.make("autovideosink")
+    source.set_property('javascript', 'alert("test0");')
 
     # Create the empty pipeline
     pipeline = Gst.Pipeline.new("test-pipeline")
@@ -40,13 +41,18 @@ def main():
         print("Unable to set the pipeline to the playing state.")
         exit(-1)
 
+    time.sleep(0.5)
+    wrapper = """function __injectedOnload(){
+                     alert('Hello');
+                     document.getElementById('gsr').innerText ='lol';
+                     window.removeEventListener('load', __injectedOnload);
+                 }
+                 window.addEventListener('load', __injectedOnload);"""
     # Modify the source's properties
+    source.set_property('javascript', wrapper)
+    source.set_property('javascript', "document.getElementById('gsr').innerText ='lol1'")
     time.sleep(2)
-    source.set_property('javascript', 'alert("test1");')
-    # time.sleep(2)
-    # source.set_property('javascript', 'alert("test2");')
-    # time.sleep(2)
-    # source.set_property('javascript', 'alert("test3");')
+    source.set_property('javascript', 'alert("test3");')
     # time.sleep(2)
     # source.set_property('javascript', 'alert("test4");')
     # time.sleep(2)

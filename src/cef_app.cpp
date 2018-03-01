@@ -21,7 +21,7 @@ namespace
 
 // When using the Views framework this object provides the delegate
 // implementation for the CefWindow that hosts the Views-based browser.
-class BrowserWindowDelegate : public CefWindowDelegate
+class BrowserWindowDelegate : public CefWindowDelegate, public CefRenderProcessHandler
 {
 public:
   explicit BrowserWindowDelegate(CefRefPtr<CefBrowserView> browser_view)
@@ -60,7 +60,11 @@ private:
 
 } // namespace
 
-Browser::Browser(void *gstCef, void *push_data, char *url, int width, int height) : gstCef(gstCef), push_data(push_data), url(url), width(width), height(height){};
+Browser::Browser(void *gstCef, void *push_data, char *url, int width,
+                 int height, char *initialization_data) : gstCef(gstCef),
+                                                          push_data(push_data),
+                                                          url(url), width(width),
+                                                          height(height){};
 
 void Browser::CloseBrowser(void *gst_cef, bool force_close)
 {
@@ -70,10 +74,10 @@ void Browser::CloseBrowser(void *gst_cef, bool force_close)
   browserClient->CloseBrowser(gst_cef, force_close);
 }
 
-void Browser::Open(void *gstCef, void *push_data, char *url, int width, int height)
+void Browser::Open(void *gstCef, void *push_data, char *open_url, int width, int height)
 {
   CEF_REQUIRE_UI_THREAD();
-  GST_INFO("Open Url: %s", url);
+  GST_INFO("Open Url: %s", open_url);
 
   // CEF Window Settings
   CefWindowInfo window_info;
@@ -89,7 +93,7 @@ void Browser::Open(void *gstCef, void *push_data, char *url, int width, int heig
   CefBrowserSettings browser_settings;
   browser_settings.windowless_frame_rate = 30;
 
-  CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(window_info, browserClient, url, browser_settings, NULL);
+  CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(window_info, browserClient, open_url, browser_settings, NULL);
   GST_DEBUG("Synchronously created the browser.");
   browserClient->AddBrowserGstMap(browser, gstCef, push_data, width, height);
   GST_DEBUG("Added browser to gst map.");
@@ -111,9 +115,9 @@ void Browser::SetHidden(void *gstCef, bool hidden)
   browserClient->SetHidden(gstCef, hidden);
 }
 
-void Browser::ExecuteJS(void *gstCef, char* js)
+void Browser::ExecuteJS(void *gstCef, char *js)
 {
-	CEF_REQUIRE_UI_THREAD();
+  CEF_REQUIRE_UI_THREAD();
   browserClient->ExecuteJS(gstCef, js);
 }
 

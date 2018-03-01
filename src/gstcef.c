@@ -65,6 +65,7 @@ static gboolean gst_cef_stop(GstBaseSrc *src);
 
 // https://bebo.com is way too heavy to use as the default.
 #define DEFAULT_URL "https://google.com"
+#define DEFAULT_INIT_DATA "Hello World!"
 #define DEFAULT_HEIGHT 720
 #define DEFAULT_WIDTH 1280
 #define DEFAULT_JS ""
@@ -76,7 +77,8 @@ enum
   PROP_WIDTH,
   PROP_HEIGHT,
   PROP_HIDDEN,
-  PROP_JS
+  PROP_JS,
+  PROP_INIT_DATA
 };
 
 /* pad templates */
@@ -143,10 +145,15 @@ gst_cef_class_init(GstCefClass *klass)
                                                     0, G_MAXUINT, DEFAULT_HEIGHT, G_PARAM_READWRITE));
 
   g_object_class_install_property(gobject_class, PROP_HIDDEN,
-                                  g_param_spec_boolean("hidden", "hidden", "set the cef browser to hidden for throttling", FALSE, G_PARAM_READWRITE));
+                                  g_param_spec_boolean("hidden", "hidden", "set the cef browser to hidden for throttling",
+                                                       FALSE, G_PARAM_READWRITE));
+  g_object_class_install_property(gobject_class, PROP_INIT_DATA,
+                                  g_param_spec_string("initialization_data", "initialization_data",
+                                                      "window.__bebo_initialization_data will be set to this during OnContextInitialized",
+                                                      DEFAULT_JS, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
   g_object_class_install_property(gobject_class, PROP_JS,
-	  g_param_spec_string("javascript", "javascript", "javascript to be executed by window.",
-		  DEFAULT_JS, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+                                  g_param_spec_string("javascript", "javascript", "javascript to be executed by window.",
+                                                      DEFAULT_JS, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 }
 
 static void push_frame(void *gstCef, const void *buffer, int width, int height)
@@ -235,6 +242,7 @@ void gst_cef_init(GstCef *cef)
   cef->width = DEFAULT_WIDTH;
   cef->height = DEFAULT_HEIGHT;
   cef->url = g_strdup(DEFAULT_URL);
+  cef->initialization_data = g_strdup(DEFAULT_INIT_DATA);
   cef->hidden = FALSE;
   g_mutex_init(&cef->frame_mutex);
   g_cond_init(&cef->frame_cond);
@@ -254,12 +262,11 @@ void gst_cef_set_hidden(GstCef *cef, gboolean hidden)
 
 void gst_cef_execute_js(GstCef *cef)
 {
-	struct gstExecuteJSArgs *args = g_malloc(sizeof(struct gstExecuteJSArgs));
-	args->gstCef = cef;
-	args->js = g_strdup(cef->js);
-	execute_js(args);
+  struct gstExecuteJSArgs *args = g_malloc(sizeof(struct gstExecuteJSArgs));
+  args->gstCef = cef;
+  args->js = g_strdup(cef->js);
+  execute_js(args);
 }
-
 
 void gst_cef_set_property(GObject *object, guint property_id,
                           const GValue *value, GParamSpec *pspec)
@@ -291,11 +298,18 @@ void gst_cef_set_property(GObject *object, guint property_id,
   }
   case PROP_JS:
   {
-	  const gchar* js = g_value_get_string(value);
-	  g_free(cef->js);
-	  cef->js = g_strdup(js);
-	  gst_cef_execute_js(cef);
-	  break;
+    const gchar *js = g_value_get_string(value);
+    g_free(cef->js);
+    cef->js = g_strdup(js);
+    gst_cef_execute_js(cef);
+    break;
+  }
+  case PROP_INIT_DATA:
+  {
+    const gchar *init_data = g_value_get_string(value);
+    g_free(cef->initialization_data);
+    cef->initialization_data = g_strdup(init_data);
+    break;
   }
   case PROP_HIDDEN:
   {
@@ -346,8 +360,11 @@ void gst_cef_get_property(GObject *object, guint property_id,
     g_value_set_boolean(value, cef->hidden);
     break;
   case PROP_JS:
-	  g_value_set_string(value, cef->js);
-	  break;
+    g_value_set_string(value, cef->js);
+    break;
+  case PROP_INIT_DATA:
+    g_value_set_string(value, cef->initialization_data);
+    break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
     break;
