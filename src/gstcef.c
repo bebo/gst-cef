@@ -185,7 +185,7 @@ void *pop_frame(GstCef *cef)
 
   gint64 end_time;
 
-  end_time = g_get_monotonic_time() + 200 * G_TIME_SPAN_MILLISECOND;
+  end_time = g_get_monotonic_time() + 20000 * G_TIME_SPAN_MILLISECOND;
   while (g_atomic_int_get(&cef->has_new_frame) == 0 && g_atomic_int_get(&cef->unlocked) == 0)
   {
     if (!g_cond_wait_until(&cef->frame_cond, &cef->frame_mutex, end_time))
