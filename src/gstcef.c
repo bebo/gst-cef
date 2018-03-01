@@ -148,7 +148,7 @@ gst_cef_class_init(GstCefClass *klass)
                                   g_param_spec_boolean("hidden", "hidden", "set the cef browser to hidden for throttling",
                                                        FALSE, G_PARAM_READWRITE));
   g_object_class_install_property(gobject_class, PROP_INIT_JS,
-                                  g_param_spec_string("initialization_js", "initialization_js",
+                                  g_param_spec_string("initialization-js", "initialization-js",
                                                       "JavaScript to be initialized OnLoadEnd",
                                                       DEFAULT_INITIALIZATION_JS, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
   g_object_class_install_property(gobject_class, PROP_JS,
