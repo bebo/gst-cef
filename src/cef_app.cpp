@@ -64,6 +64,7 @@ Browser::Browser(void *gstCef, void *push_data, char *url, int width,
                  int height, char *initialization_js) : gstCef(gstCef),
                                                           push_data(push_data),
                                                           url(url), width(width),
+                                                          initialization_js(initialization_js),
                                                           height(height){};
 
 void Browser::CloseBrowser(void *gst_cef, bool force_close)

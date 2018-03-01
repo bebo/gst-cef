@@ -68,7 +68,7 @@ static gboolean gst_cef_stop(GstBaseSrc *src);
 #define DEFAULT_HEIGHT 720
 #define DEFAULT_WIDTH 1280
 #define DEFAULT_JS ""
-#define DEFAULT_INITIALIZATION_JS "alert('hello');"
+#define DEFAULT_INITIALIZATION_JS ""
 
 enum
 {
