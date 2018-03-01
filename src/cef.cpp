@@ -82,7 +82,7 @@ static bool doOpen(gpointer data)
 {
   GST_INFO("doOpen");
   struct gstCb *cb = (struct gstCb *)data;
-  app.get()->Open(cb->gstCef, cb->push_frame, cb->url, cb->width, cb->height);
+  app.get()->Open(cb->gstCef, cb->push_frame, cb->url, cb->width, cb->height, cb->initialization_data);
   g_free(cb);
   return false;
 }

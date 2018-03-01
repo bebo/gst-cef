@@ -28,7 +28,7 @@ public:
   // CefBrowserProcessHandler methods:
   virtual void OnContextInitialized() OVERRIDE;
   void CloseBrowser(void *gst_cef, bool force_close);
-  void Open(void *gstCef, void *push_data, char *open_url, int width, int height);
+  void Open(void *gstCef, void *push_data, char *open_url, int width, int height, char *initialization_data);
   void SetSize(void *gstCef, int width, int height);
   void SetHidden(void *gstCef, bool hidden);
   void ExecuteJS(void *gstCef, char* js);

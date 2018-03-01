@@ -121,7 +121,7 @@ void BrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
   GST_DEBUG("OnAfterCreated: %d", browser->GetIdentifier());
 }
 
-void BrowserClient::AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void *gstCef, void *push_frame, int width, int height)
+void BrowserClient::AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void *gstCef, void *push_frame, int width, int height, char* initialization_data)
 {
   CEF_REQUIRE_UI_THREAD();
 
@@ -133,6 +133,7 @@ void BrowserClient::AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void *gstCef
   gst_cef_info->width = width;
   gst_cef_info->height = height;
   gst_cef_info->browser = browser;
+  gst_cef_info->initialization_data = initialization_data;
   gettimeofday(&gst_cef_info->last_tv, NULL);
 
   int id = browser->GetIdentifier();
@@ -254,6 +255,7 @@ void BrowserClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
   {
     if (httpStatusCode == 200)
     { // 200 ~ 499?
+      this->ExecuteJS(cef, "let x = 5;");
       cef->retry_count = 0;
       cef->ready = true;
     }
@@ -309,6 +311,7 @@ void BrowserClient::SetHidden(void *gst_cef, bool hidden)
 
   if (!CefCurrentlyOn(TID_UI))
   {
+    // TODO: Determine if this works and is necessary.
     // Execute on the UI thread.
     CefPostTask(TID_UI, base::Bind(&BrowserClient::SetHidden, this,
                                    gst_cef, hidden));
@@ -347,7 +350,7 @@ void BrowserClient::ExecuteJS(void *gst_cef, char* js)
 	if (!CefCurrentlyOn(TID_UI))
 	{
 		// Execute on the UI thread.
-		CefPostTask(TID_UI, base::Bind(&BrowserClient::SetHidden, this,
+		CefPostTask(TID_UI, base::Bind(&BrowserClient::ExecuteJS, this,
 			gst_cef, js));
 		return;
 	}
