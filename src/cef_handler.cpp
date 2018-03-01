@@ -255,7 +255,8 @@ void BrowserClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
   {
     if (httpStatusCode == 200)
     { // 200 ~ 499?
-      this->ExecuteJS(cef, "let x = 5;");
+      frame->ExecuteJavaScript(CefString(cef->initialization_data), frame->GetURL(), 0);
+      GST_INFO("Executed startup javascript.");
       cef->retry_count = 0;
       cef->ready = true;
     }
