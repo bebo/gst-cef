@@ -1,11 +1,12 @@
-import sys
-import gi
+import os
+import threading
 import time
+
+import gi
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GObject
 Gst.init(None)
 
-import threading
 
 
 def run_main_loop():
@@ -47,8 +48,7 @@ def main():
     Gst.Element.link(queue1, sink2)
     Gst.Element.link(queue2, sink)
 
-    source.set_property('initialization-js', "document.getElementById('gsr').innerText ='lol1'")
-
+    source.set_property('initialization-js', "document.getElementById('gsr').innerText ='0'")
     # Start playing
     ret = pipeline.set_state(Gst.State.PLAYING)
     if ret == Gst.StateChangeReturn.FAILURE:
@@ -56,8 +56,8 @@ def main():
         exit(-1)
 
     time.sleep(2)
-    for i in range(10):
-        time.sleep(5)
+    for i in range(1, 30):
+        time.sleep(2)
         source.set_property('javascript', "document.getElementById('gsr').innerText ='{}'".format(i))
     pipeline.set_state(Gst.State.NULL)
     print('Sleeping for 20s')

@@ -184,7 +184,7 @@ void *pop_frame(GstCef *cef)
 {
 
   gint64 end_time;
-
+  // Send at least one frame per 20s.
   end_time = g_get_monotonic_time() + 20000 * G_TIME_SPAN_MILLISECOND;
   while (g_atomic_int_get(&cef->has_new_frame) == 0 && g_atomic_int_get(&cef->unlocked) == 0)
   {
