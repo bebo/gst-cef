@@ -9,20 +9,20 @@ Gst.init(None)
 
 
 
-def run_main_loop():
-    loop = GObject.MainLoop()
+def run_main_loop(loop):
     loop.run()
-
 
 def main():
     print('The python.exe that this script is called with must be in the same directory as the cef resource files')
-    runner = threading.Thread(target=run_main_loop)
+    loop = GObject.MainLoop()
+    runner = threading.Thread(target=run_main_loop, args=(loop,))
     runner.start()
 
     # Create the elements
     queue1 = Gst.ElementFactory.make('queue')
     queue2 = Gst.ElementFactory.make('queue')
     source = Gst.ElementFactory.make('cef')
+    #source = Gst.ElementFactory.make('videotestsrc')
     sink = Gst.ElementFactory.make('autovideosink')
     sink2 = Gst.ElementFactory.make('glimagesink')
     tee = Gst.ElementFactory.make('tee')
@@ -56,32 +56,14 @@ def main():
         exit(-1)
 
     time.sleep(2)
-    for i in range(1, 30):
+    for i in range(1, 5):
         time.sleep(2)
         source.set_property('javascript', "document.getElementById('gsr').innerText ='{}'".format(i))
     pipeline.set_state(Gst.State.NULL)
-    print('Sleeping for 20s')
-    time.sleep(20)
+    print('Pipeline state set to null.  Sleeping for 10s')
+    time.sleep(3)
+    loop.quit()
 
-    # Wait until error or EOS
-    bus = pipeline.get_bus()
-    msg = bus.timed_pop_filtered(
-        Gst.CLOCK_TIME_NONE, Gst.MessageType.ERROR | Gst.MessageType.EOS)
-
-    # Parse message
-    if (msg):
-        if msg.type == Gst.MessageType.ERROR:
-            err, debug = msg.parse_error()
-            print("Error received from element %s: %s" % (
-                msg.src.get_name(), err))
-            print("Debugging information: %s" % debug)
-        elif msg.type == Gst.MessageType.EOS:
-            print("End-Of-Stream reached.")
-        else:
-            print("Unexpected message received.")
-
-    # Free resources
-    pipeline.set_state(Gst.State.NULL)
 
 if __name__ == '__main__':
     main()

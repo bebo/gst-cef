@@ -374,7 +374,7 @@ void gst_cef_get_property(GObject *object, guint property_id,
 void gst_cef_dispose(GObject *object)
 {
   GstCef *cef = GST_CEF(object);
-
+  GST_INFO("gst_cef_dispose");
   GST_DEBUG_OBJECT(cef, "dispose");
 
   /* clean up as possible.  may be called multiple times */
@@ -385,7 +385,7 @@ void gst_cef_dispose(GObject *object)
 void gst_cef_finalize(GObject *object)
 {
   GstCef *cef = GST_CEF(object);
-
+  GST_INFO("gst_cef_finalize");
   GST_DEBUG_OBJECT(cef, "finalize");
 
   /* clean up object here */
