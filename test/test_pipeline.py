@@ -14,6 +14,7 @@ def run_main_loop():
 
 
 def main():
+    print('The python.exe that this script is called with must be in the same directory as the cef resource files')
     runner = threading.Thread(target=run_main_loop)
     runner.start()
 
