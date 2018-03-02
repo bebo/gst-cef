@@ -7,6 +7,7 @@ Gst.init(None)
 
 import threading
 
+
 def run_main_loop():
     loop = GObject.MainLoop()
     loop.run()
@@ -17,9 +18,12 @@ def main():
     runner.start()
 
     # Create the elements
-    source = Gst.ElementFactory.make("cef")
-    sink = Gst.ElementFactory.make("autovideosink")
-    source.set_property('javascript', 'alert("test0");')
+    queue1 = Gst.ElementFactory.make('queue')
+    queue2 = Gst.ElementFactory.make('queue')
+    source = Gst.ElementFactory.make('cef')
+    sink = Gst.ElementFactory.make('autovideosink')
+    sink2 = Gst.ElementFactory.make('glimagesink')
+    tee = Gst.ElementFactory.make('tee')
 
     # Create the empty pipeline
     pipeline = Gst.Pipeline.new("test-pipeline")
@@ -31,9 +35,18 @@ def main():
     # Build the pipeline
     pipeline.add(source)
     pipeline.add(sink)
-    if not Gst.Element.link(source, sink):
-        print("Elements could not be linked.")
-        exit(-1)
+    pipeline.add(tee)
+    pipeline.add(sink2)
+    pipeline.add(queue1)
+    pipeline.add(queue2)
+
+    Gst.Element.link(source, tee)
+    Gst.Element.link(tee, queue1)
+    Gst.Element.link(tee, queue2)
+    Gst.Element.link(queue1, sink2)
+    Gst.Element.link(queue2, sink)
+
+    source.set_property('initialization-js', "document.getElementById('gsr').innerText ='lol1'")
 
     # Start playing
     ret = pipeline.set_state(Gst.State.PLAYING)
@@ -41,28 +54,13 @@ def main():
         print("Unable to set the pipeline to the playing state.")
         exit(-1)
 
-    time.sleep(0.5)
-    wrapper = """function __injectedOnload(){
-                     alert('Hello');
-                     document.getElementById('gsr').innerText ='lol';
-                     window.removeEventListener('load', __injectedOnload);
-                 }
-                 window.addEventListener('load', __injectedOnload);"""
-    # Modify the source's properties
-    source.set_property('javascript', wrapper)
-    source.set_property('javascript', "document.getElementById('gsr').innerText ='lol1'")
     time.sleep(2)
-    source.set_property('javascript', 'alert("test3");')
-    # time.sleep(2)
-    # source.set_property('javascript', 'alert("test4");')
-    # time.sleep(2)
-
+    for i in range(10):
+        time.sleep(5)
+        source.set_property('javascript', "document.getElementById('gsr').innerText ='{}'".format(i))
     pipeline.set_state(Gst.State.NULL)
     print('Sleeping for 20s')
     time.sleep(20)
-
-
-
 
     # Wait until error or EOS
     bus = pipeline.get_bus()
