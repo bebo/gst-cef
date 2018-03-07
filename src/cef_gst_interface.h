@@ -39,13 +39,13 @@ struct gstExecuteJSArgs
 	char *js;
 };
 
-void browser_loop(void *args);
-void open_browser(void *args);
+void browser_loop(gpointer args);
+void open_browser(gpointer args);
 void set_size(void *args);
 void set_hidden(void *args);
 void execute_js(void *args);
 void set_initialization_js(void *args);
-void close_browser(void *args);
+void close_browser(gpointer args);
 void shutdown_browser();
 
 #ifdef __cplusplus

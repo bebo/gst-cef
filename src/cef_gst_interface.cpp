@@ -238,19 +238,19 @@ static bool doSetInitializationJS(void *args)
 
 void set_hidden(void *args)
 {
-  GST_INFO("set_hidden");
+  GST_DEBUG("Adding set_hidden to work loop.");
   g_idle_add((GSourceFunc)doSetHidden, args);
 }
 
 void execute_js(void *args)
 {
-	GST_INFO("Adding doExecuteJS to work loop");
+	GST_DEBUG("Adding doExecuteJS to work loop");
 	g_idle_add((GSourceFunc)doExecuteJS, args);
 }
 
 void set_initialization_js(void *args)
 {
-  GST_INFO("Adding doExecuteJS to work loop");
+  GST_DEBUG("Adding doExecuteJS to work loop");
   g_idle_add((GSourceFunc)doSetInitializationJS, args);
 }
 
