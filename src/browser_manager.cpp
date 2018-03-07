@@ -25,7 +25,7 @@ void Browser::CloseBrowser(void *gst_cef, bool force_close)
   browserClient->CloseBrowser(gst_cef, force_close);
 }
 
-void Browser::Open(void *gst_cef, void *push_data, std::string url, int width, int height, std::string initialization_js)
+void Browser::Open(void *gst_cef, void *push_frame, std::string url, int width, int height, std::string initialization_js)
 {
   // TODO: Make sure this method is called on the UI thread.
   GST_INFO("Open new browser window: %s", open_url);

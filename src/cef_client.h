@@ -70,7 +70,7 @@ public:
 private:
   CefRefPtr<CefBrowser> browser_;
   bool is_closing_;
-  void *push_frame;
+  void (* push_frame)(void *gstCef, const void *buffer, int width, int height);
   void *gst_cef_;
 
   bool ready_;
