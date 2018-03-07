@@ -43,7 +43,7 @@
 #include <gst/gst.h>
 #include <gst/base/gstpushsrc.h>
 #include "gstcef.h"
-#include "cef.h"
+#include "cef_gst_interface.h"
 
 GST_DEBUG_CATEGORY(gst_cef_debug_category);
 #define DEFAULT_IS_LIVE TRUE

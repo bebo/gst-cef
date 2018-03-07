@@ -11,8 +11,8 @@
 #include "include/cef_sandbox_win.h"
 #include <include/wrapper/cef_helpers.h>
 
-#include "cef.h"
-#include "cef_app.h"
+#include "cef_gst_interface.h"
+#include "browser_manager.h"
 
 namespace
 {
