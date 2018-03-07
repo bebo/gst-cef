@@ -9,18 +9,18 @@
 #include <list>
 #include <map>
 
-class BrowserClient : public CefClient,
+class CefWindowManager : public CefClient,
                       public CefDisplayHandler,
                       public CefLifeSpanHandler,
                       public CefLoadHandler,
                       public CefRenderHandler
 {
 public:
-  explicit BrowserClient(CefString url, int width, int height, CefString initialization_js, void *push_frame_, void *gst_cef);
-  ~BrowserClient();
+  explicit CefWindowManager(CefString url, int width, int height, CefString initialization_js, void *push_frame_, void *gst_cef);
+  ~CefWindowManager();
 
   // Provide access to the single global instance of this object.
-  /* static BrowserClient* GetInstance(); */
+  /* static CefWindowManager* GetInstance(); */
 
   // CefClient methods:
   virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() OVERRIDE { return this; }
@@ -80,7 +80,7 @@ private:
   void Refresh(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame);
 
   // Include the default reference counting implementation.
-  IMPLEMENT_REFCOUNTING(BrowserClient);
+  IMPLEMENT_REFCOUNTING(CefWindowManager);
 };
 
 #endif // CEF_TESTS_CEFSIMPLE_SIMPLE_HANDLER_H_

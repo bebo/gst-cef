@@ -22,23 +22,20 @@ Browser::Browser() : initialized_(false) {};
 void Browser::CloseBrowser(void *gst_cef, bool force_close)
 {
   GST_LOG("Browser::CloseBrowser");
-  browserClient->CloseBrowser(gst_cef, force_close);
+  // browserClient->CloseBrowser(gst_cef, force_close);
 }
 
 void Browser::Open(void *gst_cef, void *push_frame, CefString url, int width, int height, CefString initialization_js)
 {
   // TODO: Make sure this method is called on the UI thread.
   GST_INFO("Open new browser window: %s", open_url);
-  CefRefPtr<BrowserClient> client = new BrowserClient(url, width, height, initialization_js, push_frame, gst_cef);
+  CefRefPtr<CefWindowManager> client = new CefWindowManager(url, width, height, initialization_js, push_frame, gst_cef);
   browsers_.push_back(client);
   if (initialized_)
     CreateWindow(client);
 }
 
-void Browser::CreateWindow(CefRefPtr<BrowserClient> client) {
-  // Enabling windowless rendering causes Chrome to fail to get the view rect and hit a NOTREACHED();
-  // Doing a release build fixes this issue.
-  // https://bitbucket.org/chromiumembedded/cef/src/fef43e07d688cb90381f7571f25b7912bded2b6e/libcef/browser/osr/render_widget_host_view_osr.cc?at=3112&fileviewer=file-view-default#render_widget_host_view_osr.cc-1120
+void Browser::CreateWindow(CefRefPtr<CefWindowManager> client) {
   CefWindowInfo window_info;
   window_info.width = width;
   window_info.height = height;

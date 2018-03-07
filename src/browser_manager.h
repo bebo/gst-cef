@@ -35,7 +35,7 @@ public:
   void ExecuteJS(void *gst_cef, std::string js);
 
 private:
-  std:<BrowserClient> browsers_;
+  std:<CefWindowManager> browsers_;
   int browser_id_;
   std::atomic<bool> initialized_;
   IMPLEMENT_REFCOUNTING(Browser);

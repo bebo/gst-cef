@@ -20,7 +20,7 @@
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_helpers.h"
 
-BrowserClient::BrowserClient(CefString url, int width, int height,
+CefWindowManager::CefWindowManager(CefString url, int width, int height,
 CefString initialization_js, void *push_frame, void *gst_cef) :
 is_closing_(false),
 url_(url),
@@ -30,16 +30,16 @@ initialization_js_(initialization_js),
 push_frame_(push_frame),
 gst_cef_(gst_cef) {}
 
-BrowserClient::~BrowserClient() {}
+CefWindowManager::~CefWindowManager() {}
 
-bool BrowserClient::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect)
+bool CefWindowManager::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect)
 {
-  GST_DEBUG("rect i got cef: %uX%u", cef->width, cef->height);
+  GST_DEBUG("GetViewRect: %uX%u", width_, height_);
   rect.Set(0, 0, width_, height_);
   return true;
 }
 
-void BrowserClient::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType paintType, const RectList &rects,
+void CefWindowManager::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType paintType, const RectList &rects,
                             const void *buffer, int width, int height)
 {
   GST_DEBUG("OnPaint");
@@ -52,29 +52,27 @@ void BrowserClient::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType pain
   push_frame(gst_cef_, buffer, width_, height_);
 }
 
-void BrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
+void CefWindowManager::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
   // The first callback to reference browser.
   browser_ = browser;
   GST_DEBUG("OnAfterCreated: %d", browser->GetIdentifier());
 }
 
-void BrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser)
+void CefWindowManager::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 {
   // Called after DoClose.
   is_closing_ = true;
   GST_DEBUG("Cef OnBeforeClose");
 }
 
-void BrowserClient::OnLoadError(CefRefPtr<CefBrowser> browser,
+void CefWindowManager::OnLoadError(CefRefPtr<CefBrowser> browser,
                                 CefRefPtr<CefFrame> frame,
                                 ErrorCode errorCode,
                                 const CefString &errorText,
                                 const CefString &failedUrl)
 {
-  CEF_REQUIRE_UI_THREAD();
   GST_ERROR("OnLoadError");
-
   // Don't display an error for downloaded files.
   if (errorCode == ERR_ABORTED)
     return;
@@ -88,7 +86,7 @@ void BrowserClient::OnLoadError(CefRefPtr<CefBrowser> browser,
   frame->LoadString(ss.str(), failedUrl);
 }
 
-void BrowserClient::OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
+void CefWindowManager::OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
                                          bool isLoading,
                                          bool canGoBack,
                                          bool canGoForward)
@@ -97,14 +95,14 @@ void BrowserClient::OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
   GST_INFO("OnLoadingStateChange: %d", isLoading);
 }
 
-void BrowserClient::Refresh(CefRefPtr<CefBrowser> browser,
+void CefWindowManager::Refresh(CefRefPtr<CefBrowser> browser,
                             CefRefPtr<CefFrame> frame)
 {
   GST_INFO("Refresh - window id: %d", browser->GetIdentifier());
   browser->Reload();
 }
 
-void BrowserClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
+void CefWindowManager::OnLoadEnd(CefRefPtr<CefBrowser> browser,
                               CefRefPtr<CefFrame> frame,
                               int httpStatusCode)
 {
@@ -138,35 +136,35 @@ void BrowserClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
       GST_INFO("OnLoadEnd - scheduled a refresh. window id: %d, status code: %d, url: %s - refreshing in %llums, count: %d",
                browser->GetIdentifier(), httpStatusCode, url, retry_time_ms, retry_count);
 
-      CefPostDelayedTask(TID_UI, base::Bind(&BrowserClient::Refresh, this, browser, frame), retry_time_ms);
+      CefPostDelayedTask(TID_UI, base::Bind(&CefWindowManager::Refresh, this, browser, frame), retry_time_ms);
       retry_count++;
     }
   }
 }
 
-void BrowserClient::CloseBrowser(void *gst_cef, bool force_close)
+void CefWindowManager::CloseBrowser(void *gst_cef, bool force_close)
 {
   GST_DEBUG("CloseBrowser. force_close: %d", force_close);
   browser_->GetHost()->CloseBrowser(force_close);
 }
 
-void BrowserClient::SetHidden(bool hidden)
+void CefWindowManager::SetHidden(bool hidden)
 {
   hidden_ = hidden;
   CefRefPtr<CefBrowserHost> host = browser_->GetHost();
   host->WasHidden(hidden);
 }
 
-void BrowserClient::ExecuteJS(CefString js)
+void CefWindowManager::ExecuteJS(CefString js)
 {
-  GST_DEBUG("BrowserClient::ExecuteJS %s", js);
+  GST_DEBUG("CefWindowManager::ExecuteJS %s", js);
   CefRefPtr<CefFrame> frame = browser_->GetMainFrame();
   frame->ExecuteJavaScript(js, frame->GetURL(), 0);
 }
 
-void BrowserClient::SetSize(int width, int height)
+void CefWindowManager::SetSize(int width, int height)
 {
-  GST_INFO("BrowserClient::Setting size of browser to %ux%u", width, height);
+  GST_INFO("CefWindowManager::Setting size of browser to %ux%u", width, height);
   width_ = width;
   height_ = height;
   CefBrowserHost *host = browser_->GetHost().get();
