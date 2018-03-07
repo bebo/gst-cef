@@ -70,11 +70,11 @@ static bool doStart(gpointer data)
   CefString url;
   CefString js;
   url.FromASCII(cb->url);
-  js.FromASCII(cb->js);
+  js.FromASCII(cb->initialization_js);
   // The window will not actually be opened until the browser finishes initializing.
-  app::Open(cb->gstCef, cb->push_frame, url, cb->width, cb->height, js);
+  app->Open(cb->gstCef, cb->push_frame, url, cb->width, cb->height, js);
   g_free(cb->url);
-  g_free(cb->js);
+  g_free(cb->initialization_js);
   g_free(cb);
 
   // Initialize CEF for the browser process.

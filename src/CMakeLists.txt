@@ -69,7 +69,6 @@ endif()
 
 ADD_EXECUTABLE(subprocess WIN32
   subprocess.cpp
-  cef_app.h
 )
 
 TARGET_LINK_LIBRARIES(subprocess

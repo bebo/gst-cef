@@ -29,15 +29,16 @@ public:
   // CefBrowserProcessHandler methods:
   virtual void OnContextInitialized() OVERRIDE;
   void CloseBrowser(void *gst_cef, bool force_close);
-  void Open(void *gst_cef, void *push_frame, std::string url, int width, int height, std::string initialization_js);
+  void Open(void *gst_cef, void *push_frame, CefString url, int width, int height, CefString initialization_js);
   void SetSize(void *gst_cef, int width, int height);
   void SetHidden(void *gst_cef, bool hidden);
-  void ExecuteJS(void *gst_cef, std::string js);
+  void ExecuteJS(void *gst_cef, CefString js);
+  void CreateCefWindow(CefRefPtr<CefWindowManager> client);
 
 private:
-  std:<CefWindowManager> browsers_;
+  std::vector<CefRefPtr<CefWindowManager>> browsers_;
   int browser_id_;
-  std::atomic<bool> initialized_;
+  bool initialized_;
   IMPLEMENT_REFCOUNTING(Browser);
 };
 

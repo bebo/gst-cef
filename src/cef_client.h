@@ -28,10 +28,6 @@ public:
   virtual CefRefPtr<CefLoadHandler> GetLoadHandler() OVERRIDE { return this; }
   virtual CefRefPtr<CefRenderHandler> GetRenderHandler() OVERRIDE { return this; }
 
-  // CefDisplayHandler methods:
-  virtual void OnTitleChange(CefRefPtr<CefBrowser> browser,
-                             const CefString &title) OVERRIDE;
-
   // CefLifeSpanHandler methods:
   virtual void OnAfterCreated(CefRefPtr<CefBrowser> browser) OVERRIDE;
   virtual bool DoClose(CefRefPtr<CefBrowser> browser) OVERRIDE;
@@ -59,22 +55,28 @@ public:
                const RectList &rects, const void *buffer, int width, int height) OVERRIDE;
 
   // Request that all existing browser windows close.
-  void CloseBrowser(void *gst_cef, bool force_close);
-  void SetSize(void *gst_cef, int width, int height);
-  void SetHidden(void *gst_cef, bool hidden);
-  void ExecuteJS(void *gst_cef, char* js);
+  void CloseBrowser(bool force_close);
+  void SetSize(int width, int height);
+  void SetHidden(bool hidden);
+  void ExecuteJS(CefString js);
   void AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void *gstCef, void *push_frame, int width, int height, char *initialization_js);
 
   bool IsClosing() const { return is_closing_; }
+  int GetWidth();
+  int GetHeight();
+  CefString GetUrl();
 private:
   CefRefPtr<CefBrowser> browser_;
   bool is_closing_;
-  void (* push_frame)(void *gstCef, const void *buffer, int width, int height);
+  void (* push_frame)(void *gst_cef, const void *buffer, int width, int height);
   void *gst_cef_;
 
   bool ready_;
+  bool hidden_;
   int width_;
   int height_;
+  int retry_count_;
+  CefString url_;
   std::string initialization_js_;
 
   void Refresh(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame);
