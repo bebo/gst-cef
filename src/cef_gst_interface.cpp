@@ -77,8 +77,8 @@ static bool doStart(gpointer data)
   g_free(cb->initialization_js);
   g_free(cb);
 
-  // Initialize CEF for the browser process.
   GST_DEBUG("CefInitialize");
+  // Initialize CEF for the browser process.  This marks the current thread as the UI thread.
   CefInitialize(main_args, settings, app.get(), NULL);
 
   g_mutex_lock(&cef_start_mutex);
@@ -91,7 +91,13 @@ static bool doOpen(gpointer data)
 {
   GST_INFO("doOpen");
   struct gstCb *cb = (struct gstCb *)data;
-  app.get()->Open(cb->gstCef, cb->push_frame, cb->url, cb->width, cb->height, cb->initialization_js);
+  CefString url;
+  CefString js;
+  url.FromASCII(cb->url);
+  js.FromASCII(cb->initialization_js);
+  app.get()->Open(cb->gstCef, cb->push_frame, url, cb->width, cb->height, js);
+  g_free(cb->initialization_js);
+  g_free(cb->url);
   g_free(cb);
   return false;
 }

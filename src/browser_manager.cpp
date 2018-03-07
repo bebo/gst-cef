@@ -59,10 +59,17 @@ CefRefPtr<CefWindowManager> Browser::GetClient(void* gst_cef) {
 
 void Browser::Open(void *gst_cef, void *push_frame, CefString url, int width, int height, CefString initialization_js)
 {
-  // TODO: Make sure this method is called on the UI thread.
-  GST_INFO("Open new browser window.");
+  GST_DEBUG("Trying to open new window.");
+  if (!CefCurrentlyOn(TID_UI) && initialized_) {
+    // Before CefInitialize is called, the UI thread is not defined.  We still need to make sure that 
+    // this is only called on the thread that will become the UI thread.
+    GST_DEBUG("Need to create windows on the UI thread. Adding to message loop");
+    CefPostTask(TID_UI, base::Bind(&Browser::Open, this, gst_cef, push_frame, url, width, height, initialization_js));
+    return;
+  }
   CefRefPtr<CefWindowManager> client = new CefWindowManager(url, width, height, initialization_js, push_frame, gst_cef);
   browsers_.push_back(client);
+  GST_DEBUG("Added new window client to the browser list.");
   if (initialized_) {
     CreateCefWindow(client);
   }
