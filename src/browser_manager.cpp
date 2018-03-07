@@ -17,7 +17,7 @@
 #include "include/wrapper/cef_helpers.h"
 #include "cef_handler.h"
 
-Browser::Browser() : {};
+Browser::Browser() : browser_id_(0) {};
 
 void Browser::CloseBrowser(void *gst_cef, bool force_close)
 {
@@ -27,32 +27,28 @@ void Browser::CloseBrowser(void *gst_cef, bool force_close)
   browserClient->CloseBrowser(gst_cef, force_close);
 }
 
-void Browser::Open(void *gstCef, void *push_data, char *open_url, int width, int height, char *initialization_js)
+void Browser::Open(void *gst_cef, void *push_data, std::string url, int width, int height, std::string initialization_js)
 {
-  CEF_REQUIRE_UI_THREAD();
-  GST_INFO("Open Url: %s", open_url);
-
-  CefRefPtr<BrowserClient> client = new BrowserClient();
-
-  // CEF Window Settings
-  CefWindowInfo window_info;
-  window_info.width = width;
-  window_info.height = height;
+  // TODO: Make sure this method is called on the UI thread.
+  GST_INFO("Open new browser window: %s", open_url);
+  CefRefPtr<BrowserClient> client = new BrowserClient(url, width, height, initialization_js, push_frame, gst_cef);
+  browsers_.push_back(client)
 
   // Enabling windowless rendering causes Chrome to fail to get the view rect and hit a NOTREACHED();
   // Doing a release build fixes this issue.
   // https://bitbucket.org/chromiumembedded/cef/src/fef43e07d688cb90381f7571f25b7912bded2b6e/libcef/browser/osr/render_widget_host_view_osr.cc?at=3112&fileviewer=file-view-default#render_widget_host_view_osr.cc-1120
+  CefWindowInfo window_info;
+  window_info.width = width;
+  window_info.height = height;
   window_info.SetAsWindowless(0);
 
-  // CEF Browser Settings
   CefBrowserSettings browser_settings;
   browser_settings.windowless_frame_rate = 30;
 
-  CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(window_info, browserClient, open_url, browser_settings, NULL);
-  GST_DEBUG("Synchronously created the browser.");
-  browserClient->AddBrowserGstMap(browser, gstCef, push_data, width, height, initialization_js);
-  GST_DEBUG("Added browser to gst map.");
+  CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(window_info, client, url, browser_settings, NULL);
   browser->GetHost()->WasResized();
+  // TODO: I probably need to unref this somewhere later.
+  client.SetBrowser(browser);
 }
 
 void Browser::SetSize(void *gstCef, int width, int height)

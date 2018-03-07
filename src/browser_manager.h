@@ -35,7 +35,8 @@ public:
   void ExecuteJS(void *gstCef, char* js);
 
 private:
-  std::map<int, CefRefPtr<BrowserClient>> browser_map_;
+  std:<BrowserClient> browsers_;
+  int browser_id_;
   std::atomic<bool> initialized_;
   IMPLEMENT_REFCOUNTING(Browser);
 };

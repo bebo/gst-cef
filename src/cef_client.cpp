@@ -21,13 +21,14 @@
 #include "include/wrapper/cef_helpers.h"
 
 BrowserClient::BrowserClient(std::string url, int width, int height,
-std::string initialization_js, void *push_frame) :
+std::string initialization_js, void *push_frame, void *gst_cef) :
 is_closing_(false),
 url_(url),
 width_(width),
 height_(height),
 initialization_js_(initialization_js),
-push_frame_(push_frame) {}
+push_frame_(push_frame),
+gst_cef_(gst_cef) {}
 
 BrowserClient::~BrowserClient() {}
 
@@ -42,20 +43,23 @@ void BrowserClient::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType pain
                             const void *buffer, int width, int height)
 {
   GST_DEBUG("OnPaint");
-  auto cef = getGstCef(browser);
-  if (!cef->ready)
+  if (!ready_)
   {
     GST_DEBUG("Not ready for OnPaint yet");
     return;
   }
-
-  cef->push_frame(cef->gst_cef, buffer, width, height);
+  // TODO: Make sure that the settings and gstreamer lineup.
+  push_frame(gst_cef_, buffer, width_, height_);
 }
 
 void BrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
   CEF_REQUIRE_UI_THREAD();
   GST_DEBUG("OnAfterCreated: %d", browser->GetIdentifier());
+}
+
+void BrowserClient::SetBrowser(CefRefPtr<CefBrowser> browser) {
+    browser_ = browser;
 }
 
 void BrowserClient::AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void *gstCef, void *push_frame, int width, int height, char* initialization_js)

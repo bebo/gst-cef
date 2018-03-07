@@ -16,8 +16,7 @@ class BrowserClient : public CefClient,
                       public CefRenderHandler
 {
 public:
-  explicit BrowserClient(std::string url, int width, int height, std::string initialization_js,   void *push_frame_;
-  CefRefPtr<CefBrowser> browser;);
+  explicit BrowserClient(std::string url, int width, int height, std::string initialization_js, void *push_frame_, void *gst_cef);
   ~BrowserClient();
 
   // Provide access to the single global instance of this object.
@@ -67,10 +66,12 @@ public:
   void AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void *gstCef, void *push_frame, int width, int height, char *initialization_js);
 
   bool IsClosing() const { return is_closing_; }
-
+  void SetBrowser(CefRefPtr<CefBrowser> browser);
 private:
+  CefRefPtr<CefBrowser> browser_;
   bool is_closing_;
   void *push_frame;
+  void *gst_cef_;
 
   bool ready_;
   int width_;
