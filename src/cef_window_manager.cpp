@@ -44,7 +44,7 @@ bool CefWindowManager::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect)
 void CefWindowManager::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType paintType, const RectList &rects,
                             const void *buffer, int width, int height)
 {
-  GST_DEBUG("OnPaint");
+  GST_DEBUG("OnPaint %d, %d", width, height);
   if (!ready_)
   {
     GST_DEBUG("Not ready for OnPaint yet");
