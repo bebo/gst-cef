@@ -51,7 +51,7 @@ void CefWindowManager::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType p
     return;
   }
   // TODO: Make sure that the settings and gstreamer lineup.
-  push_frame(gst_cef_, buffer, width_, height_);
+  push_frame(gst_cef_, buffer, width, height);
 }
 
 void CefWindowManager::OnAfterCreated(CefRefPtr<CefBrowser> browser)
