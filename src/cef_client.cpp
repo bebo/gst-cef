@@ -20,53 +20,21 @@
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_helpers.h"
 
-// POSTGRESQL gettimeofday windows.
-/* FILETIME of Jan 1 1970 00:00:00. */
-static const unsigned __int64 epoch = 116444736000000000;
-/*
- * timezone information is stored outside the kernel so tzp isn't used anymore.
- *
- * Note: this function is not for Win32 high precision timing purpose. See
- * elapsed_time().
- */
-int gettimeofday(struct timeval *tp, struct timezone *tzp)
-{
-  FILETIME file_time;
-  SYSTEMTIME system_time;
-  ULARGE_INTEGER ularge;
+BrowserClient::BrowserClient(std::string url, int width, int height,
+std::string initialization_js, void *push_frame) :
+is_closing_(false),
+url_(url),
+width_(width),
+height_(height),
+initialization_js_(initialization_js),
+push_frame_(push_frame) {}
 
-  GetSystemTime(&system_time);
-  SystemTimeToFileTime(&system_time, &file_time);
-  ularge.LowPart = file_time.dwLowDateTime;
-  ularge.HighPart = file_time.dwHighDateTime;
-
-  tp->tv_sec = (long)((ularge.QuadPart - epoch) / 10000000L);
-  tp->tv_usec = (long)(system_time.wMilliseconds * 1000);
-  return 0;
-}
-
-// TODO: support changing url by gst_cef
-BrowserClient::BrowserClient() : use_views_(false), is_closing_(false) {}
-
-BrowserClient::~BrowserClient()
-{
-  browser_gst_map.clear();
-}
+BrowserClient::~BrowserClient() {}
 
 bool BrowserClient::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect)
 {
-  CEF_REQUIRE_UI_THREAD();
-
-  auto cef = getGstCef(browser);
-
-  if (cef == 0)
-  {
-    return false;
-  }
-
   GST_DEBUG("rect i got cef: %uX%u", cef->width, cef->height);
-
-  rect = CefRect(0, 0, cef->width, cef->height);
+  rect = CefRect(0, 0, width_, height_);
   return true;
 }
 
@@ -103,7 +71,6 @@ void BrowserClient::AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void *gstCef
   gst_cef_info->height = height;
   gst_cef_info->browser = browser;
   gst_cef_info->initialization_js = initialization_js;
-  gettimeofday(&gst_cef_info->last_tv, NULL);
 
   int id = browser->GetIdentifier();
   GST_DEBUG("Adding browser to gst map browser id: %d", id);

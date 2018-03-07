@@ -9,20 +9,6 @@
 #include <list>
 #include <map>
 
-typedef struct GstCefInfo
-{
-  void *gst_cef;
-  void (*push_frame)(void *gstCef, const void *buffer, int width, int height);
-  CefRefPtr<CefBrowser> browser;
-
-  int width;
-  int height;
-  int retry_count;
-  bool ready;
-  char *initialization_js;
-  struct timeval last_tv;
-} GstCefInfo_T;
-
 class BrowserClient : public CefClient,
                       public CefDisplayHandler,
                       public CefLifeSpanHandler,
@@ -30,7 +16,8 @@ class BrowserClient : public CefClient,
                       public CefRenderHandler
 {
 public:
-  explicit BrowserClient();
+  explicit BrowserClient(std::string url, int width, int height, std::string initialization_js,   void *push_frame_;
+  CefRefPtr<CefBrowser> browser;);
   ~BrowserClient();
 
   // Provide access to the single global instance of this object.
@@ -82,19 +69,13 @@ public:
   bool IsClosing() const { return is_closing_; }
 
 private:
-  // True if the application is using the Views framework.
-  const bool use_views_;
-
-  bool ready;
   bool is_closing_;
-  int width;
-  int height;
-  std::string initialization_js;
+  void *push_frame;
 
-  // List of existing browser windows. Only accessed on the CEF UI thread.
-  std::map<int, GstCefInfo_T *> browser_gst_map;
-
-  GstCefInfo_T *getGstCef(CefRefPtr<CefBrowser> browser);
+  bool ready_;
+  int width_;
+  int height_;
+  std::string initialization_js_;
 
   void Refresh(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame);
 

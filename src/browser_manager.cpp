@@ -8,6 +8,7 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <map>
 
 #include "include/cef_browser.h"
 #include "include/cef_command_line.h"
@@ -16,56 +17,7 @@
 #include "include/wrapper/cef_helpers.h"
 #include "cef_handler.h"
 
-namespace
-{
-
-// When using the Views framework this object provides the delegate
-// implementation for the CefWindow that hosts the Views-based browser.
-class BrowserWindowDelegate : public CefWindowDelegate, public CefRenderProcessHandler
-{
-public:
-  explicit BrowserWindowDelegate(CefRefPtr<CefBrowserView> browser_view)
-      : browser_view_(browser_view) {}
-
-  void OnWindowCreated(CefRefPtr<CefWindow> window) OVERRIDE
-  {
-    // Add the browser view and show the window.
-    window->AddChildView(browser_view_);
-    window->Show();
-
-    // Give keyboard focus to the browser view.
-    browser_view_->RequestFocus();
-  }
-
-  void OnWindowDestroyed(CefRefPtr<CefWindow> window) OVERRIDE
-  {
-    browser_view_ = NULL;
-  }
-
-  bool CanClose(CefRefPtr<CefWindow> window) OVERRIDE
-  {
-    // Allow the window to close if the browser says it's OK.
-    CefRefPtr<CefBrowser> browser = browser_view_->GetBrowser();
-    if (browser)
-      return browser->GetHost()->TryCloseBrowser();
-    return true;
-  }
-
-private:
-  CefRefPtr<CefBrowserView> browser_view_;
-
-  IMPLEMENT_REFCOUNTING(BrowserWindowDelegate);
-  DISALLOW_COPY_AND_ASSIGN(BrowserWindowDelegate);
-};
-
-} // namespace
-
-Browser::Browser(void *gstCef, void *push_data, char *url, int width,
-                 int height, char *initialization_js) : gstCef(gstCef),
-                                                          push_data(push_data),
-                                                          url(url), width(width),
-                                                          initialization_js(initialization_js),
-                                                          height(height){};
+Browser::Browser() : {};
 
 void Browser::CloseBrowser(void *gst_cef, bool force_close)
 {
@@ -79,6 +31,8 @@ void Browser::Open(void *gstCef, void *push_data, char *open_url, int width, int
 {
   CEF_REQUIRE_UI_THREAD();
   GST_INFO("Open Url: %s", open_url);
+
+  CefRefPtr<BrowserClient> client = new BrowserClient();
 
   // CEF Window Settings
   CefWindowInfo window_info;

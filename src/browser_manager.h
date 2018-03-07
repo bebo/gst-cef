@@ -6,9 +6,10 @@
 #define CEF_TESTS_CEFSIMPLE_SIMPLE_APP_H_
 
 #include "include/cef_app.h"
-#include "cef_handler.h"
+#include "cef_client.h"
 
 // Implement application-level callbacks for the browser process.
+// This is a singleton class.
 class Browser : public CefApp, public CefBrowserProcessHandler, public CefRenderProcessHandler
 {
 public:
@@ -34,18 +35,8 @@ public:
   void ExecuteJS(void *gstCef, char* js);
 
 private:
-  CefRefPtr<BrowserClient> browserClient;
-  // This is a singleton class.
-  // The variables below are used to spawn the first renderer process.
-  void *gstCef;
-  void *push_data;
-  int height;
-  int width;
-  // TODO: Memory leak.  Call g_free on these parameters.
-  char *url;
-  char *initialization_js;
-
-  // Include the default reference counting implementation.
+  std::map<int, CefRefPtr<BrowserClient>> browser_map_;
+  std::atomic<bool> initialized_;
   IMPLEMENT_REFCOUNTING(Browser);
 };
 
