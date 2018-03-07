@@ -149,7 +149,7 @@ gst_cef_class_init(GstCefClass *klass)
                                                        FALSE, G_PARAM_READWRITE));
   g_object_class_install_property(gobject_class, PROP_INIT_JS,
                                   g_param_spec_string("initialization-js", "initialization-js",
-                                                      "JavaScript to be initialized OnLoadEnd",
+                                                      "JavaScript to be when the page loads (OnLoadEnd)",
                                                       DEFAULT_INITIALIZATION_JS, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
   g_object_class_install_property(gobject_class, PROP_JS,
                                   g_param_spec_string("javascript", "javascript", "javascript to be executed by window.",

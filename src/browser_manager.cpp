@@ -83,26 +83,52 @@ void Browser::CreateCefWindow(CefRefPtr<CefWindowManager> client) {
 
 void Browser::SetSize(void *gst_cef, int width, int height)
 {
-  CEF_REQUIRE_UI_THREAD();
+  if (!CefCurrentlyOn(TID_UI)) {
+    GST_INFO("Need to call Browser::SetSize on the UI thread. Adding to message loop");
+    CefPostTask(TID_UI, base::Bind(&Browser::SetSize, this, gst_cef, width, height));
+  }
   GST_INFO("Browser::SetSize");
-  // browserClient->SetSize(gstCef, width, height);
+  CefRefPtr<CefWindowManager> wm = GetClient(gst_cef);
+  if (wm == nullptr) {
+    GST_WARNING("Cannot set size.  Browser not found in map.");
+    return;
+  }
+  wm->SetSize(width, height);
 }
 
 void Browser::SetHidden(void *gst_cef, bool hidden)
 {
-  CEF_REQUIRE_UI_THREAD();
-  // browserClient->SetHidden(gstCef, hidden);
+  if (!CefCurrentlyOn(TID_UI)) {
+    GST_INFO("Need to call Browser::SetHidden on the UI thread. Adding to message loop");
+    CefPostTask(TID_UI, base::Bind(&Browser::SetHidden, this, gst_cef, hidden));
+  }
+  GST_INFO("Browser::SetHidden");
+  CefRefPtr<CefWindowManager> wm = GetClient(gst_cef);
+  if (wm == nullptr) {
+    GST_WARNING("Cannot set hidden.  Browser not found in map.");
+    return;
+  }
+  wm->SetHidden(hidden);
 }
 
 void Browser::ExecuteJS(void *gst_cef, CefString js)
 {
-  CEF_REQUIRE_UI_THREAD();
-  //browserClient->ExecuteJS(gstCef, js);
+  if (!CefCurrentlyOn(TID_UI)) {
+    GST_INFO("Need to call Browser::ExecuteJS on the UI thread. Adding to message loop");
+    CefPostTask(TID_UI, base::Bind(&Browser::ExecuteJS, this, gst_cef, js));
+  }
+  GST_INFO("Browser::ExecuteJS");
+  CefRefPtr<CefWindowManager> wm = GetClient(gst_cef);
+  if (wm == nullptr) {
+    GST_WARNING("Cannot execute JavaScript.  Browser not found in map.");
+    return;
+  }
+  wm->ExecuteJS(js);
 }
 
 void Browser::OnContextInitialized()
 {
-  GST_INFO("OnContextInitialized");
+  GST_INFO("OnContextInitialized.  Creating %d windows", browsers_.size());
   for(int i = 0; i < browsers_.size(); i++) {
     CreateCefWindow(browsers_[i]);
   }
