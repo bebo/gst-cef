@@ -17,7 +17,7 @@
 #include "include/wrapper/cef_helpers.h"
 #include "cef_handler.h"
 
-Browser::Browser() : browser_id_(0) {};
+Browser::Browser() : initialized_(false) {};
 
 void Browser::CloseBrowser(void *gst_cef, bool force_close)
 {
@@ -25,12 +25,14 @@ void Browser::CloseBrowser(void *gst_cef, bool force_close)
   browserClient->CloseBrowser(gst_cef, force_close);
 }
 
-void Browser::Open(void *gst_cef, void *push_frame, std::string url, int width, int height, std::string initialization_js)
+void Browser::Open(void *gst_cef, void *push_frame, CefString url, int width, int height, CefString initialization_js)
 {
   // TODO: Make sure this method is called on the UI thread.
   GST_INFO("Open new browser window: %s", open_url);
   CefRefPtr<BrowserClient> client = new BrowserClient(url, width, height, initialization_js, push_frame, gst_cef);
-  browsers_.push_back(client)
+  browsers_.push_back(client);
+  if (initialized_)
+    CreateWindow(client);
 }
 
 void Browser::CreateWindow(CefRefPtr<BrowserClient> client) {
@@ -64,7 +66,7 @@ void Browser::SetHidden(void *gst_cef, bool hidden)
   // browserClient->SetHidden(gstCef, hidden);
 }
 
-void Browser::ExecuteJS(void *gst_cef, std::string js)
+void Browser::ExecuteJS(void *gst_cef, CefString js)
 {
   CEF_REQUIRE_UI_THREAD();
   //browserClient->ExecuteJS(gstCef, js);
@@ -76,6 +78,7 @@ void Browser::OnContextInitialized()
   for(int i = 0; i < browsers_.size(); i++) {
     CreateWindow(browsers_[i]);
   }
+  initialized_ = true;
 }
 
 void Browser::OnBeforeCommandLineProcessing(

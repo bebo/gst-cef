@@ -66,8 +66,15 @@ static bool doStart(gpointer data)
   // It will create the first browser instance in OnContextInitialized() on the 
   // browser UI thread after the CEF has initialized.
   app = new Browser();
-  // TODO: Fix this function.
-  app::Open(cb->gstCef, cb->push_frame, cb->url, cb->width, cb->height, cb->initialization_js)
+
+  CefString url;
+  CefString js;
+  url.FromASCII(cb->url);
+  js.FromASCII(cb->js);
+  // The window will not actually be opened until the browser finishes initializing.
+  app::Open(cb->gstCef, cb->push_frame, url, cb->width, cb->height, js);
+  g_free(cb->url);
+  g_free(cb->js);
   g_free(cb);
 
   // Initialize CEF for the browser process.
