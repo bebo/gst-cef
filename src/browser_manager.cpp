@@ -49,8 +49,6 @@ void Browser::CreateWindow(CefRefPtr<BrowserClient> client) {
 
   CefRefPtr<CefBrowser> browser = CefBrowserHost::CreateBrowserSync(window_info, client, url, browser_settings, NULL);
   browser->GetHost()->WasResized();
-  // TODO: I probably need to unref this somewhere later.
-  client.SetBrowser(browser);
 }
 
 void Browser::SetSize(void *gst_cef, int width, int height)

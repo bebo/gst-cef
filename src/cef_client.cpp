@@ -20,8 +20,8 @@
 #include "include/wrapper/cef_closure_task.h"
 #include "include/wrapper/cef_helpers.h"
 
-BrowserClient::BrowserClient(std::string url, int width, int height,
-std::string initialization_js, void *push_frame, void *gst_cef) :
+BrowserClient::BrowserClient(CefString url, int width, int height,
+CefString initialization_js, void *push_frame, void *gst_cef) :
 is_closing_(false),
 url_(url),
 width_(width),
@@ -35,7 +35,7 @@ BrowserClient::~BrowserClient() {}
 bool BrowserClient::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect)
 {
   GST_DEBUG("rect i got cef: %uX%u", cef->width, cef->height);
-  rect = CefRect(0, 0, width_, height_);
+  rect.Set(0, 0, width_, height_);
   return true;
 }
 
@@ -54,84 +54,16 @@ void BrowserClient::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType pain
 
 void BrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
-  CEF_REQUIRE_UI_THREAD();
+  // The first callback to reference browser.
+  browser_ = browser;
   GST_DEBUG("OnAfterCreated: %d", browser->GetIdentifier());
-}
-
-void BrowserClient::SetBrowser(CefRefPtr<CefBrowser> browser) {
-    browser_ = browser;
-}
-
-void BrowserClient::AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void *gstCef, void *push_frame, int width, int height, char* initialization_js)
-{
-  CEF_REQUIRE_UI_THREAD();
-
-  GstCefInfo_T *gst_cef_info = new GstCefInfo_T;
-  gst_cef_info->gst_cef = gstCef;
-  gst_cef_info->push_frame = (void (*)(void *gstCef, const void *buffer, int width, int height))push_frame;
-  gst_cef_info->ready = 0;
-  gst_cef_info->retry_count = 0;
-  gst_cef_info->width = width;
-  gst_cef_info->height = height;
-  gst_cef_info->browser = browser;
-  gst_cef_info->initialization_js = initialization_js;
-
-  int id = browser->GetIdentifier();
-  GST_DEBUG("Adding browser to gst map browser id: %d", id);
-
-  browser_gst_map[id] = gst_cef_info;
-  //Do this because the caps may have triggered a SetSize before this function was called
-  //this->SetSize(gstCef, width, height);
-}
-
-GstCefInfo_T *BrowserClient::getGstCef(CefRefPtr<CefBrowser> browser)
-{
-  CEF_REQUIRE_UI_THREAD();
-
-  int id = browser->GetIdentifier();
-
-  auto info_it = browser_gst_map.find(id);
-  auto it_end = browser_gst_map.end();
-
-  if (info_it == it_end)
-  {
-    GST_DEBUG("Browser not found in the map, browser id: %d", id);
-    return NULL;
-  }
-
-  return info_it->second;
-}
-
-bool BrowserClient::DoClose(CefRefPtr<CefBrowser> browser)
-{
-  CEF_REQUIRE_UI_THREAD();
-
-  GST_DEBUG("DoClose, browser id: %d", browser->GetIdentifier());
-
-  // Closing the main window requires special handling. See the DoClose()
-  // documentation in the CEF header for a detailed destription of this
-  // process.
-  if (browser_gst_map.size() == 1)
-  {
-    // Set a flag to indicate that the window close should be allowed.
-    is_closing_ = true;
-  }
-
-  // Allow the close. For windowed browsers this will result in the OS close
-  // event being sent.
-  return false;
 }
 
 void BrowserClient::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 {
-  CEF_REQUIRE_UI_THREAD();
-
-  GST_INFO("OnBeforeClose, browser id: %d", browser->GetIdentifier());
-
-  // Remove from the browser from the map.
-  GstCefInfo_T *gstcefinfo = browser_gst_map[browser->GetIdentifier()];
-  browser_gst_map.erase(browser->GetIdentifier());
-  delete gstcefinfo;
+  // Called after DoClose.
+  is_closing_ = true;
+  GST_DEBUG("Cef OnBeforeClose");
 }
 
 void BrowserClient::OnLoadError(CefRefPtr<CefBrowser> browser,
@@ -191,7 +123,7 @@ void BrowserClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
   {
     if (httpStatusCode == 200)
     { // 200 ~ 499?
-      GST_INFO("Cef Initialization JavaScript: %s", initialization_js);
+      GST_INFO("Cef Initialization JavaScript: %s", initialization_js_);
       frame->ExecuteJavaScript(CefString(initialization_js), frame->GetURL(), 0);
       GST_INFO("Executed startup javascript.");
       retry_count = 0;
@@ -215,145 +147,28 @@ void BrowserClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
 void BrowserClient::CloseBrowser(void *gst_cef, bool force_close)
 {
   GST_DEBUG("CloseBrowser. force_close: %d", force_close);
-  if (!CefCurrentlyOn(TID_UI))
-  {
-    // Execute on the UI thread.
-    CefPostTask(TID_UI, base::Bind(&BrowserClient::CloseBrowser, this,
-                                   gst_cef, force_close));
-    return;
-  }
-  CEF_REQUIRE_UI_THREAD();
-
-  for (auto it = browser_gst_map.begin(); it != browser_gst_map.end(); ++it)
-  {
-    if (!it->second)
-    {
-      GST_ERROR("Closing Browser, browser id: %d. UNABLE TO FIND it->second", it->first);
-      continue;
-    }
-
-    if (it->second->gst_cef == gst_cef)
-    {
-      GST_LOG("Closing Browser, browser id: %d", it->first);
-      CefBrowser *browser = it->second->browser.get();
-      browser->GetHost()->CloseBrowser(force_close);
-      break;
-    }
-  }
+  browser_->GetHost()->CloseBrowser(force_close);
 }
 
-void BrowserClient::SetHidden(void *gst_cef, bool hidden)
+void BrowserClient::SetHidden(bool hidden)
 {
-  GST_INFO("Set Hidden");
-
-  if (!CefCurrentlyOn(TID_UI))
-  {
-    // TODO: Determine if this works and is necessary.
-    // Execute on the UI thread.
-    CefPostTask(TID_UI, base::Bind(&BrowserClient::SetHidden, this,
-                                   gst_cef, hidden));
-    return;
-  }
-  CEF_REQUIRE_UI_THREAD();
-
-  GST_INFO("BrowserClient::SetHidden hidden %u", hidden);
-
-  for (auto it = browser_gst_map.begin(); it != browser_gst_map.end(); ++it)
-  {
-    if (!it->second)
-    {
-      GST_ERROR("BrowserClient::SetHidden, browser id: %d. UNABLE TO FIND it->second", it->first);
-      continue;
-    }
-
-    if (it->second->gst_cef == gst_cef)
-    {
-      GstCefInfo_T *info = (GstCefInfo_T *)it->second;
-      CefBrowser *browser = info->browser.get();
-      CefRefPtr<CefBrowserHost> host = browser->GetHost();
-      host->WasHidden(hidden);
-      return;
-    }
-  }
-
-  GST_INFO("Didn't get gst_cef");
+  hidden_ = hidden;
+  CefRefPtr<CefBrowserHost> host = browser_->GetHost();
+  host->WasHidden(hidden);
 }
 
-void BrowserClient::ExecuteJS(void *gst_cef, char* js)
+void BrowserClient::ExecuteJS(CefString js)
 {
-	// We need the UI thread because we are accessing the browser map.
-	GST_INFO("Execute JS any thread");
-
-	if (!CefCurrentlyOn(TID_UI))
-	{
-		// Execute on the UI thread.
-		CefPostTask(TID_UI, base::Bind(&BrowserClient::ExecuteJS, this,
-			gst_cef, js));
-		return;
-	}
-	CEF_REQUIRE_UI_THREAD();
-
-	GST_DEBUG("BrowserClient::ExecuteJS %s", js);
-
-	for (auto it = browser_gst_map.begin(); it != browser_gst_map.end(); ++it)
-	{
-		if (!it->second)
-		{
-			GST_ERROR("BrowserClient::ExecuteJS, browser id: %d. UNABLE TO FIND it->second", it->first);
-			continue;
-		}
-
-		if (it->second->gst_cef == gst_cef)
-		{
-			GstCefInfo_T *info = (GstCefInfo_T *)it->second;
-			CefRefPtr<CefBrowser> browser = info->browser;
-			CefRefPtr<CefFrame> frame = browser->GetMainFrame();
-			frame->ExecuteJavaScript(CefString(js), frame->GetURL(), 0);
-			g_free(js);
-			return;
-		}
-	}
-
-	g_free(js);
-	GST_WARNING("Failed to execute javascript because we couldn't find the browser: %s", js);
+  GST_DEBUG("BrowserClient::ExecuteJS %s", js);
+  CefRefPtr<CefFrame> frame = browser_->GetMainFrame();
+  frame->ExecuteJavaScript(js, frame->GetURL(), 0);
 }
 
-void BrowserClient::SetSize(void *gst_cef, int width, int height)
+void BrowserClient::SetSize(int width, int height)
 {
-
-  GST_INFO("Set Size Any Thread");
-
-  if (!CefCurrentlyOn(TID_UI))
-  {
-    // Execute on the UI thread.
-    CefPostTask(TID_UI, base::Bind(&BrowserClient::SetSize, this,
-                                   gst_cef, width, height));
-    return;
-  }
-  CEF_REQUIRE_UI_THREAD();
-
-  GST_INFO("BrowserClient::Setting size of browser %ux%u", width, height);
-
-  for (auto it = browser_gst_map.begin(); it != browser_gst_map.end(); ++it)
-  {
-    if (!it->second)
-    {
-      GST_ERROR("BrowserClient::SetSize, browser id: %d. UNABLE TO FIND it->second", it->first);
-      continue;
-    }
-
-    if (it->second->gst_cef == gst_cef)
-    {
-      GstCefInfo_T *info = (GstCefInfo_T *)it->second;
-      CefBrowser *browser = info->browser.get();
-      GST_INFO("got cef. BrowserClient::SetSize id: %d", browser->GetIdentifier());
-      info->width = width;
-      info->height = height;
-      CefBrowserHost *host = browser->GetHost().get();
-      host->WasResized();
-      return;
-    }
-  }
-
-  GST_INFO("Didn't get gst_cef");
+  GST_INFO("BrowserClient::Setting size of browser to %ux%u", width, height);
+  width_ = width;
+  height_ = height;
+  CefBrowserHost *host = browser_->GetHost().get();
+  host->WasResized();
 }
