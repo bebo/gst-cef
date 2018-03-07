@@ -10,6 +10,7 @@
 
 // Implement application-level callbacks for the browser process.
 // This is a singleton class and all public functions in this class need to be called on the UI thread.
+// Most of the CEF callbacks are guaranteed to be called on the UI thread.
 class Browser : public CefApp, public CefBrowserProcessHandler, public CefRenderProcessHandler
 {
 public:
@@ -36,6 +37,7 @@ public:
   void CreateCefWindow(CefRefPtr<CefWindowManager> client);
 
 private:
+  CefRefPtr<CefWindowManager> GetClient(void* gst_cef);
   std::vector<CefRefPtr<CefWindowManager>> browsers_;
   int browser_id_;
   bool initialized_;

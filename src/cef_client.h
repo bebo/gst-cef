@@ -64,6 +64,8 @@ public:
   int GetWidth();
   int GetHeight();
   CefString GetUrl();
+  void* GetGstCef();
+  CefRefPtr<CefBrowser> GetBrowser();
 private:
   CefRefPtr<CefBrowser> browser_;
   bool is_closing_;

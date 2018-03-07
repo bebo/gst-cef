@@ -22,7 +22,44 @@ Browser::Browser() : initialized_(false) {};
 void Browser::CloseBrowser(void *gst_cef, bool force_close)
 {
   GST_LOG("Browser::CloseBrowser");
-  // browserClient->CloseBrowser(gst_cef, force_close);
+  if (!CefCurrentlyOn(TID_UI)) {
+    GST_INFO("Need to close on UI thread. Adding to message loop");
+    // TODO: fix this.
+    std::exit(1);
+  }
+  CefRefPtr<CefWindowManager> b;
+  int index = -1;
+  for (int i = 0; i < browsers_.size(); i++) {
+    if (gst_cef == browsers_[i]->GetGstCef()) {
+      index = i;
+      b = browsers_[i];
+      browsers_.erase(browsers_.begin() + i);
+    }
+  }
+  if (index == -1) {
+    GST_INFO("Failed to find browser when trying to close");
+    return;
+  }
+  GST_INFO("Closing browser at index: %d", index);
+  b->GetBrowser()->GetHost()->CloseBrowser(force_close);
+}
+
+CefRefPtr<CefWindowManager> Browser::GetClient(void* gst_cef) {
+  // Must be called on UI thread.  
+  if (!CefCurrentlyOn(TID_UI)) {
+    GST_INFO("Need to close on UI thread. Adding to message loop");
+    // TODO: fix this.
+    std::exit(1);
+  }
+
+  GST_INFO("Getting browser client");
+  for (int i = 0; i < browsers_.size(); i++) {
+    if (gst_cef == browsers_[i]->GetGstCef()) {
+      GST_INFO("found correct browser");
+      return browsers_[i];
+    }
+  }
+  GST_INFO("Did not found browser");
 }
 
 void Browser::Open(void *gst_cef, void *push_frame, CefString url, int width, int height, CefString initialization_js)

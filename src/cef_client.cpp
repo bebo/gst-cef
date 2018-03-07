@@ -156,10 +156,18 @@ CefString CefWindowManager::GetUrl() {
   return url_;
 }
 
+void* CefWindowManager::GetGstCef() {
+  return gst_cef_;
+}
+
 void CefWindowManager::CloseBrowser(bool force_close)
 {
   GST_DEBUG("CloseBrowser. force_close: %d", force_close);
   browser_->GetHost()->CloseBrowser(force_close);
+}
+
+CefRefPtr<CefBrowser> CefWindowManager::GetBrowser() {
+  return browser_;
 }
 
 void CefWindowManager::SetHidden(bool hidden)
