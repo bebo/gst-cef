@@ -12,7 +12,7 @@
 class Browser : public CefApp, public CefBrowserProcessHandler, public CefRenderProcessHandler
 {
 public:
-  Browser(void *gstCef, void *push_data, char *url, int width, int height, char *initialization_js);
+  Browser();
 
   // CefApp methods:
   virtual CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler()

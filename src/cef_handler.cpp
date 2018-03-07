@@ -84,37 +84,6 @@ void BrowserClient::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType pain
   cef->push_frame(cef->gst_cef, buffer, width, height);
 }
 
-void BrowserClient::OnTitleChange(CefRefPtr<CefBrowser> browser,
-                                  const CefString &title)
-{
-  CEF_REQUIRE_UI_THREAD();
-
-  if (use_views_)
-  {
-    // Set the title of the window using the Views framework.
-    CefRefPtr<CefBrowserView> browser_view =
-        CefBrowserView::GetForBrowser(browser);
-    if (browser_view)
-    {
-      CefRefPtr<CefWindow> window = browser_view->GetWindow();
-      if (window)
-        window->SetTitle(title);
-    }
-  }
-  else
-  {
-    // Set the title of the window using platform APIs.
-    PlatformTitleChange(browser, title);
-  }
-}
-
-void BrowserClient::PlatformTitleChange(CefRefPtr<CefBrowser> browser,
-                                        const CefString &title)
-{
-  // CefWindowHandle hwnd = browser->GetHost()->GetWindowHandle();
-  // SetWindowText(hwnd, std::wstring(title).c_str());
-}
-
 void BrowserClient::OnAfterCreated(CefRefPtr<CefBrowser> browser)
 {
   CEF_REQUIRE_UI_THREAD();
@@ -236,10 +205,6 @@ void BrowserClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
                               CefRefPtr<CefFrame> frame,
                               int httpStatusCode)
 {
-  CEF_REQUIRE_UI_THREAD();
-
-  auto cef = getGstCef(browser);
-
   if (httpStatusCode >= 200 && httpStatusCode < 400)
   {
     GST_INFO("OnLoadEnd - window id: %d, is main: %d, status code: %d",
@@ -255,24 +220,23 @@ void BrowserClient::OnLoadEnd(CefRefPtr<CefBrowser> browser,
   {
     if (httpStatusCode == 200)
     { // 200 ~ 499?
-      GST_INFO("Cef Initialization JavaScript: %s", cef->initialization_js);
-      frame->ExecuteJavaScript(CefString(cef->initialization_js), frame->GetURL(), 0);
+      GST_INFO("Cef Initialization JavaScript: %s", initialization_js);
+      frame->ExecuteJavaScript(CefString(initialization_js), frame->GetURL(), 0);
       GST_INFO("Executed startup javascript.");
-      cef->retry_count = 0;
-      cef->ready = true;
+      retry_count = 0;
+      ready = true;
     }
     else if (httpStatusCode >= 500 && httpStatusCode < 600)
     { // 500 ~ 599?
       const char *url = frame->GetURL().ToString().c_str();
 
-      unsigned long long retry_time_ms = (std::min)((unsigned long long)30000, (unsigned long long)std::pow(2, cef->retry_count) * 200); // 200, 400, 800, 1600 ... 30000
+      unsigned long long retry_time_ms = (std::min)((unsigned long long)30000, (unsigned long long)std::pow(2, retry_count) * 200); // 200, 400, 800, 1600 ... 30000
 
       GST_INFO("OnLoadEnd - scheduled a refresh. window id: %d, status code: %d, url: %s - refreshing in %llums, count: %d",
-               browser->GetIdentifier(), httpStatusCode, url, retry_time_ms, cef->retry_count);
+               browser->GetIdentifier(), httpStatusCode, url, retry_time_ms, retry_count);
 
       CefPostDelayedTask(TID_UI, base::Bind(&BrowserClient::Refresh, this, browser, frame), retry_time_ms);
-
-      cef->retry_count = cef->retry_count + 1;
+      retry_count++;
     }
   }
 }

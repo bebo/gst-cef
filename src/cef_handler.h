@@ -52,6 +52,7 @@ public:
   virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) OVERRIDE;
 
   // CefLoadHandler methods:
+  // They will be called on the UI thread.
   virtual void OnLoadError(CefRefPtr<CefBrowser> browser,
                            CefRefPtr<CefFrame> frame,
                            ErrorCode errorCode,
@@ -81,14 +82,14 @@ public:
   bool IsClosing() const { return is_closing_; }
 
 private:
-  // Platform-specific implementation.
-  void PlatformTitleChange(CefRefPtr<CefBrowser> browser,
-                           const CefString &title);
-
   // True if the application is using the Views framework.
   const bool use_views_;
 
+  bool ready;
   bool is_closing_;
+  int width;
+  int height;
+  std::string initialization_js;
 
   // List of existing browser windows. Only accessed on the CEF UI thread.
   std::map<int, GstCefInfo_T *> browser_gst_map;
