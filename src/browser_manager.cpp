@@ -51,20 +51,20 @@ void Browser::CreateWindow(CefRefPtr<BrowserClient> client) {
   client.SetBrowser(browser);
 }
 
-void Browser::SetSize(void *gstCef, int width, int height)
+void Browser::SetSize(void *gst_cef, int width, int height)
 {
   CEF_REQUIRE_UI_THREAD();
   GST_INFO("Browser::SetSize");
   // browserClient->SetSize(gstCef, width, height);
 }
 
-void Browser::SetHidden(void *gstCef, bool hidden)
+void Browser::SetHidden(void *gst_cef, bool hidden)
 {
   CEF_REQUIRE_UI_THREAD();
   // browserClient->SetHidden(gstCef, hidden);
 }
 
-void Browser::ExecuteJS(void *gstCef, char *js)
+void Browser::ExecuteJS(void *gst_cef, std::string js)
 {
   CEF_REQUIRE_UI_THREAD();
   //browserClient->ExecuteJS(gstCef, js);
