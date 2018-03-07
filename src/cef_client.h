@@ -2,8 +2,8 @@
 // reserved. Use of this source code is governed by a BSD-style license that
 // can be found in the LICENSE file.
 
-#ifndef CEF_TESTS_CEFSIMPLE_SIMPLE_HANDLER_H_
-#define CEF_TESTS_CEFSIMPLE_SIMPLE_HANDLER_H_
+#ifndef CEF_CLIENT_H_
+#define CEF_CLIENT_H_
 
 #include "include/cef_client.h"
 #include <list>
@@ -30,7 +30,6 @@ public:
 
   // CefLifeSpanHandler methods:
   virtual void OnAfterCreated(CefRefPtr<CefBrowser> browser) OVERRIDE;
-  virtual bool DoClose(CefRefPtr<CefBrowser> browser) OVERRIDE;
   virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) OVERRIDE;
 
   // CefLoadHandler methods:
@@ -85,4 +84,4 @@ private:
   IMPLEMENT_REFCOUNTING(CefWindowManager);
 };
 
-#endif // CEF_TESTS_CEFSIMPLE_SIMPLE_HANDLER_H_
+#endif // CEF_CLIENT_H_
