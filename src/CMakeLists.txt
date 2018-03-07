@@ -31,13 +31,13 @@ LINK_DIRECTORIES(
 
 ADD_LIBRARY(libgstcef SHARED
   gstcef.c
-  cef.cpp
-  cef.h
   gstcef.h
-  cef_app.cpp
-  cef_app.h
-  cef_handler.cpp
-  cef_handler.h
+  cef_gst_interface.cpp
+  cef_gst_interface.h
+  browser_manager.cpp
+  browser_manager.h
+  cef_client.cpp
+  cef_client.h
 )
 
 # We probably don't need most of these libraries.
