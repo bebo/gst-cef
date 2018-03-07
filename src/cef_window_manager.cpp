@@ -50,7 +50,6 @@ void CefWindowManager::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType p
     GST_DEBUG("Not ready for OnPaint yet");
     return;
   }
-  // TODO: Make sure that the settings and gstreamer lineup.
   push_frame(gst_cef_, buffer, width, height);
 }
 
