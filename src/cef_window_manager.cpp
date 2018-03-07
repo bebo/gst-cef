@@ -65,6 +65,7 @@ void CefWindowManager::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 {
   // Called after DoClose.
   is_closing_ = true;
+  browser_ = nullptr; 
   GST_DEBUG("Cef OnBeforeClose");
 }
 

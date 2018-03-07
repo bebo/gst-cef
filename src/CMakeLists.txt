@@ -36,8 +36,8 @@ ADD_LIBRARY(libgstcef SHARED
   cef_gst_interface.h
   browser_manager.cpp
   browser_manager.h
-  cef_client.cpp
-  cef_client.h
+  cef_window_manager.cpp
+  cef_window_manager.h
 )
 
 # We probably don't need most of these libraries.
