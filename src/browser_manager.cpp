@@ -21,8 +21,6 @@ Browser::Browser() : browser_id_(0) {};
 
 void Browser::CloseBrowser(void *gst_cef, bool force_close)
 {
-  CEF_REQUIRE_UI_THREAD();
-
   GST_LOG("Browser::CloseBrowser");
   browserClient->CloseBrowser(gst_cef, force_close);
 }
@@ -33,7 +31,9 @@ void Browser::Open(void *gst_cef, void *push_data, std::string url, int width, i
   GST_INFO("Open new browser window: %s", open_url);
   CefRefPtr<BrowserClient> client = new BrowserClient(url, width, height, initialization_js, push_frame, gst_cef);
   browsers_.push_back(client)
+}
 
+void Browser::CreateWindow(CefRefPtr<BrowserClient> client) {
   // Enabling windowless rendering causes Chrome to fail to get the view rect and hit a NOTREACHED();
   // Doing a release build fixes this issue.
   // https://bitbucket.org/chromiumembedded/cef/src/fef43e07d688cb90381f7571f25b7912bded2b6e/libcef/browser/osr/render_widget_host_view_osr.cc?at=3112&fileviewer=file-view-default#render_widget_host_view_osr.cc-1120
@@ -55,31 +55,27 @@ void Browser::SetSize(void *gstCef, int width, int height)
 {
   CEF_REQUIRE_UI_THREAD();
   GST_INFO("Browser::SetSize");
-  this->width = width;
-  this->height = height;
-  browserClient->SetSize(gstCef, width, height);
+  // browserClient->SetSize(gstCef, width, height);
 }
 
 void Browser::SetHidden(void *gstCef, bool hidden)
 {
   CEF_REQUIRE_UI_THREAD();
-  browserClient->SetHidden(gstCef, hidden);
+  // browserClient->SetHidden(gstCef, hidden);
 }
 
 void Browser::ExecuteJS(void *gstCef, char *js)
 {
   CEF_REQUIRE_UI_THREAD();
-  browserClient->ExecuteJS(gstCef, js);
+  //browserClient->ExecuteJS(gstCef, js);
 }
 
 void Browser::OnContextInitialized()
 {
-  CEF_REQUIRE_UI_THREAD();
   GST_INFO("OnContextInitialized");
-
-  // BrowserClient implements browser-level callbacks.
-  browserClient = new BrowserClient();
-  Open(gstCef, push_data, url, this->width, this->height, this->initialization_js);
+  for(int i = 0; i < browsers_.size(); i++) {
+    CreateWindow(browsers_[i]);
+  }
 }
 
 void Browser::OnBeforeCommandLineProcessing(

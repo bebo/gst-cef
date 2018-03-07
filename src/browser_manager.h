@@ -9,7 +9,7 @@
 #include "cef_client.h"
 
 // Implement application-level callbacks for the browser process.
-// This is a singleton class.
+// This is a singleton class and all functions in this class need to be called on the UI thread.
 class Browser : public CefApp, public CefBrowserProcessHandler, public CefRenderProcessHandler
 {
 public:
