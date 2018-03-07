@@ -126,6 +126,21 @@ void Browser::ExecuteJS(void *gst_cef, CefString js)
   wm->ExecuteJS(js);
 }
 
+void Browser::SetInitializationJS(void *gst_cef, CefString js)
+{
+  if (!CefCurrentlyOn(TID_UI)) {
+    GST_INFO("Need to call Browser::ExecuteJS on the UI thread. Adding to message loop");
+    CefPostTask(TID_UI, base::Bind(&Browser::SetInitializationJS, this, gst_cef, js));
+  }
+  GST_INFO("Browser::ExecuteJS");
+  CefRefPtr<CefWindowManager> wm = GetClient(gst_cef);
+  if (wm == nullptr) {
+    GST_DEBUG("Cannot set initialization JavaScript because the window does not exist yet.  It will be set later.");
+    return;
+  }
+  wm->ExecuteJS(js);
+}
+
 void Browser::OnContextInitialized()
 {
   GST_INFO("OnContextInitialized.  Creating %d windows", browsers_.size());

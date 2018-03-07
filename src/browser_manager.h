@@ -34,6 +34,7 @@ public:
   void SetSize(void *gst_cef, int width, int height);
   void SetHidden(void *gst_cef, bool hidden);
   void ExecuteJS(void *gst_cef, CefString js);
+  void SetInitializationJS(void *gst_cef, CefString initialization_js);
   void CreateCefWindow(CefRefPtr<CefWindowManager> client);
 
 private:

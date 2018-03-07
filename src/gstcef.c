@@ -268,6 +268,15 @@ void gst_cef_execute_js(GstCef *cef)
   execute_js(args);
 }
 
+void gst_cef_set_initialization_js(GstCef *cef)
+{
+  // TODO: Investigate whether we need to lock cef when properties are set.
+  struct gstExecuteJSArgs *args = g_malloc(sizeof(struct gstExecuteJSArgs));
+  args->gstCef = cef;
+  args->js = g_strdup(cef->initialization_js);
+  set_initialization_js(args);
+}
+
 void gst_cef_set_property(GObject *object, guint property_id,
                           const GValue *value, GParamSpec *pspec)
 {
@@ -309,6 +318,7 @@ void gst_cef_set_property(GObject *object, guint property_id,
     const gchar *init_js = g_value_get_string(value);
     g_free(cef->initialization_js);
     cef->initialization_js = g_strdup(init_js);
+    gst_cef_set_initialization_js(cef);
     break;
   }
   case PROP_HIDDEN:

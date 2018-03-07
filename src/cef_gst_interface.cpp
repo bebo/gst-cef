@@ -201,17 +201,39 @@ static bool doExecuteJS(void *args)
 	GST_DEBUG("doExecuteJS");
     struct gstExecuteJSArgs *exec_js_args = (gstExecuteJSArgs* )args;
 	void *gstCef = exec_js_args->gstCef;
-	char* js = exec_js_args->js;
+  CefString js;
+  js.FromASCII(exec_js_args->js);
+  g_free(exec_js_args->js);
 	g_free(args);
 
 	if (!app)
 	{
-		g_free(js);
+    GST_INFO("Cannot execute JS because the app is not initialized.");
 		return false;
 	}
 
 	app->ExecuteJS(gstCef, js);
 	return false;
+}
+
+static bool doSetInitializationJS(void *args)
+{
+  GST_DEBUG("doSetInitializationJS");
+  struct gstExecuteJSArgs *exec_js_args = (gstExecuteJSArgs*)args;
+  void *gstCef = exec_js_args->gstCef;
+  CefString js;
+  js.FromASCII(exec_js_args->js);
+  g_free(exec_js_args->js);
+  g_free(args);
+
+  if (!app)
+  {
+    GST_INFO("Cannot set initialization JS because the app is not initialized.");
+    return false;
+  }
+
+  app->SetInitializationJS(gstCef, js);
+  return false;
 }
 
 void set_hidden(void *args)
@@ -224,6 +246,12 @@ void execute_js(void *args)
 {
 	GST_INFO("Adding doExecuteJS to work loop");
 	g_idle_add((GSourceFunc)doExecuteJS, args);
+}
+
+void set_initialization_js(void *args)
+{
+  GST_INFO("Adding doExecuteJS to work loop");
+  g_idle_add((GSourceFunc)doSetInitializationJS, args);
 }
 
 bool doClose(gpointer args)

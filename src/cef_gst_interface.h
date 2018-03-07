@@ -44,6 +44,7 @@ void open_browser(void *args);
 void set_size(void *args);
 void set_hidden(void *args);
 void execute_js(void *args);
+void set_initialization_js(void *args);
 void close_browser(void *args);
 void shutdown_browser();
 
