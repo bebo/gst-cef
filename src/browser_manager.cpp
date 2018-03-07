@@ -12,10 +12,12 @@
 #include "include/views/cef_browser_view.h"
 #include "include/views/cef_window.h"
 #include "include/wrapper/cef_helpers.h"
+#include "include/cef_app.h"
+#include "include/wrapper/cef_closure_task.h"
 
 #include "cef_gst_interface.h"
 #include "browser_manager.h"
-#include "cef_client.h"
+#include "cef_window_manager.h"
 
 Browser::Browser() : initialized_(false) {};
 
@@ -24,34 +26,27 @@ void Browser::CloseBrowser(void *gst_cef, bool force_close)
   GST_LOG("Browser::CloseBrowser");
   if (!CefCurrentlyOn(TID_UI)) {
     GST_INFO("Need to close on UI thread. Adding to message loop");
-    // TODO: fix this.
-    std::exit(1);
+    CefPostTask(TID_UI, base::Bind(&Browser::CloseBrowser, this, gst_cef, force_close));
   }
   CefRefPtr<CefWindowManager> b;
-  int index = -1;
   for (int i = 0; i < browsers_.size(); i++) {
     if (gst_cef == browsers_[i]->GetGstCef()) {
-      index = i;
       b = browsers_[i];
       browsers_.erase(browsers_.begin() + i);
+      GST_INFO("Closing browser at index: %d", i);
     }
   }
-  if (index == -1) {
+  if (b == nullptr) {
     GST_INFO("Failed to find browser when trying to close");
     return;
   }
-  GST_INFO("Closing browser at index: %d", index);
   b->GetBrowser()->GetHost()->CloseBrowser(force_close);
 }
 
 CefRefPtr<CefWindowManager> Browser::GetClient(void* gst_cef) {
-  // Must be called on UI thread.  
   if (!CefCurrentlyOn(TID_UI)) {
-    GST_INFO("Need to close on UI thread. Adding to message loop");
-    // TODO: fix this.
-    std::exit(1);
+    GST_WARNING("Need to call Browser::GetClient on UI thread.");
   }
-
   GST_INFO("Getting browser client");
   for (int i = 0; i < browsers_.size(); i++) {
     if (gst_cef == browsers_[i]->GetGstCef()) {

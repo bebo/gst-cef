@@ -6,7 +6,7 @@
 #define CEF_TESTS_CEFSIMPLE_SIMPLE_APP_H_
 
 #include "include/cef_app.h"
-#include "cef_client.h"
+#include "cef_window_manager.h"
 
 // Implement application-level callbacks for the browser process.
 // This is a singleton class and all public functions in this class need to be called on the UI thread.
