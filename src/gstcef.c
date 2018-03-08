@@ -426,8 +426,8 @@ gst_cef_get_caps(GstBaseSrc *src, GstCaps *filter)
 
   GST_DEBUG_OBJECT(cef, "get_caps");
 
- // caps = gst_caps_new_simple("video/x-raw(memory:GLMemory)",
-  caps = gst_caps_new_simple("video/x-raw",
+  // caps = gst_caps_new_simple("video/x-raw",
+  caps = gst_caps_new_simple("video/x-raw(memory:GLMemory)",
                              "format", G_TYPE_STRING, "RGBA",
                              "framerate", GST_TYPE_FRACTION, 0, 1,
                              "pixel-aspect-ratio", GST_TYPE_FRACTION, 1, 1,
@@ -545,10 +545,11 @@ static GstFlowReturn gst_cef_create(GstPushSrc *src, GstBuffer **buf)
   GST_DEBUG("Successfully popped frame.");
   gsize my_size = cef->width * cef->height * 4;
 
-  //*buf = gst_buffer_new();
-  //gst_gl_memory_setup_buffer(NULL, *buf, NULL, , 1);
+   
+  *buf = gst_buffer_new();
+  //gst_gl_memory_setup_buffer(NULL, *buf, NULL, GST_GL_RGBA8, 1);
   *buf = cef->current_buffer;
-  cef->current_buffer = gst_buffer_new_allocate(NULL, my_size, NULL);
+  //cef->current_buffer = gst_buffer_new_allocate(NULL, my_size, NULL);
   g_mutex_unlock(&cef->frame_mutex);
   return GST_FLOW_OK;
 }
