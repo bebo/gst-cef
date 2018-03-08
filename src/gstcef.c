@@ -253,8 +253,9 @@ void gst_cef_init(GstCef *cef)
   GError *error = NULL;
   // TODO: What is the diference between a new context and creating a context?
   gst_gl_context_create(cef->context, 0, &error);
-  fail_if(error != NULL, "Error creating context: %s\n",
-    error ? error->message : "Unknown Error");
+  if (error != NULL) {
+    GST_ERROR("Error creating context: %s\n", error->message);
+  }
 
   cef->upload = gst_gl_upload_new(cef->context);
   g_mutex_init(&cef->frame_mutex);
