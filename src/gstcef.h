@@ -43,7 +43,7 @@ struct _GstCef
   const char *url;
   const char *js;
   const char *initialization_js;
-  void *current_buffer;
+  GstBuffer *current_buffer;
   GMutex frame_mutex;
   GCond frame_cond;
   /* gint64 cur_offset; */

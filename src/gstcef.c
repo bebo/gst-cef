@@ -173,7 +173,7 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height)
 
   if (cef->current_buffer)
   {
-    memcpy(cef->current_buffer, buffer, size);
+    gst_buffer_fill(cef->current_buffer, 0, buffer, size);
     g_atomic_int_set(&cef->has_new_frame, 1);
     g_cond_signal(&cef->frame_cond);
     g_mutex_unlock(&cef->frame_mutex);
@@ -188,7 +188,7 @@ void *pop_frame(GstCef *cef)
 
   gint64 end_time;
   // Send at least one frame per 20s.
-  end_time = g_get_monotonic_time() + 20000 * G_TIME_SPAN_MILLISECOND;
+  end_time = g_get_monotonic_time() + 2000000000 * G_TIME_SPAN_MILLISECOND;
   while (g_atomic_int_get(&cef->has_new_frame) == 0 && g_atomic_int_get(&cef->unlocked) == 0)
   {
     if (!g_cond_wait_until(&cef->frame_cond, &cef->frame_mutex, end_time))
@@ -471,11 +471,10 @@ static gboolean gst_cef_start(GstBaseSrc *src)
   }
 
   gsize size = 4 * cef->width * cef->height;
-  cef->current_buffer = g_malloc(size);
-  memset(cef->current_buffer, 0, size);
+  // TODO: Use allocater instead of creating a new one.
+  cef->current_buffer = gst_buffer_new_allocate(NULL, size, NULL);
 
   new_browser(cef);
-
   return TRUE;
 }
 
@@ -486,7 +485,8 @@ static gboolean gst_cef_stop(GstBaseSrc *src)
   close_browser(cef);
   if (cef->current_buffer)
   {
-    g_free(cef->current_buffer);
+    // TODO: determine if this is okay.
+    gst_buffer_unref(cef->current_buffer);
     cef->current_buffer = NULL;
   }
   return TRUE;
@@ -534,10 +534,9 @@ static GstFlowReturn gst_cef_create(GstPushSrc *src, GstBuffer **buf)
   }
   GST_DEBUG("Successfully popped frame.");
 
+  *buf = cef->current_buffer;
   gsize my_size = cef->width * cef->height * 4;
-  GstBuffer *buffer = gst_buffer_new_allocate(NULL, my_size, NULL);
-  gst_buffer_fill(buffer, 0, frame, my_size);
-  *buf = buffer;
+  cef->current_buffer = gst_buffer_new_allocate(NULL, my_size, NULL);
   g_mutex_unlock(&cef->frame_mutex);
   return GST_FLOW_OK;
 }
