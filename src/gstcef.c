@@ -250,8 +250,13 @@ void gst_cef_init(GstCef *cef)
   // https://webcache.googleusercontent.com/search?q=cache:bAm74g6ojHUJ:https://gstreamer.freedesktop.org/data/doc/gstreamer/head/gst-plugins-bad-libs/html/GstGLUpload.html+&cd=1&hl=en&ct=clnk&gl=us&client=firefox-b-1-ab
   cef->display = gst_gl_display_new();
   cef->context = gst_gl_context_new(cef->display);
-  cef->upload = gst_gl_upload_new(NULL);
+  GError *error = NULL;
+  // TODO: What is the diference between a new context and creating a context?
+  gst_gl_context_create(cef->context, 0, &error);
+  fail_if(error != NULL, "Error creating context: %s\n",
+    error ? error->message : "Unknown Error");
 
+  cef->upload = gst_gl_upload_new(cef->context);
   g_mutex_init(&cef->frame_mutex);
   g_cond_init(&cef->frame_cond);
 
