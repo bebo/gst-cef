@@ -84,7 +84,7 @@ enum
 };
 
 /* pad templates */
-#define VTS_VIDEO_CAPS GST_VIDEO_CAPS_MAKE("BGRA")
+#define VTS_VIDEO_CAPS GST_VIDEO_CAPS_MAKE("RGBA")
 
 static GstStaticPadTemplate gst_cef_src_template =
     GST_STATIC_PAD_TEMPLATE("src",
@@ -248,7 +248,10 @@ void gst_cef_init(GstCef *cef)
   cef->initialization_js = g_strdup(DEFAULT_INITIALIZATION_JS);
   cef->hidden = FALSE;
   // https://webcache.googleusercontent.com/search?q=cache:bAm74g6ojHUJ:https://gstreamer.freedesktop.org/data/doc/gstreamer/head/gst-plugins-bad-libs/html/GstGLUpload.html+&cd=1&hl=en&ct=clnk&gl=us&client=firefox-b-1-ab
+  cef->display = gst_gl_display_new();
+  cef->context = gst_gl_context_new(cef->display);
   cef->upload = gst_gl_upload_new(NULL);
+
   g_mutex_init(&cef->frame_mutex);
   g_cond_init(&cef->frame_cond);
 
@@ -417,8 +420,9 @@ gst_cef_get_caps(GstBaseSrc *src, GstCaps *filter)
 
   GST_DEBUG_OBJECT(cef, "get_caps");
 
+ // caps = gst_caps_new_simple("video/x-raw(memory:GLMemory)",
   caps = gst_caps_new_simple("video/x-raw",
-                             "format", G_TYPE_STRING, "BGRA",
+                             "format", G_TYPE_STRING, "RGBA",
                              "framerate", GST_TYPE_FRACTION, 0, 1,
                              "pixel-aspect-ratio", GST_TYPE_FRACTION, 1, 1,
                              "width", G_TYPE_INT, cef->width,
@@ -533,9 +537,11 @@ static GstFlowReturn gst_cef_create(GstPushSrc *src, GstBuffer **buf)
     return GST_FLOW_FLUSHING;
   }
   GST_DEBUG("Successfully popped frame.");
-
-  *buf = cef->current_buffer;
   gsize my_size = cef->width * cef->height * 4;
+
+  //*buf = gst_buffer_new();
+  //gst_gl_memory_setup_buffer(NULL, *buf, NULL, , 1);
+  *buf = cef->current_buffer;
   cef->current_buffer = gst_buffer_new_allocate(NULL, my_size, NULL);
   g_mutex_unlock(&cef->frame_mutex);
   return GST_FLOW_OK;
