@@ -42,8 +42,11 @@
 #include <ctype.h>
 #include <gst/gst.h>
 #include <gst/base/gstpushsrc.h>
+
 #include "gstcef.h"
 #include "cef_gst_interface.h"
+
+#define SUPPORTED_GL_APIS (GST_GL_API_OPENGL | GST_GL_API_OPENGL3 | GST_GL_API_GLES2)
 
 GST_DEBUG_CATEGORY(gst_cef_debug_category);
 #define DEFAULT_IS_LIVE TRUE
@@ -62,7 +65,6 @@ static gboolean gst_cef_unlock_stop(GstBaseSrc *src);
 static GstFlowReturn gst_cef_create(GstPushSrc *src, GstBuffer **buf);
 static gboolean gst_cef_start(GstBaseSrc *src);
 static gboolean gst_cef_stop(GstBaseSrc *src);
-
 // https://bebo.com is way too heavy to use as the default.
 #define DEFAULT_URL "https://google.com"
 #define DEFAULT_HEIGHT 720
@@ -132,6 +134,7 @@ gst_cef_class_init(GstCefClass *klass)
   base_src_class->stop = GST_DEBUG_FUNCPTR(gst_cef_stop);
   push_src_class->create = GST_DEBUG_FUNCPTR(gst_cef_create);
 
+  // GL Methods
   g_object_class_install_property(gobject_class, PROP_URL,
                                   g_param_spec_string("url", "url", "website to render into video",
                                                       DEFAULT_URL, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
@@ -244,6 +247,8 @@ void gst_cef_init(GstCef *cef)
   cef->url = g_strdup(DEFAULT_URL);
   cef->initialization_js = g_strdup(DEFAULT_INITIALIZATION_JS);
   cef->hidden = FALSE;
+  // https://webcache.googleusercontent.com/search?q=cache:bAm74g6ojHUJ:https://gstreamer.freedesktop.org/data/doc/gstreamer/head/gst-plugins-bad-libs/html/GstGLUpload.html+&cd=1&hl=en&ct=clnk&gl=us&client=firefox-b-1-ab
+  cef->upload = gst_gl_upload_new(NULL);
   g_mutex_init(&cef->frame_mutex);
   g_cond_init(&cef->frame_cond);
 

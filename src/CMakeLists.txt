@@ -18,9 +18,15 @@ ADD_LOGICAL_TARGET("libcef_lib" "${CEF_LIB_DEBUG}" "${CEF_LIB_RELEASE}")
 
 INCLUDE_DIRECTORIES(
   ${GST_INSTALL_BASE}/include
+  ${GST_INSTALL_BASE}/include/lib
+  ${GST_INSTALL_BASE}/include/static
   ${GST_INSTALL_BASE}/include/gstreamer-1.0
+  # ${GST_INSTALL_BASE}/include/gstreamer-1.0/gst/gl
   ${GST_INSTALL_BASE}/include/glib-2.0
   ${GST_INSTALL_BASE}/lib/glib-2.0/include
+  ${GST_INSTALL_BASE}/lib
+  ${GST_INSTALL_BASE}/lib/gstreamer-1.0
+  ${GST_INSTALL_BASE}/lib/gstreamer-1.0/include
   ${PROJECT_SOURCE_DIR}/../../win32/common
   ${CMAKE_SOURCE_DIR}/third_party/cef/cef_binary_${CEF_VERSION}_windows64
 )
