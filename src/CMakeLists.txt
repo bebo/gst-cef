@@ -21,11 +21,8 @@ INCLUDE_DIRECTORIES(
   ${GST_INSTALL_BASE}/include/lib
   ${GST_INSTALL_BASE}/include/static
   ${GST_INSTALL_BASE}/include/gstreamer-1.0
-  # ${GST_INSTALL_BASE}/include/gstreamer-1.0/gst/gl
   ${GST_INSTALL_BASE}/include/glib-2.0
   ${GST_INSTALL_BASE}/lib/glib-2.0/include
-  ${GST_INSTALL_BASE}/lib
-  ${GST_INSTALL_BASE}/lib/gstreamer-1.0
   ${GST_INSTALL_BASE}/lib/gstreamer-1.0/include
   ${PROJECT_SOURCE_DIR}/../../win32/common
   ${CMAKE_SOURCE_DIR}/third_party/cef/cef_binary_${CEF_VERSION}_windows64
@@ -51,6 +48,7 @@ TARGET_LINK_LIBRARIES(libgstcef
   gstreamer-1.0
   gstaudio-1.0
   gstvideo-1.0
+  gstgl-1.0
   gstbase-1.0
   glib-2.0
   gobject-2.0
