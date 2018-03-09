@@ -57,7 +57,7 @@ static void gst_cef_get_property(GObject *object,
                                  guint property_id, GValue *value, GParamSpec *pspec);
 static void gst_cef_dispose(GObject *object);
 static void gst_cef_finalize(GObject *object);
-
+static gboolean gst_cef_decide_allocation(GstBaseSrc * bsrc, GstQuery * query);
 static GstCaps *gst_cef_get_caps(GstBaseSrc *src, GstCaps *filter);
 static gboolean gst_cef_is_seekable(GstBaseSrc *src);
 static gboolean gst_cef_unlock(GstBaseSrc *src);
@@ -132,6 +132,7 @@ gst_cef_class_init(GstCefClass *klass)
   base_src_class->unlock_stop = GST_DEBUG_FUNCPTR(gst_cef_unlock_stop);
   base_src_class->start = GST_DEBUG_FUNCPTR(gst_cef_start);
   base_src_class->stop = GST_DEBUG_FUNCPTR(gst_cef_stop);
+  base_src_class->decide_allocation = GST_DEBUG_FUNCPTR(gst_cef_decide_allocation);
   push_src_class->create = GST_DEBUG_FUNCPTR(gst_cef_create);
 
   // GL Methods
@@ -247,17 +248,6 @@ void gst_cef_init(GstCef *cef)
   cef->url = g_strdup(DEFAULT_URL);
   cef->initialization_js = g_strdup(DEFAULT_INITIALIZATION_JS);
   cef->hidden = FALSE;
-  // https://webcache.googleusercontent.com/search?q=cache:bAm74g6ojHUJ:https://gstreamer.freedesktop.org/data/doc/gstreamer/head/gst-plugins-bad-libs/html/GstGLUpload.html+&cd=1&hl=en&ct=clnk&gl=us&client=firefox-b-1-ab
-  cef->display = gst_gl_display_new();
-  cef->context = gst_gl_context_new(cef->display);
-  GError *error = NULL;
-  // TODO: What is the diference between a new context and creating a context?
-  gst_gl_context_create(cef->context, 0, &error);
-  if (error != NULL) {
-    GST_ERROR("Error creating context: %s\n", error->message);
-  }
-
-  cef->upload = gst_gl_upload_new(cef->context);
   g_mutex_init(&cef->frame_mutex);
   g_cond_init(&cef->frame_cond);
 
@@ -416,6 +406,49 @@ void gst_cef_finalize(GObject *object)
 
   G_OBJECT_CLASS(gst_cef_parent_class)->finalize(object);
 }
+static gboolean gst_cef_decide_allocation(GstBaseSrc *src, GstQuery *query) {
+  GstCef *cef = GST_CEF(src);
+  guint size, min, max;
+  GstBufferPool *pool;
+  gboolean update;
+  if (gst_query_get_n_allocation_pools(query) > 0) {
+    gst_query_parse_nth_allocation_pool(query, 0, &pool, &size, &min, &max);
+    update = TRUE;
+    size = MAX(size, 4 * cef->width * cef->height);
+  }
+  else {
+    pool = NULL;
+    size = 4 * cef->width * cef->height;
+    min = max = 0;
+    update = FALSE;
+  }
+
+  if (pool == NULL) {
+    GST_INFO("No downstream pool.  Creating our own");
+    pool = gst_video_buffer_pool_new();
+  }
+  GstStructure *config = gst_buffer_pool_get_config(pool);
+  GstCaps *caps = NULL;
+  gst_query_parse_allocation(query, &caps, NULL);
+  if (caps)
+    gst_buffer_pool_config_set_params(config, caps, size, min, max);
+  
+  if (gst_query_find_allocation_meta(query, GST_VIDEO_META_API_TYPE, NULL)) {
+    gst_buffer_pool_config_add_option(config,
+      GST_BUFFER_POOL_OPTION_VIDEO_META);
+  }
+  gst_buffer_pool_set_config(pool, config);
+
+  if (update)
+    gst_query_set_nth_allocation_pool(query, 0, pool, size, min, max);
+  else
+    gst_query_add_allocation_pool(query, pool, size, min, max);
+
+  if (pool)
+    gst_object_unref(pool);
+
+  return GST_BASE_SRC_CLASS(gst_cef_parent_class)->decide_allocation(src, query);
+}
 
 /* get caps from subclass */
 static GstCaps *
@@ -426,9 +459,9 @@ gst_cef_get_caps(GstBaseSrc *src, GstCaps *filter)
 
   GST_DEBUG_OBJECT(cef, "get_caps");
 
-  // caps = gst_caps_new_simple("video/x-raw",
-  caps = gst_caps_new_simple("video/x-raw(memory:GLMemory)",
-                             "format", G_TYPE_STRING, "RGBA",
+  //caps = gst_caps_new_simple("video/x-raw(memory:GLMemory)",
+  caps = gst_caps_new_simple("video/x-raw",
+                             "format", G_TYPE_STRING, "BGRA",
                              "framerate", GST_TYPE_FRACTION, 0, 1,
                              "pixel-aspect-ratio", GST_TYPE_FRACTION, 1, 1,
                              "width", G_TYPE_INT, cef->width,
@@ -482,8 +515,8 @@ static gboolean gst_cef_start(GstBaseSrc *src)
 
   gsize size = 4 * cef->width * cef->height;
   // TODO: Use allocater instead of creating a new one.
-  cef->current_buffer = gst_buffer_new_allocate(NULL, size, NULL);
 
+  cef->current_buffer = gst_buffer_new_allocate(NULL, size, NULL);
   new_browser(cef);
   return TRUE;
 }
@@ -546,10 +579,8 @@ static GstFlowReturn gst_cef_create(GstPushSrc *src, GstBuffer **buf)
   gsize my_size = cef->width * cef->height * 4;
 
    
-  *buf = gst_buffer_new();
-  //gst_gl_memory_setup_buffer(NULL, *buf, NULL, GST_GL_RGBA8, 1);
   *buf = cef->current_buffer;
-  //cef->current_buffer = gst_buffer_new_allocate(NULL, my_size, NULL);
+  cef->current_buffer = gst_buffer_new_allocate(NULL, my_size, NULL);
   g_mutex_unlock(&cef->frame_mutex);
   return GST_FLOW_OK;
 }

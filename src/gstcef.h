@@ -24,7 +24,6 @@
 #include <gst/base/gstpushsrc.h>
 #include <gst/video/gstvideometa.h>
 #include <gst/video/video.h>
-#include <gst/gl/gl.h>
 
 G_BEGIN_DECLS
 
@@ -53,12 +52,6 @@ struct _GstCef
   int width;
   int height;
   gboolean hidden;
-
-  // GL Variables
-  GstGLContext *context, *other_context;
-  GstGLFramebuffer *fbo;
-  GstGLDisplay *display;
-  GstGLUpload *upload;
 };
 
 struct _GstCefClass

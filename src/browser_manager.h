@@ -29,7 +29,7 @@ public:
 
   // CefBrowserProcessHandler methods:
   virtual void OnContextInitialized() OVERRIDE;
-  void CloseBrowser(void *gst_cef, bool force_close);
+  void CloseBrowser(void *gst_cef, bool force_close, int count);
   void Open(void *gst_cef, void *push_frame, CefString url, int width, int height, CefString initialization_js);
   void SetSize(void *gst_cef, int width, int height);
   void SetHidden(void *gst_cef, bool hidden);
