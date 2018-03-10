@@ -62,7 +62,7 @@ static GstCaps *gst_cef_get_caps(GstBaseSrc *src, GstCaps *filter);
 static gboolean gst_cef_is_seekable(GstBaseSrc *src);
 static gboolean gst_cef_unlock(GstBaseSrc *src);
 static gboolean gst_cef_unlock_stop(GstBaseSrc *src);
-static GstFlowReturn gst_cef_create(GstPushSrc *src, GstBuffer **buf);
+static GstFlowReturn gst_cef_fill(GstPushSrc *src, GstBuffer *buf);
 static gboolean gst_cef_start(GstBaseSrc *src);
 static gboolean gst_cef_stop(GstBaseSrc *src);
 // https://bebo.com is way too heavy to use as the default.
@@ -133,7 +133,7 @@ gst_cef_class_init(GstCefClass *klass)
   base_src_class->start = GST_DEBUG_FUNCPTR(gst_cef_start);
   base_src_class->stop = GST_DEBUG_FUNCPTR(gst_cef_stop);
   base_src_class->decide_allocation = GST_DEBUG_FUNCPTR(gst_cef_decide_allocation);
-  push_src_class->create = GST_DEBUG_FUNCPTR(gst_cef_create);
+  push_src_class->fill = GST_DEBUG_FUNCPTR(gst_cef_fill);
 
   // GL Methods
   g_object_class_install_property(gobject_class, PROP_URL,
@@ -202,13 +202,14 @@ void *pop_frame(GstCef *cef)
   return NULL;
 }
 
-static GstFlowReturn gst_cef_create(GstPushSrc *src, GstBuffer **buf)
+static GstFlowReturn gst_cef_fill(GstPushSrc *src, GstBuffer *buf)
 {
   GstCef *cef = GST_CEF(src);
   g_mutex_lock(&cef->frame_mutex);
 
   gsize my_size = cef->width * cef->height * 4;
-  cef->current_buffer = gst_buffer_new_allocate(NULL, my_size, NULL);
+  //cef->current_buffer = gst_buffer_new_allocate(NULL, my_size, NULL);
+  cef->current_buffer = buf;
   g_cond_signal(&cef->buffer_cond);
   GST_DEBUG("Popping Cef Frame");
   void *frame = pop_frame(cef);
@@ -219,7 +220,7 @@ static GstFlowReturn gst_cef_create(GstPushSrc *src, GstBuffer **buf)
     return GST_FLOW_FLUSHING;
   }
   GST_DEBUG("Successfully popped frame.");
-  *buf = cef->current_buffer;
+  // *buf = cef->current_buffer;
   cef->current_buffer = NULL;
   g_mutex_unlock(&cef->frame_mutex);
   return GST_FLOW_OK;
