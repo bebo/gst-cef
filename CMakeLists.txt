@@ -20,7 +20,7 @@ set_property(GLOBAL PROPERTY OS_FOLDERS ON)
 #
 
 # Specify the CEF distribution version.
-set(CEF_VERSION "3.3282.1733.g9091548")
+set(CEF_VERSION "3.3282.1742.g96f907e")
 
 # Add this project's cmake/ directory to the module path.
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
