@@ -208,7 +208,6 @@ static GstFlowReturn gst_cef_fill(GstPushSrc *src, GstBuffer *buf)
   g_mutex_lock(&cef->frame_mutex);
 
   gsize my_size = cef->width * cef->height * 4;
-  //cef->current_buffer = gst_buffer_new_allocate(NULL, my_size, NULL);
   cef->current_buffer = buf;
   g_cond_signal(&cef->buffer_cond);
   GST_DEBUG("Popping Cef Frame");
@@ -220,7 +219,6 @@ static GstFlowReturn gst_cef_fill(GstPushSrc *src, GstBuffer *buf)
     return GST_FLOW_FLUSHING;
   }
   GST_DEBUG("Successfully popped frame.");
-  // *buf = cef->current_buffer;
   cef->current_buffer = NULL;
   g_mutex_unlock(&cef->frame_mutex);
   return GST_FLOW_OK;
