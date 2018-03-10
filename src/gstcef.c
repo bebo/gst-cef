@@ -57,12 +57,12 @@ static void gst_cef_get_property(GObject *object,
                                  guint property_id, GValue *value, GParamSpec *pspec);
 static void gst_cef_dispose(GObject *object);
 static void gst_cef_finalize(GObject *object);
-
+static gboolean gst_cef_decide_allocation(GstBaseSrc * bsrc, GstQuery * query);
 static GstCaps *gst_cef_get_caps(GstBaseSrc *src, GstCaps *filter);
 static gboolean gst_cef_is_seekable(GstBaseSrc *src);
 static gboolean gst_cef_unlock(GstBaseSrc *src);
 static gboolean gst_cef_unlock_stop(GstBaseSrc *src);
-static GstFlowReturn gst_cef_create(GstPushSrc *src, GstBuffer **buf);
+static GstFlowReturn gst_cef_fill(GstPushSrc *src, GstBuffer *buf);
 static gboolean gst_cef_start(GstBaseSrc *src);
 static gboolean gst_cef_stop(GstBaseSrc *src);
 // https://bebo.com is way too heavy to use as the default.
@@ -84,7 +84,7 @@ enum
 };
 
 /* pad templates */
-#define VTS_VIDEO_CAPS GST_VIDEO_CAPS_MAKE("BGRA")
+#define VTS_VIDEO_CAPS GST_VIDEO_CAPS_MAKE("RGBA")
 
 static GstStaticPadTemplate gst_cef_src_template =
     GST_STATIC_PAD_TEMPLATE("src",
@@ -132,7 +132,8 @@ gst_cef_class_init(GstCefClass *klass)
   base_src_class->unlock_stop = GST_DEBUG_FUNCPTR(gst_cef_unlock_stop);
   base_src_class->start = GST_DEBUG_FUNCPTR(gst_cef_start);
   base_src_class->stop = GST_DEBUG_FUNCPTR(gst_cef_stop);
-  push_src_class->create = GST_DEBUG_FUNCPTR(gst_cef_create);
+  base_src_class->decide_allocation = GST_DEBUG_FUNCPTR(gst_cef_decide_allocation);
+  push_src_class->fill = GST_DEBUG_FUNCPTR(gst_cef_fill);
 
   // GL Methods
   g_object_class_install_property(gobject_class, PROP_URL,
@@ -163,21 +164,25 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height)
 {
   GST_DEBUG("Pushing Frame");
   GstCef *cef = (GstCef *)gstCef;
+
+  g_mutex_lock(&cef->frame_mutex);
   int size = width * height * 4;
   if (size != (cef->width * cef->height * 4))
   {
     GST_ERROR("push_frame size mismatch");
   }
 
-  g_mutex_lock(&cef->frame_mutex);
-
+  if (!cef->current_buffer) {
+    g_cond_wait_until(&cef->buffer_cond, &cef->frame_mutex, 20);
+  }
   if (cef->current_buffer)
   {
     gst_buffer_fill(cef->current_buffer, 0, buffer, size);
     g_atomic_int_set(&cef->has_new_frame, 1);
     g_cond_signal(&cef->frame_cond);
-    g_mutex_unlock(&cef->frame_mutex);
-    return;
+  }
+  else {
+    GST_INFO("Cef push_frame does not have buffer");
   }
 
   g_mutex_unlock(&cef->frame_mutex);
@@ -185,18 +190,9 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height)
 
 void *pop_frame(GstCef *cef)
 {
-
-  gint64 end_time;
-  // Send at least one frame per 20s.
-  end_time = g_get_monotonic_time() + 2000000000 * G_TIME_SPAN_MILLISECOND;
-  while (g_atomic_int_get(&cef->has_new_frame) == 0 && g_atomic_int_get(&cef->unlocked) == 0)
-  {
-    if (!g_cond_wait_until(&cef->frame_cond, &cef->frame_mutex, end_time))
-    {
-      break;
-    }
+  while (g_atomic_int_get(&cef->has_new_frame) == 0 && g_atomic_int_get(&cef->unlocked) == 0) {
+    g_cond_wait(&cef->frame_cond, &cef->frame_mutex);
   }
-
   if (g_atomic_int_get(&cef->unlocked) == 0)
   { // 0 - not in cleanup state
     g_atomic_int_set(&cef->has_new_frame, 0);
@@ -204,6 +200,28 @@ void *pop_frame(GstCef *cef)
   }
 
   return NULL;
+}
+
+static GstFlowReturn gst_cef_fill(GstPushSrc *src, GstBuffer *buf)
+{
+  GstCef *cef = GST_CEF(src);
+  g_mutex_lock(&cef->frame_mutex);
+
+  gsize my_size = cef->width * cef->height * 4;
+  cef->current_buffer = buf;
+  g_cond_signal(&cef->buffer_cond);
+  GST_DEBUG("Popping Cef Frame");
+  void *frame = pop_frame(cef);
+  if (!frame)
+  {
+    GST_DEBUG("No frame returned");
+    g_mutex_unlock(&cef->frame_mutex);
+    return GST_FLOW_FLUSHING;
+  }
+  GST_DEBUG("Successfully popped frame.");
+  cef->current_buffer = NULL;
+  g_mutex_unlock(&cef->frame_mutex);
+  return GST_FLOW_OK;
 }
 
 void new_browser(GstCef *cef)
@@ -247,10 +265,9 @@ void gst_cef_init(GstCef *cef)
   cef->url = g_strdup(DEFAULT_URL);
   cef->initialization_js = g_strdup(DEFAULT_INITIALIZATION_JS);
   cef->hidden = FALSE;
-  // https://webcache.googleusercontent.com/search?q=cache:bAm74g6ojHUJ:https://gstreamer.freedesktop.org/data/doc/gstreamer/head/gst-plugins-bad-libs/html/GstGLUpload.html+&cd=1&hl=en&ct=clnk&gl=us&client=firefox-b-1-ab
-  cef->upload = gst_gl_upload_new(NULL);
   g_mutex_init(&cef->frame_mutex);
   g_cond_init(&cef->frame_cond);
+  g_cond_init(&cef->buffer_cond);
 
   gst_base_src_set_format(GST_BASE_SRC(cef), GST_FORMAT_TIME);
   gst_base_src_set_live(GST_BASE_SRC(cef), DEFAULT_IS_LIVE);
@@ -275,7 +292,6 @@ void gst_cef_execute_js(GstCef *cef)
 
 void gst_cef_set_initialization_js(GstCef *cef)
 {
-  // TODO: Investigate whether we need to lock cef when properties are set.
   struct gstExecuteJSArgs *args = g_malloc(sizeof(struct gstExecuteJSArgs));
   args->gstCef = cef;
   args->js = g_strdup(cef->initialization_js);
@@ -407,6 +423,49 @@ void gst_cef_finalize(GObject *object)
 
   G_OBJECT_CLASS(gst_cef_parent_class)->finalize(object);
 }
+static gboolean gst_cef_decide_allocation(GstBaseSrc *src, GstQuery *query) {
+  GstCef *cef = GST_CEF(src);
+  guint size, min, max;
+  GstBufferPool *pool;
+  gboolean update;
+  if (gst_query_get_n_allocation_pools(query) > 0) {
+    gst_query_parse_nth_allocation_pool(query, 0, &pool, &size, &min, &max);
+    update = TRUE;
+    size = MAX(size, 4 * cef->width * cef->height);
+  }
+  else {
+    pool = NULL;
+    size = 4 * cef->width * cef->height;
+    min = max = 0;
+    update = FALSE;
+  }
+
+  if (pool == NULL) {
+    GST_INFO("No downstream pool.  Creating our own");
+    pool = gst_video_buffer_pool_new();
+  }
+  GstStructure *config = gst_buffer_pool_get_config(pool);
+  GstCaps *caps = NULL;
+  gst_query_parse_allocation(query, &caps, NULL);
+  if (caps)
+    gst_buffer_pool_config_set_params(config, caps, size, min, max);
+  
+  if (gst_query_find_allocation_meta(query, GST_VIDEO_META_API_TYPE, NULL)) {
+    gst_buffer_pool_config_add_option(config,
+      GST_BUFFER_POOL_OPTION_VIDEO_META);
+  }
+  gst_buffer_pool_set_config(pool, config);
+
+  if (update)
+    gst_query_set_nth_allocation_pool(query, 0, pool, size, min, max);
+  else
+    gst_query_add_allocation_pool(query, pool, size, min, max);
+
+  if (pool)
+    gst_object_unref(pool);
+
+  return GST_BASE_SRC_CLASS(gst_cef_parent_class)->decide_allocation(src, query);
+}
 
 /* get caps from subclass */
 static GstCaps *
@@ -417,6 +476,7 @@ gst_cef_get_caps(GstBaseSrc *src, GstCaps *filter)
 
   GST_DEBUG_OBJECT(cef, "get_caps");
 
+  //caps = gst_caps_new_simple("video/x-raw(memory:GLMemory)",
   caps = gst_caps_new_simple("video/x-raw",
                              "format", G_TYPE_STRING, "BGRA",
                              "framerate", GST_TYPE_FRACTION, 0, 1,
@@ -469,11 +529,7 @@ static gboolean gst_cef_start(GstBaseSrc *src)
     GST_ERROR("no width, or height, or url");
     return FALSE;
   }
-
-  gsize size = 4 * cef->width * cef->height;
-  // TODO: Use allocater instead of creating a new one.
-  cef->current_buffer = gst_buffer_new_allocate(NULL, size, NULL);
-
+  cef->current_buffer = NULL;
   new_browser(cef);
   return TRUE;
 }
@@ -517,28 +573,6 @@ gst_cef_unlock_stop(GstBaseSrc *src)
 
   GST_INFO_OBJECT(cef, "unlock_stop complete");
   return TRUE;
-}
-
-static GstFlowReturn gst_cef_create(GstPushSrc *src, GstBuffer **buf)
-{
-  GstCef *cef = GST_CEF(src);
-
-  g_mutex_lock(&cef->frame_mutex);
-  GST_DEBUG("Popping Cef Frame");
-  void *frame = pop_frame(cef);
-  if (!frame)
-  {
-    GST_DEBUG("No frame returned");
-    g_mutex_unlock(&cef->frame_mutex);
-    return GST_FLOW_FLUSHING;
-  }
-  GST_DEBUG("Successfully popped frame.");
-
-  *buf = cef->current_buffer;
-  gsize my_size = cef->width * cef->height * 4;
-  cef->current_buffer = gst_buffer_new_allocate(NULL, my_size, NULL);
-  g_mutex_unlock(&cef->frame_mutex);
-  return GST_FLOW_OK;
 }
 
 static gboolean
