@@ -48,7 +48,6 @@ TARGET_LINK_LIBRARIES(libgstcef
   gstreamer-1.0
   gstaudio-1.0
   gstvideo-1.0
-  gstgl-1.0
   gstbase-1.0
   glib-2.0
   gobject-2.0
