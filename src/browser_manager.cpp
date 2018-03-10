@@ -25,7 +25,7 @@ void Browser::CloseBrowser(void *gst_cef, bool force_close, int count)
 {
   GST_LOG("Browser::CloseBrowser");
   if (!CefCurrentlyOn(TID_UI) || count == 0) {
-    GST_INFO("Need to close on UI thread. Adding to message loop");
+    GST_DEBUG("Need to close on UI thread. Adding to message loop");
     CefPostTask(TID_UI, base::Bind(&Browser::CloseBrowser, this, gst_cef, force_close, 1));
   }
   CefRefPtr<CefWindowManager> b;
@@ -37,7 +37,7 @@ void Browser::CloseBrowser(void *gst_cef, bool force_close, int count)
     }
   }
   if (b == nullptr) {
-    GST_INFO("Failed to find browser when trying to close");
+    GST_DEBUG("Failed to find browser when trying to close");
     return;
   }
   b->GetBrowser()->GetHost()->CloseBrowser(force_close);

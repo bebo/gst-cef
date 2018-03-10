@@ -162,6 +162,7 @@ gst_cef_class_init(GstCefClass *klass)
 
 static void push_frame(void *gstCef, const void *buffer, int width, int height)
 {
+  // TODO: This code doesn't look safe.
   GST_DEBUG("Pushing Frame");
   GstCef *cef = (GstCef *)gstCef;
   int size = width * height * 4;
@@ -177,8 +178,9 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height)
     gst_buffer_fill(cef->current_buffer, 0, buffer, size);
     g_atomic_int_set(&cef->has_new_frame, 1);
     g_cond_signal(&cef->frame_cond);
-    g_mutex_unlock(&cef->frame_mutex);
-    return;
+  }
+  else {
+    GST_INFO("Cef push_frame does not have buffer");
   }
 
   g_mutex_unlock(&cef->frame_mutex);
@@ -186,7 +188,9 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height)
 
 void *pop_frame(GstCef *cef)
 {
-  g_cond_wait(&cef->frame_cond, &cef->frame_mutex);
+  while (g_atomic_int_get(&cef->has_new_frame) == 0 && g_atomic_int_get(&cef->unlocked) == 0) {
+    g_cond_wait(&cef->frame_cond, &cef->frame_mutex);
+  }
   if (g_atomic_int_get(&cef->unlocked) == 0)
   { // 0 - not in cleanup state
     g_atomic_int_set(&cef->has_new_frame, 0);
@@ -194,6 +198,29 @@ void *pop_frame(GstCef *cef)
   }
 
   return NULL;
+}
+
+static GstFlowReturn gst_cef_create(GstPushSrc *src, GstBuffer **buf)
+{
+  GstCef *cef = GST_CEF(src);
+  // Install the buffer into CEF, wait for CEF to call OnPaint.
+  g_mutex_lock(&cef->frame_mutex);
+  gsize my_size = cef->width * cef->height * 4;
+  cef->current_buffer = gst_buffer_new_allocate(NULL, my_size, NULL);
+
+  GST_DEBUG("Popping Cef Frame");
+  void *frame = pop_frame(cef);
+  if (!frame)
+  {
+    GST_DEBUG("No frame returned");
+    g_mutex_unlock(&cef->frame_mutex);
+    return GST_FLOW_FLUSHING;
+  }
+  GST_DEBUG("Successfully popped frame.");
+  *buf = cef->current_buffer;
+  cef->current_buffer = NULL;
+  g_mutex_unlock(&cef->frame_mutex);
+  return GST_FLOW_OK;
 }
 
 void new_browser(GstCef *cef)
@@ -501,11 +528,7 @@ static gboolean gst_cef_start(GstBaseSrc *src)
     GST_ERROR("no width, or height, or url");
     return FALSE;
   }
-
-  gsize size = 4 * cef->width * cef->height;
-  // TODO: Use allocater instead of creating a new one.
-
-  cef->current_buffer = gst_buffer_new_allocate(NULL, size, NULL);
+  cef->current_buffer = NULL;
   new_browser(cef);
   return TRUE;
 }
@@ -549,29 +572,6 @@ gst_cef_unlock_stop(GstBaseSrc *src)
 
   GST_INFO_OBJECT(cef, "unlock_stop complete");
   return TRUE;
-}
-
-static GstFlowReturn gst_cef_create(GstPushSrc *src, GstBuffer **buf)
-{
-  GstCef *cef = GST_CEF(src);
-
-  g_mutex_lock(&cef->frame_mutex);
-  GST_DEBUG("Popping Cef Frame");
-  void *frame = pop_frame(cef);
-  if (!frame)
-  {
-    GST_DEBUG("No frame returned");
-    g_mutex_unlock(&cef->frame_mutex);
-    return GST_FLOW_FLUSHING;
-  }
-  GST_DEBUG("Successfully popped frame.");
-  gsize my_size = cef->width * cef->height * 4;
-
-   
-  *buf = cef->current_buffer;
-  cef->current_buffer = gst_buffer_new_allocate(NULL, my_size, NULL);
-  g_mutex_unlock(&cef->frame_mutex);
-  return GST_FLOW_OK;
 }
 
 static gboolean
