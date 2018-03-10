@@ -173,7 +173,10 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height)
   }
 
   if (!cef->current_buffer) {
-    g_cond_wait_until(&cef->buffer_cond, &cef->frame_mutex, 20);
+    // TODO: I'm pretty sure we should just wait rather than putting a timeout here.
+    // TODO: I put one in because I was worried about getting stuff indefinitely on cleanup.
+    // TODO: Skipping frames can put us in a bad posititon for static sites.
+    g_cond_wait_until(&cef->buffer_cond, &cef->frame_mutex, 20000);
   }
   if (cef->current_buffer)
   {
@@ -538,13 +541,12 @@ static gboolean gst_cef_stop(GstBaseSrc *src)
 {
   GstCef *cef = GST_CEF(src);
   GST_INFO_OBJECT(cef, "stop");
+
   close_browser(cef);
-  if (cef->current_buffer)
-  {
-    // TODO: determine if this is okay.
-    gst_buffer_unref(cef->current_buffer);
-    cef->current_buffer = NULL;
-  }
+  // TODO: Wait until the browser is fully closed to cleanup.
+  g_cond_clear(&cef->frame_cond);
+  g_cond_clear(&cef->buffer_cond);
+  g_mutex_clear(&cef->frame_mutex);
   return TRUE;
 }
 
