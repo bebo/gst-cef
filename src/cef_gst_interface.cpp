@@ -265,7 +265,7 @@ bool doClose(gpointer args)
   GST_INFO("doClose");
   if (app)
   {
-    app->CloseBrowser(args, true, 0);
+    app->CloseBrowser(args, true, 1);
   }
   else
   {
