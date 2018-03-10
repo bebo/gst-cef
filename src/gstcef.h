@@ -42,9 +42,12 @@ struct _GstCef
   const char *url;
   const char *js;
   const char *initialization_js;
-  GstBuffer *current_buffer;
+
+  // Need the frame_mutex to touch the below properties.
   GMutex frame_mutex;
+  GstBuffer *current_buffer;
   GCond frame_cond;
+  GCond buffer_cond;
   /* gint64 cur_offset; */
   volatile gint unlocked;
   volatile gint has_new_frame;

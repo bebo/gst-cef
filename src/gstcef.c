@@ -162,17 +162,19 @@ gst_cef_class_init(GstCefClass *klass)
 
 static void push_frame(void *gstCef, const void *buffer, int width, int height)
 {
-  // TODO: This code doesn't look safe.
   GST_DEBUG("Pushing Frame");
   GstCef *cef = (GstCef *)gstCef;
+
+  g_mutex_lock(&cef->frame_mutex);
   int size = width * height * 4;
   if (size != (cef->width * cef->height * 4))
   {
     GST_ERROR("push_frame size mismatch");
   }
 
-  g_mutex_lock(&cef->frame_mutex);
-
+  if (!cef->current_buffer) {
+    g_cond_wait_until(&cef->buffer_cond, &cef->frame_mutex, 20);
+  }
   if (cef->current_buffer)
   {
     gst_buffer_fill(cef->current_buffer, 0, buffer, size);
@@ -203,11 +205,11 @@ void *pop_frame(GstCef *cef)
 static GstFlowReturn gst_cef_create(GstPushSrc *src, GstBuffer **buf)
 {
   GstCef *cef = GST_CEF(src);
-  // Install the buffer into CEF, wait for CEF to call OnPaint.
   g_mutex_lock(&cef->frame_mutex);
+
   gsize my_size = cef->width * cef->height * 4;
   cef->current_buffer = gst_buffer_new_allocate(NULL, my_size, NULL);
-
+  g_cond_signal(&cef->buffer_cond);
   GST_DEBUG("Popping Cef Frame");
   void *frame = pop_frame(cef);
   if (!frame)
@@ -266,6 +268,7 @@ void gst_cef_init(GstCef *cef)
   cef->hidden = FALSE;
   g_mutex_init(&cef->frame_mutex);
   g_cond_init(&cef->frame_cond);
+  g_cond_init(&cef->buffer_cond);
 
   gst_base_src_set_format(GST_BASE_SRC(cef), GST_FORMAT_TIME);
   gst_base_src_set_live(GST_BASE_SRC(cef), DEFAULT_IS_LIVE);
@@ -290,7 +293,6 @@ void gst_cef_execute_js(GstCef *cef)
 
 void gst_cef_set_initialization_js(GstCef *cef)
 {
-  // TODO: Investigate whether we need to lock cef when properties are set.
   struct gstExecuteJSArgs *args = g_malloc(sizeof(struct gstExecuteJSArgs));
   args->gstCef = cef;
   args->js = g_strdup(cef->initialization_js);
