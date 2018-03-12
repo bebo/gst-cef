@@ -138,7 +138,9 @@ void browser_loop(gpointer args)
   // CefRunMessageLoop(), but we need the UI thread unblocked.
   while (g_atomic_int_get(&loop_live))
   {
-    Sleep(5);
+    // Decreasing the doWork frequency is more efficient, but it causes us to
+    // lose a bunch of frames if it gets too close to our target framerate.
+    Sleep(6);
     g_idle_add((GSourceFunc)doWork, NULL);
   }
   GST_INFO("MessageLoop Ended");

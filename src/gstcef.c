@@ -443,7 +443,7 @@ static gboolean gst_cef_decide_allocation(GstBaseSrc *src, GstQuery *query) {
     min = max = 0;
     update = FALSE;
   }
-
+    
   if (pool == NULL) {
     GST_INFO("No downstream pool.  Creating our own");
     pool = gst_video_buffer_pool_new();
