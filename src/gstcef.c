@@ -426,6 +426,7 @@ void gst_cef_finalize(GObject *object)
 
   G_OBJECT_CLASS(gst_cef_parent_class)->finalize(object);
 }
+
 static gboolean gst_cef_decide_allocation(GstBaseSrc *src, GstQuery *query) {
   GstCef *cef = GST_CEF(src);
   guint size, min, max;

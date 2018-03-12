@@ -138,7 +138,7 @@ void browser_loop(gpointer args)
   // CefRunMessageLoop(), but we need the UI thread unblocked.
   while (g_atomic_int_get(&loop_live))
   {
-    Sleep(32);
+    Sleep(5);
     g_idle_add((GSourceFunc)doWork, NULL);
   }
   GST_INFO("MessageLoop Ended");
