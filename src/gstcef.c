@@ -172,11 +172,8 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height)
     GST_ERROR("push_frame size mismatch");
   }
 
-  if (!cef->current_buffer) {
-    // TODO: I'm pretty sure we should just wait rather than putting a timeout here.
-    // TODO: I put one in because I was worried about getting stuff indefinitely on cleanup.
-    // TODO: Skipping frames can put us in a bad posititon for static sites.
-    g_cond_wait_until(&cef->buffer_cond, &cef->frame_mutex, 20000);
+  while (!cef->current_buffer && g_atomic_int_get(&cef->unlocked) == 0) {
+    g_cond_wait(&cef->buffer_cond, &cef->frame_mutex);
   }
   if (cef->current_buffer)
   {
@@ -512,7 +509,7 @@ gst_cef_unlock(GstBaseSrc *src)
 
   g_atomic_int_set(&cef->unlocked, 1);
   g_cond_signal(&cef->frame_cond);
-
+  g_cond_signal(&cef->buffer_cond);
   g_mutex_unlock(&cef->frame_mutex);
 
   GST_INFO_OBJECT(cef, "unlock complete");

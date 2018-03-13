@@ -124,9 +124,12 @@ void CefWindowManager::OnLoadEnd(CefRefPtr<CefBrowser> browser,
   {
     if (httpStatusCode == 200)
     { // 200 ~ 499?
-      GST_INFO("Cef Initialization JavaScript: %s", initialization_js_);
-      frame->ExecuteJavaScript(initialization_js_, frame->GetURL(), 0);
-      GST_INFO("Executed startup javascript.");
+      if (!initialization_js_.empty()) {
+        GST_INFO("Cef Initialization JavaScript: %s", initialization_js_);
+        frame->ExecuteJavaScript(initialization_js_, frame->GetURL(), 0);
+        GST_INFO("Executed startup javascript.");
+      }
+
       retry_count_ = 0;
       ready_ = true;
     }

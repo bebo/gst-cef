@@ -264,7 +264,7 @@ void set_initialization_js(void *args)
 
 bool doClose(gpointer args)
 {
-  GST_INFO("doClose");
+  GST_DEBUG("doClose");
   if (app)
   {
     app->CloseBrowser(args, true, 1);
