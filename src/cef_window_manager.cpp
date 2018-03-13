@@ -44,7 +44,7 @@ bool CefWindowManager::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect)
 void CefWindowManager::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType paintType, const RectList &rects,
                             const void *buffer, int width, int height)
 {
-  // As of October 2015 the rects are just a single rect.
+  // The rects are just a single rectangle as of October 2015.
   GST_DEBUG("OnPaint %d, %d", width, height);
   if (!ready_)
   {
