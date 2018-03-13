@@ -514,7 +514,6 @@ gst_cef_unlock(GstBaseSrc *src)
   g_cond_signal(&cef->frame_cond);
   g_cond_signal(&cef->buffer_cond);
 
-  // TODO: This is wrong because we could get the mutex before stuck threads wakeup.
   g_mutex_lock(&cef->frame_mutex);
   close_browser(cef);
   g_mutex_unlock(&cef->frame_mutex);
@@ -548,7 +547,6 @@ static gboolean gst_cef_stop(GstBaseSrc *src)
   GST_INFO_OBJECT(cef, "stop");
 
   close_browser(cef);
-  // TODO: Wait until the browser is fully closed to cleanup.
   g_cond_clear(&cef->frame_cond);
   g_cond_clear(&cef->buffer_cond);
   g_mutex_clear(&cef->frame_mutex);
