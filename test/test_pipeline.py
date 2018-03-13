@@ -73,13 +73,15 @@ def latency_query():
     queue1 = Gst.ElementFactory.make('queue')
     #source = Gst.ElementFactory.make('cef')
     source = Gst.ElementFactory.make('videotestsrc')
+    source.set_property('is-live', True)
+    source.set_property('timestamp-offset', 100000000)
     sink = Gst.ElementFactory.make('glimagesink')
     tee = Gst.ElementFactory.make('tee')
     mixer = Gst.ElementFactory.make('glvideomixer')
 
     # Create the empty pipeline
     pipeline = Gst.Pipeline.new("test-pipeline")
-
+    pipeline.set_latency(100000000)
     if not source or not sink or not pipeline:
         print("Not all elements could be created.")
         exit(-1)
@@ -115,7 +117,7 @@ def latency_query():
 
 if __name__ == '__main__':
     try:
-        # latency_query()
-        main()
+        latency_query()
+        # main()
     except KeyboardInterrupt:
         loop.quit()
