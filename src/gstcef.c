@@ -545,7 +545,7 @@ static gboolean gst_cef_stop(GstBaseSrc *src)
 {
   GstCef *cef = GST_CEF(src);
   GST_INFO_OBJECT(cef, "stop");
-
+  g_atomic_int_set(&cef->unlocked, 1);
   close_browser(cef);
   g_cond_clear(&cef->frame_cond);
   g_cond_clear(&cef->buffer_cond);
@@ -557,6 +557,7 @@ static gboolean gst_cef_stop(GstBaseSrc *src)
 static gboolean
 gst_cef_unlock_stop(GstBaseSrc *src)
 {
+  // TODO: We are no longer support dynamic resize so this should probably be removed.
   GstCef *cef = GST_CEF(src);
   gint width = cef->width;
   gint height = cef->width;
@@ -571,9 +572,7 @@ gst_cef_unlock_stop(GstBaseSrc *src)
     GST_ERROR("no width, or height, or url");
     return FALSE;
   }
-
-  g_atomic_int_set(&cef->unlocked, 0);
-
+  
   g_mutex_unlock(&cef->frame_mutex);
 
   GST_INFO_OBJECT(cef, "unlock_stop complete");
