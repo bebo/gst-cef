@@ -23,6 +23,7 @@
 CefWindowManager::CefWindowManager(CefString url, int width, int height,
 CefString initialization_js, void *push_frame, void *gst_cef) :
 is_closing_(false),
+ready_(false),
 url_(url),
 retry_count_(0),
 width_(width),
