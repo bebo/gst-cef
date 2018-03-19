@@ -324,7 +324,7 @@ void gst_cef_set_property(GObject *object, guint property_id,
       GST_WARNING("The browser width cannot be greater than 4000.  You tried setting it to %d", width);
       width = 4000;
     }
-    else if (width >= 0) {
+    else if (width <= 0) {
       GST_WARNING("The browser width must be greater than 0.  %d", width);
       width = 800;
     }
@@ -338,7 +338,7 @@ void gst_cef_set_property(GObject *object, guint property_id,
       GST_WARNING("The browser height cannot be greater than  4000.  You tried setting it to %d", height);
       height = 4000;
     }
-    else if (height < 0) {
+    else if (height <= 0) {
       GST_WARNING("The browser height must be greater than 0. %d", height);
       height = 600;
     }
