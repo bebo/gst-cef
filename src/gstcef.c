@@ -319,13 +319,29 @@ void gst_cef_set_property(GObject *object, guint property_id,
   }
   case PROP_WIDTH:
   {
-    const guint width = g_value_get_uint(value);
+    guint width = g_value_get_uint(value);
+    if (width > 4000) {
+      GST_WARNING("The browser width cannot be greater than 4000.  You tried setting it to %d", width);
+      width = 4000;
+    }
+    else if (width >= 0) {
+      GST_WARNING("The browser width must be greater than 0.  %d", width);
+      width = 800;
+    }
     cef->width = width;
     break;
   }
   case PROP_HEIGHT:
   {
-    const guint height = g_value_get_uint(value);
+    guint height = g_value_get_uint(value);
+    if (height > 4000) {
+      GST_WARNING("The browser height cannot be greater than  4000.  You tried setting it to %d", height);
+      height = 4000;
+    }
+    else if (height < 0) {
+      GST_WARNING("The browser height must be greater than 0. %d", height);
+      height = 600;
+    }
     cef->height = height;
     break;
   }
