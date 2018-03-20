@@ -55,6 +55,7 @@ static bool doStart(gpointer data)
   }
   std::wcout << L"Subprocess Path: " << path << std::endl;
   CefString(&settings.browser_subprocess_path).FromWString(path);
+  CefString(&settings.cache_path).FromASCII("C:\\ProgramData\\Bebo");
 
   settings.windowless_rendering_enabled = true;
   settings.no_sandbox = true;
