@@ -18,7 +18,7 @@ if errorlevel 1 (
     exit /b %errorlevel%
 )
 
-"C:\Program Files\7-Zip\7z.exe" a -r ..\%FILENAME% -w .\dist\* -mem=AES256
+"C:\Program Files\7-Zip\7z.exe" a -r %FILENAME% -w .\dist\* -mem=AES256
 
 @if errorlevel 1 (
     echo "zip failed with %errorlevel%"
