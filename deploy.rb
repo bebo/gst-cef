@@ -63,10 +63,10 @@ OptionParser.new do |opts|
   opts.on("-t", "--tag TAG", "tag to deploy") do |t|
       options[:tag] = t
   end
-  options[:upload] = true
-  opts.on("-u", "--[no-]upload", "upload to s3") do |d|
-      options[:deploy] = d
-  end
+  # options[:upload] = true
+  # opts.on("-u", "--[no-]upload", "upload to s3") do |d|
+      # options[:deploy] = d
+  # end
   opts.on("-l", "--[no-]live", "make live as latest & for auto-update") do |l|
       options[:live ] = l
   end
@@ -111,7 +111,7 @@ unless options[:dryrun]
 end
 
 # trigger new build
-jenkins_build_url="#{JENKINS_URL}buildWithParameters?token=uBC3kFJF&ENV=#{options[:environment]}&TAG=#{new_tag}&UPLOAD=#{options[:upload]}"
+jenkins_build_url="#{JENKINS_URL}buildWithParameters?token=uBC3kFJF&ENV=#{options[:environment]}&TAG=#{new_tag}"
 
 if options[:live]
     jenkins_build_url += "&LIVE=#{options[:live]}"
