@@ -458,6 +458,7 @@ gst_cef_decide_allocation(GstBaseSrc *src, GstQuery *query)
   }
   else
   {
+    GST_WARNING("No allocation pool sent in query");
     pool = NULL;
     size = 4 * cef->width * cef->height;
     min = max = 0;
