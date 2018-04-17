@@ -109,7 +109,7 @@ static void
 gst_cef_class_init(GstCefClass *klass)
 {
   GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
-  printf("gst_cef_class_init\n");
+  GST_DEBUG("gst_cef_class_init");
   GstBaseSrcClass *base_src_class = GST_BASE_SRC_CLASS(klass);
   GstPushSrcClass *push_src_class = GST_PUSH_SRC_CLASS(klass);
   GstElementClass *element_class = GST_ELEMENT_CLASS(klass);
@@ -259,7 +259,7 @@ void new_browser(GstCef *cef)
  */
 void gst_cef_init(GstCef *cef)
 {
-  printf("gst_cef_init\n");
+  GST_DEBUG("gst_cef_init");
 
   g_atomic_int_set(&cef->unlocked, 0);
   cef->has_opened_browser = FALSE;

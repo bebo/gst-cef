@@ -46,14 +46,14 @@ static bool doStart(gpointer data)
     }
   }
   path[slash_index + 1] = L"\0"[0];
-  std::wcout << L"Resource Directory Path: " << path << std::endl;
+  //std::wcout << L"Resource Directory Path: " << path << std::endl;
   CefString(&settings.resources_dir_path).FromWString(path);
   std::wstring subprocess = L"\\subprocess";
   for (int i = slash_index; i < slash_index + 12; i++)
   {
     path[i] = subprocess[i - slash_index];
   }
-  std::wcout << L"Subprocess Path: " << path << std::endl;
+  //std::wcout << L"Subprocess Path: " << path << std::endl;
   CefString(&settings.browser_subprocess_path).FromWString(path);
   CefString(&settings.cache_path).FromASCII("C:\\ProgramData\\Bebo");
 
