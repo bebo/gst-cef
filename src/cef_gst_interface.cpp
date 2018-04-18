@@ -48,7 +48,7 @@ static bool doStart(gpointer data)
   path[slash_index + 1] = L"\0"[0];
   //std::wcout << L"Resource Directory Path: " << path << std::endl;
   CefString(&settings.resources_dir_path).FromWString(path);
-  std::wstring subprocess = L"\\subprocess";
+  std::wstring subprocess = L"\\bebo_cef";
   for (int i = slash_index; i < slash_index + 12; i++)
   {
     path[i] = subprocess[i - slash_index];

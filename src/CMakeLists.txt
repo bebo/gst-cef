@@ -71,16 +71,16 @@ if(USE_SANDBOX)
   )
 endif()
 
-ADD_EXECUTABLE(subprocess WIN32
+ADD_EXECUTABLE(bebo_cef WIN32
   subprocess.cpp
 )
 
-TARGET_LINK_LIBRARIES(subprocess
+TARGET_LINK_LIBRARIES(bebo_cef
   libcef_lib
   libcef_dll_wrapper
 )
 
-SET_TARGET_PROPERTIES(subprocess PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
+SET_TARGET_PROPERTIES(bebo_cef PROPERTIES LINK_FLAGS "/SUBSYSTEM:WINDOWS")
 
 # Copy binary and resource files to the target output directory.
 set(DIST_DIR "${CMAKE_BINARY_DIR}/dist")
@@ -116,4 +116,4 @@ set(ENGLISH_FILES
 )
 COPY_FILES(libgstcef "${ENGLISH_FILES}" "${CEF_RESOURCE_DIR}/locales" "${DIST_DIR}/locales")
 COPY_FILES(libgstcef "libgstcef.dll" "${CMAKE_BINARY_DIR}/src/$<CONFIGURATION>" "${DIST_DIR}")
-COPY_FILES(subprocess "subprocess.exe" "${CMAKE_BINARY_DIR}/src/$<CONFIGURATION>" "${DIST_DIR}")
+COPY_FILES(bebo_cef "bebo_cef.exe" "${CMAKE_BINARY_DIR}/src/$<CONFIGURATION>" "${DIST_DIR}")
