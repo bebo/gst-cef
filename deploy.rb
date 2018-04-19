@@ -77,6 +77,12 @@ OptionParser.new do |opts|
 
 end.parse!
 
+# remove this when we have automatic cert signing
+if options[:live] && options[:environment] == "prod"
+    puts "we don't have automatic certificate signing, so you'll need to make a non-live build and manually sign it then make the signed version live manually"
+    exit(1)
+end
+
 # make sure there are no uncommited changes before we tag
 unless options[:dirty]
     require_clean_work_tree
