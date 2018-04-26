@@ -164,4 +164,5 @@ void Browser::OnBeforeCommandLineProcessing(
   command_line->AppendSwitch("disable-gpu-compositing");
   command_line->AppendSwitch("enable-begin-frame-scheduling");
   command_line->AppendSwitch("enable-system-flash");
+  command_line->AppendSwitch("log-severity=disable");
 }
