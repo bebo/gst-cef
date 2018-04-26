@@ -11,6 +11,9 @@ SET_PROPERTY(
   APPEND PROPERTY COMPILE_DEFINITIONS
 )
 
+ADD_DEFINITIONS(-DUNICODE)
+ADD_DEFINITIONS(-D_UNICODE)
+
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT /Zi")
 set(CMAKE_SHARED_LINKER_FLAGS_RELEASE "${CMAKE_SHARED_LINKER_FLAGS_RELEASE} /DEBUG /OPT:REF /OPT:ICF")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd")
@@ -42,6 +45,8 @@ ADD_LIBRARY(libgstcef SHARED
   browser_manager.h
   cef_window_manager.cpp
   cef_window_manager.h
+  registry.h
+  registry.cpp
 )
 
 # We probably don't need most of these libraries.

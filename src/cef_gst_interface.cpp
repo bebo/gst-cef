@@ -13,6 +13,7 @@
 
 #include "cef_gst_interface.h"
 #include "browser_manager.h"
+#include "registry.h"
 
 namespace
 {
@@ -22,6 +23,22 @@ static GMutex cef_start_mutex;
 static GCond cef_start_cond;
 static guint browser_loop_index = 0;
 } // namespace
+
+void getLogsPath(CHAR *filename) {
+  DWORD size = 8000;
+  memset(filename, 0, size);
+
+  RegKey registry(HKEY_CURRENT_USER, L"Software\\Bebo\\GameCapture", KEY_READ);
+
+  if (registry.HasValue(L"Logs")) {
+    std::wstring data;
+    registry.ReadValue(L"Logs", &data);
+    wsprintfA(filename, "%ls\\", data.c_str());
+  }
+  else {
+    GetTempPathA(8000, filename);
+  }
+}
 
 static bool doStart(gpointer data)
 {
@@ -56,11 +73,17 @@ static bool doStart(gpointer data)
   //std::wcout << L"Subprocess Path: " << path << std::endl;
   CefString(&settings.browser_subprocess_path).FromWString(path);
   CefString(&settings.cache_path).FromASCII("C:\\ProgramData\\Bebo");
+  CHAR *log_path = new CHAR[8000];
+  getLogsPath(log_path);
+  strcat(log_path, "bebo_cef.log");
+  GST_INFO("Cef log path: %s", log_path);
+  CefString(&settings.log_file).FromASCII(log_path);
+  delete log_path;
 
   settings.windowless_rendering_enabled = true;
   settings.no_sandbox = true;
-
-  // settings.log_severity = LOGSEVERITY_VERBOSE;
+  GST_INFO("Disabling logging.");
+  settings.log_severity = LOGSEVERITY_DISABLE;
   settings.multi_threaded_message_loop = false;
 
   // Browser implements application-level callbacks for the browser process.
