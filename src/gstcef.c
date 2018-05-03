@@ -239,7 +239,7 @@ void new_browser(GstCef *cef)
   cb->url = g_strdup(cef->url);
   cb->width = cef->width;
   cb->height = cef->height;
-  cb->initialization_js = cef->initialization_js;
+  cb->initialization_js = g_strdup(cef->initialization_js);
   GST_INFO("set cb");
 
   if (browserLoop == 0)
@@ -267,6 +267,7 @@ void gst_cef_init(GstCef *cef)
   cef->height = DEFAULT_HEIGHT;
   cef->url = g_strdup(DEFAULT_URL);
   cef->initialization_js = g_strdup(DEFAULT_INITIALIZATION_JS);
+  cef->js = g_strdup(DEFAULT_JS);
   cef->hidden = FALSE;
   g_mutex_init(&cef->frame_mutex);
   g_cond_init(&cef->frame_cond);
@@ -439,7 +440,9 @@ void gst_cef_finalize(GObject *object)
   GST_DEBUG_OBJECT(cef, "finalize");
 
   /* clean up object here */
-
+  g_free(cef->initialization_js);
+  g_free(cef->url);
+  g_free(cef->js);
   G_OBJECT_CLASS(gst_cef_parent_class)->finalize(object);
 }
 
