@@ -32,11 +32,18 @@ void Browser::CloseBrowser(void *gst_cef, bool force_close, int count)
   for (int i = 0; i < browsers_.size(); i++) {
     if (gst_cef == browsers_[i]->GetGstCef()) {
       b = browsers_[i];
+      if (count < 30 && (b == nullptr || b->GetBrowser() == nullptr ||
+        b->GetBrowser()->GetHost() == nullptr)) {
+        CefPostDelayedTask(TID_UI, base::Bind(&Browser::CloseBrowser, this, gst_cef, force_close, count + 1), 1000);
+        return;
+      }
       browsers_.erase(browsers_.begin() + i);
       GST_INFO("Closing browser at index: %d", i);
     }
   }
-  if (b == nullptr) {
+  if (b == nullptr || b->GetBrowser() == nullptr ||
+    b->GetBrowser()->GetHost() == nullptr) {
+    GST_WARNING("Could not close browser because it is null.");
     return;
   }
   b->GetBrowser()->GetHost()->CloseBrowser(force_close);

@@ -48,6 +48,7 @@ static bool doStart(gpointer data)
   struct gstCb *cb = (struct gstCb *)data;
   CefMainArgs main_args(GetModuleHandle(NULL));
 
+
   // Specify CEF global settings here.
   CefSettings settings;
 
