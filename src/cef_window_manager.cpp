@@ -76,7 +76,7 @@ void CefWindowManager::OnLoadError(CefRefPtr<CefBrowser> browser,
                                 const CefString &errorText,
                                 const CefString &failedUrl)
 {
-  GST_ERROR("OnLoadError");
+  GST_WARNING("OnLoadError %S %S", failedUrl.c_str(), errorText.c_str());
   // Don't display an error for downloaded files.
   if (errorCode == ERR_ABORTED)
     return;

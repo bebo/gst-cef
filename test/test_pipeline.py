@@ -123,9 +123,11 @@ def streamlabs_alert():
     runner.start()
 
     # Create the elements
-    source = Gst.ElementFactory.make('cef')
+    source = Gst.ElementFactory.make('gltestsrc')
+    cc = Gst.ElementFactory.make('glcolorconvert')
+    enc = Gst.ElementFactory.make('d3dnvh264enc')
+    dec = Gst.ElementFactory.make('avdec_h264')
     sink = Gst.ElementFactory.make('glimagesink')
-    source.set_property('url', 'https://streamlabs.com/alert-box/v3/B32C8C284B4D610B2D79')
     # Create the empty pipeline
     pipeline = Gst.Pipeline.new("test-pipeline")
 
@@ -135,9 +137,15 @@ def streamlabs_alert():
 
     # Build the pipeline
     pipeline.add(source)
+    pipeline.add(cc)
+    pipeline.add(enc)
+    pipeline.add(dec)
     pipeline.add(sink)
 
-    Gst.Element.link(source, sink)
+    Gst.Element.link(source, cc)
+    Gst.Element.link(cc, enc)
+    Gst.Element.link(enc, dec)
+    Gst.Element.link(dec, sink)
 
     # Start playing
     ret = pipeline.set_state(Gst.State.PLAYING)
