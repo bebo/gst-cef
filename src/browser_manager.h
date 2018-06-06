@@ -26,6 +26,7 @@ public:
   virtual void OnBeforeCommandLineProcessing(
       const CefString &process_type,
       CefRefPtr<CefCommandLine> command_line) OVERRIDE;
+  virtual void OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar) OVERRIDE;
 
   // CefBrowserProcessHandler methods:
   virtual void OnContextInitialized() OVERRIDE;
@@ -36,6 +37,7 @@ public:
   void ExecuteJS(void *gst_cef, CefString js);
   void SetInitializationJS(void *gst_cef, CefString initialization_js);
   void CreateCefWindow(CefRefPtr<CefWindowManager> client);
+
 
 private:
   CefRefPtr<CefWindowManager> GetClient(void* gst_cef);

@@ -11,8 +11,9 @@
 #include "include/cef_sandbox_win.h"
 #include <include/wrapper/cef_helpers.h>
 
-#include "cef_gst_interface.h"
 #include "browser_manager.h"
+#include "cef_gst_interface.h"
+#include "file_scheme_handler.h"
 #include "registry.h"
 
 namespace
@@ -105,6 +106,7 @@ static bool doStart(gpointer data)
   GST_DEBUG("CefInitialize");
   // Initialize CEF for the browser process.  This marks the current thread as the UI thread.
   CefInitialize(main_args, settings, app.get(), NULL);
+  CefRegisterSchemeHandlerFactory("bebofile", "", new FileSchemeHandlerFactory());
 
   g_mutex_lock(&cef_start_mutex);
   g_cond_signal(&cef_start_cond);

@@ -45,6 +45,8 @@ ADD_LIBRARY(libgstcef SHARED
   browser_manager.h
   cef_window_manager.cpp
   cef_window_manager.h
+  file_scheme_handler.cpp
+  file_scheme_handler.h
   registry.h
   registry.cpp
 )

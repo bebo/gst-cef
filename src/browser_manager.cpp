@@ -173,3 +173,8 @@ void Browser::OnBeforeCommandLineProcessing(
   command_line->AppendSwitch("enable-system-flash");
   command_line->AppendSwitch("log-severity=disable");
 }
+
+void Browser::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
+{
+  registrar->AddCustomScheme("bebofile", true, false, false, true, true, false);
+}
