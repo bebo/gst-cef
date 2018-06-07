@@ -37,6 +37,9 @@ bool FileSchemeHandler::ProcessRequest(CefRefPtr<CefRequest> request,
     url_path.pop_back();
   }
   std::wstring bf_path = bebofile_path_.ToWString();
+  if (bf_path.back() != '/') {
+    bf_path.push_back(L'/');
+  }
   std::wstring path = bf_path + url_path;
   file_stream_.open(path, std::ifstream::in | std::ifstream::binary);
 
