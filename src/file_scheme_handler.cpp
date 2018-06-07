@@ -71,13 +71,13 @@ void FileSchemeHandler::GetResponseHeaders(CefRefPtr<CefResponse> response,
 {
   CEF_REQUIRE_IO_THREAD();
 
-  DCHECK(!data_.empty());
-
   response->SetMimeType(mime_type_);
   response->SetStatus(200);
+  response->SetStatusText("OK");
 
   // Set the resulting response length.
   response_length = length_;
+  redirectUrl = "";
 }
 
 bool FileSchemeHandler::ReadResponse(void* data_out,
@@ -93,16 +93,24 @@ bool FileSchemeHandler::ReadResponse(void* data_out,
     return false;
   }
 
-  if (offset_ == length_) {
-    file_stream_.close();
-    return false;
-  }
-
   file_stream_.read(reinterpret_cast<char*>(data_out), bytes_to_read);
   bytes_read = (int) file_stream_.gcount();
   offset_ += bytes_read;
 
+  if (offset_ == length_) {
+    file_stream_.close();
+  }
+
   return true;
+}
+
+void FileSchemeHandler::Cancel() { 
+  CEF_REQUIRE_IO_THREAD();
+  if (file_stream_.is_open()) {
+    file_stream_.close();
+  }
+  
+  // std::cout << "offset: " << offset_ << ", length: " << length_ << "\n";
 }
 
 CefRefPtr<CefResourceHandler> FileSchemeHandlerFactory::Create(

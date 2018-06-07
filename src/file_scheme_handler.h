@@ -14,8 +14,8 @@ class FileSchemeHandler : public CefResourceHandler {
  public:
   FileSchemeHandler(CefString bebofile_path);
 
-  void Cancel() OVERRIDE { CEF_REQUIRE_IO_THREAD(); }
-
+  virtual void Cancel() OVERRIDE;   
+  
   virtual bool ProcessRequest(CefRefPtr<CefRequest> request,
       CefRefPtr<CefCallback> callback) OVERRIDE;
 
@@ -31,10 +31,9 @@ class FileSchemeHandler : public CefResourceHandler {
  private:
   CefString bebofile_path_;
   std::ifstream file_stream_;
-  std::string data_;
   std::string mime_type_;
-  size_t offset_;
-  size_t length_;
+  uint64_t offset_;
+  uint64_t length_;
 
 
   IMPLEMENT_REFCOUNTING(FileSchemeHandler);

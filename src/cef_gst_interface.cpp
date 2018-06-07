@@ -60,12 +60,12 @@ static bool doStart(gpointer data)
   std::wstring path(c_path);
   path = path.substr(0, path.find_last_of(L"\\") + 1);
 
-  std::wcout << L"Resource Directory Path: " << path << std::endl;
+  // std::wcout << L"Resource Directory Path: " << path << std::endl;
   CefString(&settings.resources_dir_path).FromWString(path);
 
   std::wstring subprocess = L"\\bebo_cef";
   path = path.append(subprocess);
-  std::wcout << L"Subprocess Path: " << path << std::endl;
+  // std::wcout << L"Subprocess Path: " << path << std::endl;
   CefString(&settings.browser_subprocess_path).FromWString(path);
   CefString(&settings.cache_path).FromASCII("C:\\ProgramData\\Bebo");
   CHAR log_path[8000];
