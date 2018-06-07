@@ -2,6 +2,7 @@
 #include <Windows.h>
 
 #include <include/cef_app.h>
+#include "file_scheme_handler.h"
 
 class BrowserApp : public CefApp
 {
@@ -14,7 +15,7 @@ public:
 
   virtual void OnRegisterCustomSchemes(
     CefRawPtr<CefSchemeRegistrar> registrar) OVERRIDE;
-  
+
   IMPLEMENT_REFCOUNTING(BrowserApp);
 };
 
@@ -34,9 +35,7 @@ void BrowserApp::OnBeforeCommandLineProcessing(
 void BrowserApp::OnRegisterCustomSchemes(
     CefRawPtr<CefSchemeRegistrar> registrar)
 {
-  // Register the custom scheme as standard and secure.
-  // Must be the same implementation in all processes.
-  registrar->AddCustomScheme("bebofile", true, false, false, true, true, false);
+  registrar->AddCustomScheme(kFileSchemeProtocol, true, false, false, true, true, false);
 }
 
 int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,

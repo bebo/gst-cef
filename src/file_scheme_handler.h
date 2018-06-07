@@ -5,10 +5,14 @@
 #include "include/cef_app.h"
 #include "include/wrapper/cef_helpers.h"
 
+const std::string kFileSchemeProtocol = "bebofs";
+
+void RegisterFileSchemeHandlerFactory(CefRawPtr<CefSchemeRegistrar> registrar);
+
 // Implementation of the scheme handler for file:// requests.
 class FileSchemeHandler : public CefResourceHandler {
  public:
-  FileSchemeHandler();
+  FileSchemeHandler(CefString bebofile_path);
 
   void Cancel() OVERRIDE { CEF_REQUIRE_IO_THREAD(); }
 
@@ -25,6 +29,7 @@ class FileSchemeHandler : public CefResourceHandler {
       CefRefPtr<CefCallback> callback) OVERRIDE;
 
  private:
+  CefString bebofile_path_;
   std::ifstream file_stream_;
   std::string data_;
   std::string mime_type_;
@@ -39,7 +44,7 @@ class FileSchemeHandler : public CefResourceHandler {
 class FileSchemeHandlerFactory : public CefSchemeHandlerFactory
 {
 public:
-  FileSchemeHandlerFactory() {}
+  FileSchemeHandlerFactory(CefString bebofile_path): bebofile_path_(bebofile_path) {}
 
   virtual CefRefPtr<CefResourceHandler> Create(CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefFrame> frame,
@@ -47,6 +52,7 @@ public:
       CefRefPtr<CefRequest> request) OVERRIDE;
 
 private:
+  CefString bebofile_path_;
   IMPLEMENT_REFCOUNTING(FileSchemeHandlerFactory);
 };
 

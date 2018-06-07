@@ -18,11 +18,11 @@
 
 namespace
 {
-static gint loop_live = 0;
-static CefRefPtr<Browser> app;
-static GMutex cef_start_mutex;
-static GCond cef_start_cond;
-static guint browser_loop_index = 0;
+  static gint loop_live = 0;
+  static CefRefPtr<Browser> app;
+  static GMutex cef_start_mutex;
+  static GCond cef_start_cond;
+  static guint browser_loop_index = 0;
 } // namespace
 
 void getLogsPath(CHAR *filename) {
@@ -95,8 +95,10 @@ static bool doStart(gpointer data)
 
   CefString url;
   CefString js;
+  CefString bebofile_path;
   url.FromASCII(cb->url);
   js.FromASCII(cb->initialization_js);
+  bebofile_path.FromASCII(cb->bebofile_path);
   // The window will not actually be opened until the browser finishes initializing.
   app->Open(cb->gstCef, cb->push_frame, url, cb->width, cb->height, js);
   g_free(cb->url);
@@ -106,7 +108,7 @@ static bool doStart(gpointer data)
   GST_DEBUG("CefInitialize");
   // Initialize CEF for the browser process.  This marks the current thread as the UI thread.
   CefInitialize(main_args, settings, app.get(), NULL);
-  CefRegisterSchemeHandlerFactory("bebofile", "", new FileSchemeHandlerFactory());
+  CefRegisterSchemeHandlerFactory(kFileSchemeProtocol, "", new FileSchemeHandlerFactory(bebofile_path));
 
   g_mutex_lock(&cef_start_mutex);
   g_cond_signal(&cef_start_cond);
@@ -233,22 +235,22 @@ static bool doSetHidden(void *args)
 
 static bool doExecuteJS(void *args)
 {
-	GST_DEBUG("doExecuteJS");
-    struct gstExecuteJSArgs *exec_js_args = (gstExecuteJSArgs* )args;
-	void *gstCef = exec_js_args->gstCef;
+  GST_DEBUG("doExecuteJS");
+  struct gstExecuteJSArgs *exec_js_args = (gstExecuteJSArgs* )args;
+  void *gstCef = exec_js_args->gstCef;
   CefString js;
   js.FromASCII(exec_js_args->js);
   g_free(exec_js_args->js);
-	g_free(args);
+  g_free(args);
 
-	if (!app)
-	{
+  if (!app)
+  {
     GST_INFO("Cannot execute JS because the app is not initialized.");
-		return false;
-	}
+    return false;
+  }
 
-	app->ExecuteJS(gstCef, js);
-	return false;
+  app->ExecuteJS(gstCef, js);
+  return false;
 }
 
 static bool doSetInitializationJS(void *args)
@@ -279,8 +281,8 @@ void set_hidden(void *args)
 
 void execute_js(void *args)
 {
-	GST_DEBUG("Adding doExecuteJS to work loop");
-	g_idle_add((GSourceFunc)doExecuteJS, args);
+  GST_DEBUG("Adding doExecuteJS to work loop");
+  g_idle_add((GSourceFunc)doExecuteJS, args);
 }
 
 void set_initialization_js(void *args)

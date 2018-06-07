@@ -6,7 +6,13 @@
 #include <include/cef_scheme.h>
 #include <include/cef_parser.h>
 
-FileSchemeHandler::FileSchemeHandler(): offset_(0), length_(0)
+void RegisterFileSchemeHandlerFactory(CefRawPtr<CefSchemeRegistrar> registrar)
+{
+  registrar->AddCustomScheme(kFileSchemeProtocol, true, false, false, true, true, false);
+}
+
+FileSchemeHandler::FileSchemeHandler(CefString bebofile_path)
+  : offset_(0), length_(0), bebofile_path_(bebofile_path)
 {
 }
 
@@ -18,10 +24,23 @@ bool FileSchemeHandler::ProcessRequest(CefRefPtr<CefRequest> request,
   CefURLParts url_parts;
   CefParseURL(request->GetURL(), url_parts);
 
-  std::string url_path = CefString(&url_parts.path).ToString();
-  file_stream_.open(url_path, std::ifstream::in | std::ifstream::binary);
+  cef_uri_unescape_rule_t unescape_rule = static_cast<cef_uri_unescape_rule_t>(
+        UU_SPACES | UU_URL_SPECIAL_CHARS_EXCEPT_PATH_SEPARATORS);
 
-  // std::cout << "bebofile://url_path: " << url_path << "\n";
+  std::wstring decoded_host = CefURIDecode(CefString(&url_parts.host), false,
+      unescape_rule);
+  std::wstring decoded_path = CefURIDecode(CefString(&url_parts.path), false,
+      unescape_rule);
+
+  std::wstring url_path =  decoded_host + decoded_path;
+  if (url_path.back() == '/') { // remove trailing slash
+    url_path.pop_back();
+  }
+  std::wstring bf_path = bebofile_path_.ToWString();
+  std::wstring path = bf_path + url_path;
+  file_stream_.open(path, std::ifstream::in | std::ifstream::binary);
+
+  // std::wcout << "resolved bebofs: " << path << "\n";
 
   if (!file_stream_.is_open()) {
     callback->Cancel();
@@ -33,9 +52,9 @@ bool FileSchemeHandler::ProcessRequest(CefRefPtr<CefRequest> request,
   file_stream_.seekg(0, std::ios::beg);
 
   // get mime_type by file extension
-  size_t dot_index = url_path.find_last_of(".");
+  size_t dot_index = path.find_last_of(L".");
   if (dot_index != std::string::npos) {
-    std::string extension = url_path.substr(url_path.find_last_of(".") + 1);
+    std::wstring extension = path.substr(dot_index + 1);
     mime_type_ = CefGetMimeType(extension);
   }
 
@@ -90,5 +109,6 @@ CefRefPtr<CefResourceHandler> FileSchemeHandlerFactory::Create(
     CefRefPtr<CefRequest> request)
 {
   CEF_REQUIRE_IO_THREAD();
-  return new FileSchemeHandler();
+  return new FileSchemeHandler(bebofile_path_);
 }
+
