@@ -54,33 +54,25 @@ static bool doStart(gpointer data)
   CefSettings settings;
 
   HMODULE hModule = GetModuleHandleW(NULL);
-  WCHAR path[MAX_PATH + 50];
-  GetModuleFileNameW(hModule, path, MAX_PATH);
-  int slash_index = 0;
-  for (int i = 0; i < MAX_PATH; i++)
-  {
-    if (path[i] == L"\\"[0])
-    {
-      slash_index = i;
-    }
-  }
-  path[slash_index + 1] = L"\0"[0];
-  //std::wcout << L"Resource Directory Path: " << path << std::endl;
+  WCHAR c_path[MAX_PATH + 50];
+  GetModuleFileNameW(hModule, c_path, MAX_PATH);
+
+  std::wstring path(c_path);
+  path = path.substr(0, path.find_last_of(L"\\") + 1);
+
+  std::wcout << L"Resource Directory Path: " << path << std::endl;
   CefString(&settings.resources_dir_path).FromWString(path);
+
   std::wstring subprocess = L"\\bebo_cef";
-  for (int i = slash_index; i < slash_index + 12; i++)
-  {
-    path[i] = subprocess[i - slash_index];
-  }
-  //std::wcout << L"Subprocess Path: " << path << std::endl;
+  path = path.append(subprocess);
+  std::wcout << L"Subprocess Path: " << path << std::endl;
   CefString(&settings.browser_subprocess_path).FromWString(path);
   CefString(&settings.cache_path).FromASCII("C:\\ProgramData\\Bebo");
-  CHAR *log_path = new CHAR[8000];
+  CHAR log_path[8000];
   getLogsPath(log_path);
   strcat(log_path, "bebo_cef.log");
   GST_INFO("Cef log path: %s", log_path);
   CefString(&settings.log_file).FromASCII(log_path);
-  delete log_path;
 
   settings.windowless_rendering_enabled = true;
   settings.no_sandbox = true;
@@ -103,6 +95,7 @@ static bool doStart(gpointer data)
   app->Open(cb->gstCef, cb->push_frame, url, cb->width, cb->height, js);
   g_free(cb->url);
   g_free(cb->initialization_js);
+  g_free(cb->bebofile_path);
   g_free(cb);
 
   GST_DEBUG("CefInitialize");
