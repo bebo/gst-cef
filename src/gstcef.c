@@ -71,6 +71,7 @@ static gboolean gst_cef_stop(GstBaseSrc *src);
 #define DEFAULT_WIDTH 1280
 #define DEFAULT_JS ""
 #define DEFAULT_INITIALIZATION_JS ""
+#define DEFAULT_BEBOFILE_PATH ""
 
 enum
 {
@@ -80,7 +81,8 @@ enum
   PROP_HEIGHT,
   PROP_HIDDEN,
   PROP_JS,
-  PROP_INIT_JS
+  PROP_INIT_JS,
+  PROP_BEBOFILE_PATH
 };
 
 /* pad templates */
@@ -158,6 +160,12 @@ gst_cef_class_init(GstCefClass *klass)
   g_object_class_install_property(gobject_class, PROP_JS,
                                   g_param_spec_string("javascript", "javascript", "javascript to be executed by window.",
                                                       DEFAULT_JS, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+
+  g_object_class_install_property(gobject_class, PROP_BEBOFILE_PATH,
+                                  g_param_spec_string("bebofile-path", "bebofile-path", "base path for bebofile protocol.",
+                                                      DEFAULT_BEBOFILE_PATH, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+
+
 }
 
 static void push_frame(void *gstCef, const void *buffer, int width, int height)
@@ -229,7 +237,6 @@ static GstFlowReturn gst_cef_fill(GstPushSrc *src, GstBuffer *buf)
 
 void new_browser(GstCef *cef)
 {
-  const GstStructure *structure;
   struct gstCb *cb = g_malloc(sizeof(struct gstCb));
 
   GST_INFO("actual new browser");
@@ -240,6 +247,7 @@ void new_browser(GstCef *cef)
   cb->width = cef->width;
   cb->height = cef->height;
   cb->initialization_js = g_strdup(cef->initialization_js);
+  cb->bebofile_path = g_strdup(cef->bebofile_path);
   GST_INFO("set cb");
 
   if (browserLoop == 0)
@@ -268,6 +276,7 @@ void gst_cef_init(GstCef *cef)
   cef->url = g_strdup(DEFAULT_URL);
   cef->initialization_js = g_strdup(DEFAULT_INITIALIZATION_JS);
   cef->js = g_strdup(DEFAULT_JS);
+  cef->bebofile_path = g_strdup(DEFAULT_BEBOFILE_PATH);
   cef->hidden = FALSE;
   g_mutex_init(&cef->frame_mutex);
   g_cond_init(&cef->frame_cond);
@@ -372,6 +381,13 @@ void gst_cef_set_property(GObject *object, guint property_id,
     }
     break;
   }
+  case PROP_BEBOFILE_PATH:
+  {
+    const gchar *path = g_value_get_string(value);
+    g_free(cef->bebofile_path);
+    cef->bebofile_path = g_strdup(path);
+    break;
+  }
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
     break;
@@ -415,6 +431,9 @@ void gst_cef_get_property(GObject *object, guint property_id,
     break;
   case PROP_INIT_JS:
     g_value_set_string(value, cef->initialization_js);
+    break;
+  case PROP_BEBOFILE_PATH:
+    g_value_set_string(value, cef->bebofile_path);
     break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -547,7 +566,7 @@ gst_cef_start(GstBaseSrc *src)
   GstCef *cef = GST_CEF(src);
   gint width = cef->width;
   gint height = cef->width;
-  char *url = cef->url;
+  const char *url = cef->url;
 
   GST_INFO_OBJECT(cef, "start");
 
@@ -581,7 +600,7 @@ gst_cef_unlock_stop(GstBaseSrc *src)
   GstCef *cef = GST_CEF(src);
   gint width = cef->width;
   gint height = cef->width;
-  char *url = cef->url;
+  const char *url = cef->url;
 
   GST_INFO_OBJECT(cef, "unlock_stop");
 

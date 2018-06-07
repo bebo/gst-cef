@@ -2,6 +2,7 @@
 #include <Windows.h>
 
 #include <include/cef_app.h>
+#include "file_scheme_handler.h"
 
 class BrowserApp : public CefApp
 {
@@ -11,6 +12,9 @@ public:
   virtual void OnBeforeCommandLineProcessing(
       const CefString &process_type,
       CefRefPtr<CefCommandLine> command_line) OVERRIDE;
+
+  virtual void OnRegisterCustomSchemes(
+    CefRawPtr<CefSchemeRegistrar> registrar) OVERRIDE;
 
   IMPLEMENT_REFCOUNTING(BrowserApp);
 };
@@ -26,6 +30,12 @@ void BrowserApp::OnBeforeCommandLineProcessing(
   command_line->AppendSwitch("enable-begin-frame-scheduling");
   command_line->AppendSwitch("enable-system-flash");
   command_line->AppendSwitch("log-severity=disable");
+}
+
+void BrowserApp::OnRegisterCustomSchemes(
+    CefRawPtr<CefSchemeRegistrar> registrar)
+{
+  registrar->AddCustomScheme(kFileSchemeProtocol, true, false, false, true, true, false);
 }
 
 int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,

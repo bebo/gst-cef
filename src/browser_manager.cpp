@@ -18,6 +18,7 @@
 #include "cef_gst_interface.h"
 #include "browser_manager.h"
 #include "cef_window_manager.h"
+#include "file_scheme_handler.h"
 
 Browser::Browser() : initialized_(false) {};
 
@@ -61,6 +62,7 @@ CefRefPtr<CefWindowManager> Browser::GetClient(void* gst_cef) {
     }
   }
   GST_INFO("Did not found browser");
+  return NULL;
 }
 
 void Browser::Open(void *gst_cef, void *push_frame, CefString url, int width, int height, CefString initialization_js)
@@ -172,4 +174,9 @@ void Browser::OnBeforeCommandLineProcessing(
   command_line->AppendSwitch("enable-begin-frame-scheduling");
   command_line->AppendSwitch("enable-system-flash");
   command_line->AppendSwitch("log-severity=disable");
+}
+
+void Browser::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
+{
+  RegisterFileSchemeHandlerFactory(registrar);
 }

@@ -16,6 +16,7 @@ struct gstCb
   void *push_frame;
   char *url;
   char *initialization_js;
+  char *bebofile_path;
   int width;
   int height;
 };
@@ -35,8 +36,8 @@ struct gstHiddenArgs
 
 struct gstExecuteJSArgs
 {
-	void *gstCef;
-	char *js;
+  void *gstCef;
+  char *js;
 };
 
 void browser_loop(gpointer args);

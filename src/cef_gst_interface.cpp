@@ -11,17 +11,18 @@
 #include "include/cef_sandbox_win.h"
 #include <include/wrapper/cef_helpers.h>
 
-#include "cef_gst_interface.h"
 #include "browser_manager.h"
+#include "cef_gst_interface.h"
+#include "file_scheme_handler.h"
 #include "registry.h"
 
 namespace
 {
-static gint loop_live = 0;
-static CefRefPtr<Browser> app;
-static GMutex cef_start_mutex;
-static GCond cef_start_cond;
-static guint browser_loop_index = 0;
+  static gint loop_live = 0;
+  static CefRefPtr<Browser> app;
+  static GMutex cef_start_mutex;
+  static GCond cef_start_cond;
+  static guint browser_loop_index = 0;
 } // namespace
 
 void getLogsPath(CHAR *filename) {
@@ -53,33 +54,25 @@ static bool doStart(gpointer data)
   CefSettings settings;
 
   HMODULE hModule = GetModuleHandleW(NULL);
-  WCHAR path[MAX_PATH + 50];
-  GetModuleFileNameW(hModule, path, MAX_PATH);
-  int slash_index = 0;
-  for (int i = 0; i < MAX_PATH; i++)
-  {
-    if (path[i] == L"\\"[0])
-    {
-      slash_index = i;
-    }
-  }
-  path[slash_index + 1] = L"\0"[0];
-  //std::wcout << L"Resource Directory Path: " << path << std::endl;
+  WCHAR c_path[MAX_PATH + 50];
+  GetModuleFileNameW(hModule, c_path, MAX_PATH);
+
+  std::wstring path(c_path);
+  path = path.substr(0, path.find_last_of(L"\\") + 1);
+
+  // std::wcout << L"Resource Directory Path: " << path << std::endl;
   CefString(&settings.resources_dir_path).FromWString(path);
+
   std::wstring subprocess = L"\\bebo_cef";
-  for (int i = slash_index; i < slash_index + 12; i++)
-  {
-    path[i] = subprocess[i - slash_index];
-  }
-  //std::wcout << L"Subprocess Path: " << path << std::endl;
+  path = path.append(subprocess);
+  // std::wcout << L"Subprocess Path: " << path << std::endl;
   CefString(&settings.browser_subprocess_path).FromWString(path);
   CefString(&settings.cache_path).FromASCII("C:\\ProgramData\\Bebo");
-  CHAR *log_path = new CHAR[8000];
+  CHAR log_path[8000];
   getLogsPath(log_path);
   strcat(log_path, "bebo_cef.log");
   GST_INFO("Cef log path: %s", log_path);
   CefString(&settings.log_file).FromASCII(log_path);
-  delete log_path;
 
   settings.windowless_rendering_enabled = true;
   settings.no_sandbox = true;
@@ -94,17 +87,21 @@ static bool doStart(gpointer data)
 
   CefString url;
   CefString js;
+  CefString bebofile_path;
   url.FromASCII(cb->url);
   js.FromASCII(cb->initialization_js);
+  bebofile_path.FromASCII(cb->bebofile_path);
   // The window will not actually be opened until the browser finishes initializing.
   app->Open(cb->gstCef, cb->push_frame, url, cb->width, cb->height, js);
   g_free(cb->url);
   g_free(cb->initialization_js);
+  g_free(cb->bebofile_path);
   g_free(cb);
 
   GST_DEBUG("CefInitialize");
   // Initialize CEF for the browser process.  This marks the current thread as the UI thread.
   CefInitialize(main_args, settings, app.get(), NULL);
+  CefRegisterSchemeHandlerFactory(kFileSchemeProtocol, "", new FileSchemeHandlerFactory(bebofile_path));
 
   g_mutex_lock(&cef_start_mutex);
   g_cond_signal(&cef_start_cond);
@@ -231,22 +228,22 @@ static bool doSetHidden(void *args)
 
 static bool doExecuteJS(void *args)
 {
-	GST_DEBUG("doExecuteJS");
-    struct gstExecuteJSArgs *exec_js_args = (gstExecuteJSArgs* )args;
-	void *gstCef = exec_js_args->gstCef;
+  GST_DEBUG("doExecuteJS");
+  struct gstExecuteJSArgs *exec_js_args = (gstExecuteJSArgs* )args;
+  void *gstCef = exec_js_args->gstCef;
   CefString js;
   js.FromASCII(exec_js_args->js);
   g_free(exec_js_args->js);
-	g_free(args);
+  g_free(args);
 
-	if (!app)
-	{
+  if (!app)
+  {
     GST_INFO("Cannot execute JS because the app is not initialized.");
-		return false;
-	}
+    return false;
+  }
 
-	app->ExecuteJS(gstCef, js);
-	return false;
+  app->ExecuteJS(gstCef, js);
+  return false;
 }
 
 static bool doSetInitializationJS(void *args)
@@ -277,8 +274,8 @@ void set_hidden(void *args)
 
 void execute_js(void *args)
 {
-	GST_DEBUG("Adding doExecuteJS to work loop");
-	g_idle_add((GSourceFunc)doExecuteJS, args);
+  GST_DEBUG("Adding doExecuteJS to work loop");
+  g_idle_add((GSourceFunc)doExecuteJS, args);
 }
 
 void set_initialization_js(void *args)
