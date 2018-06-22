@@ -3,9 +3,15 @@
 
 require 'optparse'
 require 'open3'
+require 'rbconfig' 
+
 include Open3
 
-JENKINS_URL = "https://usw1-jenkins-001.blab.im/job/gst-cef/"
+JENKINS_URL = "https://usw1-jenkins-002.blab.im/job/gst-cef/"
+IS_WINDOWS = (RbConfig::CONFIG['host_os'] =~ /mswin|mingw|cygwin/)
+
+curl = IS_WINDOWS ? "./curl/bin/curl.exe -L --write-out %{http_code}" : "curl -s --write-out %{http_code}"
+curl_test = IS_WINDOWS ? "./curl/bin/curl.exe -L --write-out %{http_code} -so nul" : "curl --write-out %{http_code} -so /dev/null"
 
 def bump_version(t)
     elems = t.split(".").map{|x| x.to_i}
@@ -57,12 +63,12 @@ OptionParser.new do |opts|
   opts.on("-t", "--tag TAG", "tag to deploy") do |t|
       options[:tag] = t
   end
-  options[:deploy] = true
-  opts.on("-d", "--[no-]deploy", "deploy to hosts") do |d|
+  options[:upload] = true
+  opts.on("-u", "--[no-]upload", "upload to s3") do |d|
       options[:deploy] = d
   end
-  opts.on("-H", "--hosts HOSTS", "hosts to deploy to, comma seperated list, eg dev01,dev02 ") do |h|
-      options[:hosts] = h
+  opts.on("-l", "--[no-]live", "make live as latest & for auto-update") do |l|
+      options[:live ] = l
   end
   opts.on_tail("-h", "--help", "Show this message") do
     puts opts
@@ -71,12 +77,18 @@ OptionParser.new do |opts|
 
 end.parse!
 
+# remove this when we have automatic cert signing
+if options[:live] && options[:environment] == "prod"
+    puts "we don't have automatic certificate signing, so you'll need to make a non-live build and manually sign it then make the signed version live manually"
+    exit(1)
+end
+
 # make sure there are no uncommited changes before we tag
 unless options[:dirty]
     require_clean_work_tree
 end
-
-test_response=%x(curl -L --write-out "%{http_code}" -so /dev/null #{JENKINS_URL})
+puts "#{curl_test} #{JENKINS_URL}"
+test_response=%x(#{curl_test} #{JENKINS_URL})
 # check for 200, if not, then exit
 unless test_response == '200'
 #if test_response != '200' || test_response != '201'
@@ -105,16 +117,16 @@ unless options[:dryrun]
 end
 
 # trigger new build
-jenkins_build_url="#{JENKINS_URL}buildWithParameters?token=uBC3kFJF&ENV=#{options[:environment]}&TAG=#{new_tag}&DEPLOY=#{options[:deploy]}"
+jenkins_build_url="#{JENKINS_URL}buildWithParameters?token=uBC3kFJF&ENV=#{options[:environment]}&TAG=#{new_tag}&UPLOAD=#{options[:upload]}"
 
-# append hosts parameter to jenkins url if we set it option
-if options[:hosts]
-    jenkins_build_url += "&HOSTS=#{options[:hosts]}"
+if options[:live]
+    jenkins_build_url += "&LIVE=#{options[:live]}"
 end
+puts "#{jenkins_build_url}"
 
 puts "jenkins url: #{jenkins_build_url}" if options[:verbose]
 unless options[:dryrun]
-    build_response=%x(curl -sL --write-out %{http_code} '#{jenkins_build_url}')
+    build_response=%x(#{curl} "#{jenkins_build_url}")
     if build_response == '200' || build_response == '201'
         puts "building #{new_tag}"
     else
@@ -122,5 +134,3 @@ unless options[:dryrun]
         exit(1)
     end
 end
-
-puts "You sure you want to push to `prod` and not `bebo-prod`?" if options[:environment] == "prod"

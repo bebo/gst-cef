@@ -15,12 +15,16 @@ missing
 stamp-*
 my-plugin-*.tar.*
 compile
+
 build/
+CMakeFiles/
+GPUCache/
 package/
 *~
 
 aclocal.m4
 autom4te.cache
+build
 config.h
 config.h.in
 config.log
@@ -49,14 +53,17 @@ ABOUT-NLS
 /INSTALL
 _stdint.h
 gst-plugins-bad-*.tar.*
+.vs
 
 .deps
+.idea
 .libs
 .dirstamp
 *.lo
 *.la
 *.so
 *.o
+*.pyc
 *~
 /m4
 Makefile.in
@@ -80,4 +87,39 @@ Build
 *.log
 *.trs
 
+*.gypcmd
+*.mk
+*.ncb
+*.opensdf
+*.props
+*.pyc
+*.rules
+*.sdf
+*.sln
+*.sublime-project
+*.sublime-workspace
+*.suo
+*.targets
+*.user
+*.vcproj
+*.vcxproj
+*.vcxproj.filters
+*.vpj
+*.vpw
+*.vpwhistu
+*.vtg
+*.xcodeproj
+*.xcworkspace
+*_proto.xml
+*_proto_cpp.xml
+*~
 
+# CEF build directory
+/build
+# CEF download directory
+/third_party/cef/
+# clang-format downloads
+/tools/buildtools/external_bin
+/tools/buildtools/linux64/clang-format
+/tools/buildtools/mac/clang-format
+/tools/buildtools/win/clang-format.exe

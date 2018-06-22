@@ -27,11 +27,11 @@
 
 G_BEGIN_DECLS
 
-#define GST_TYPE_CEF   (gst_cef_get_type())
-#define GST_CEF(obj)   (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_CEF,GstCef))
-#define GST_CEF_CLASS(klass)   (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_CEF,GstCefClass))
-#define GST_IS_CEF(obj)   (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_CEF))
-#define GST_IS_CEF_CLASS(obj)   (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_CEF))
+#define GST_TYPE_CEF (gst_cef_get_type())
+#define GST_CEF(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GST_TYPE_CEF, GstCef))
+#define GST_CEF_CLASS(klass) (G_TYPE_CHECK_CLASS_CAST((klass), GST_TYPE_CEF, GstCefClass))
+#define GST_IS_CEF(obj) (G_TYPE_CHECK_INSTANCE_TYPE((obj), GST_TYPE_CEF))
+#define GST_IS_CEF_CLASS(obj) (G_TYPE_CHECK_CLASS_TYPE((klass), GST_TYPE_CEF))
 
 typedef struct _GstCef GstCef;
 typedef struct _GstCefClass GstCefClass;
@@ -40,9 +40,15 @@ struct _GstCef
 {
   GstPushSrc src;
   const char *url;
-  void *current_buffer;
+  const char *js;
+  const char *initialization_js;
+  const char *bebofile_path;
+
+  // Need the frame_mutex to touch the below properties.
   GMutex frame_mutex;
+  GstBuffer *current_buffer;
   GCond frame_cond;
+  GCond buffer_cond;
   /* gint64 cur_offset; */
   volatile gint unlocked;
   volatile gint has_new_frame;
@@ -57,7 +63,7 @@ struct _GstCefClass
   GstPushSrcClass base_cef_class;
 };
 
-GType gst_cef_get_type (void);
+GType gst_cef_get_type(void);
 
 G_END_DECLS
 
