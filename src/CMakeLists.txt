@@ -4,8 +4,6 @@
 
 cmake_minimum_required(VERSION 3.8)
 
-SET(GST_INSTALL_BASE "C:\\gstreamer\\1.0\\x86_64" CACHE PATH "Path to the GStreamer install base")
-
 SET_PROPERTY(
   DIRECTORY
   APPEND PROPERTY COMPILE_DEFINITIONS
