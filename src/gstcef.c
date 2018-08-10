@@ -196,6 +196,7 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height)
   }
 
   g_mutex_unlock(&cef->frame_mutex);
+  GST_DEBUG("DONE PUSHING FRAME");
 }
 
 void *pop_frame(GstCef *cef)
@@ -574,7 +575,7 @@ gst_cef_unlock_stop(GstBaseSrc *src)
     GST_ERROR("no width, or height, or url");
     return FALSE;
   }
-  g_mutex_lock(&cef->frame_mutex);
+  //g_mutex_lock(&cef->frame_mutex);
   start_rendering(cef);
   //g_mutex_unlock(&cef->frame_mutex);
   GST_INFO_OBJECT(cef, "unlock_stop complete");
