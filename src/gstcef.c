@@ -199,17 +199,17 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height)
 }
 
 void *pop_frame(GstCef *cef)
-{
+{ 
   while (g_atomic_int_get(&cef->has_new_frame) == 0 && g_atomic_int_get(&cef->unlocked) == 0)
   {
     g_cond_wait(&cef->frame_cond, &cef->frame_mutex);
   }
+  GST_INFO("POP_FRAME WAITING IS FINISHED");
   if (g_atomic_int_get(&cef->unlocked) == 0)
   { // 0 - not in cleanup state
     g_atomic_int_set(&cef->has_new_frame, 0);
     return cef->current_buffer;
   }
-
   return NULL;
 }
 
@@ -548,15 +548,36 @@ static gboolean
 gst_cef_unlock(GstBaseSrc *src)
 {
   GstCef *cef = GST_CEF(src);
-  GST_INFO_OBJECT(cef, "unlock");
+  GST_DEBUG_OBJECT(cef, "unlock");
   g_atomic_int_set(&cef->unlocked, 1);
   g_cond_signal(&cef->frame_cond);
   g_cond_signal(&cef->buffer_cond);
+  //g_mutex_lock(&cef->frame_mutex);
+  stop_rendering(cef);
+  //g_mutex_unlock(&cef->frame_mutex);
+  return TRUE;
+}
 
+/* Clear any pending unlock request, as we succeeded in unlocking */
+static gboolean
+gst_cef_unlock_stop(GstBaseSrc *src)
+{
+  // TODO: We are no longer support dynamic resize so this should probably be removed.
+  GstCef *cef = GST_CEF(src);
+  GST_DEBUG_OBJECT(cef, "unlock_stop");
+  gint width = cef->width;
+  gint height = cef->width;
+  const char *url = cef->url;
+  g_atomic_int_set(&cef->unlocked, 0);
+  if (!width || !height || !url)
+  {
+    GST_ERROR("no width, or height, or url");
+    return FALSE;
+  }
   g_mutex_lock(&cef->frame_mutex);
-  close_browser(cef);
-  g_mutex_unlock(&cef->frame_mutex);
-  GST_INFO_OBJECT(cef, "unlock complete");
+  start_rendering(cef);
+  //g_mutex_unlock(&cef->frame_mutex);
+  GST_INFO_OBJECT(cef, "unlock_stop complete");
   return TRUE;
 }
 
@@ -583,38 +604,14 @@ gst_cef_start(GstBaseSrc *src)
 static gboolean gst_cef_stop(GstBaseSrc *src)
 {
   GstCef *cef = GST_CEF(src);
+  GST_INFO_OBJECT(cef, "TEST22222");
   GST_INFO_OBJECT(cef, "stop");
   g_atomic_int_set(&cef->unlocked, 1);
+
   close_browser(cef);
   g_cond_clear(&cef->frame_cond);
   g_cond_clear(&cef->buffer_cond);
   g_mutex_clear(&cef->frame_mutex);
-  return TRUE;
-}
-
-/* Clear any pending unlock request, as we succeeded in unlocking */
-static gboolean
-gst_cef_unlock_stop(GstBaseSrc *src)
-{
-  // TODO: We are no longer support dynamic resize so this should probably be removed.
-  GstCef *cef = GST_CEF(src);
-  gint width = cef->width;
-  gint height = cef->width;
-  const char *url = cef->url;
-
-  GST_INFO_OBJECT(cef, "unlock_stop");
-
-  g_mutex_lock(&cef->frame_mutex);
-
-  if (!width || !height || !url)
-  {
-    GST_ERROR("no width, or height, or url");
-    return FALSE;
-  }
-  
-  g_mutex_unlock(&cef->frame_mutex);
-
-  GST_INFO_OBJECT(cef, "unlock_stop complete");
   return TRUE;
 }
 

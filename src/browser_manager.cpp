@@ -117,7 +117,7 @@ void Browser::SetHidden(void *gst_cef, bool hidden)
     GST_INFO("Need to call Browser::SetHidden on the UI thread. Adding to message loop");
     CefPostTask(TID_UI, base::Bind(&Browser::SetHidden, this, gst_cef, hidden));
   }
-  GST_INFO("Browser::SetHidden");
+  GST_INFO("Browser::SetHidden %d", hidden);
   CefRefPtr<CefWindowManager> wm = GetClient(gst_cef);
   if (wm == nullptr) {
     GST_WARNING("Cannot set hidden.  Browser not found in map.");

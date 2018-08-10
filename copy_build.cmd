@@ -1,0 +1,1 @@
+xcopy C:\Users\TsBat\bebo\gst-stuff\gst-cef\build\dist\libgstcef.dll C:\Users\TsBat\bebo\mercy\dist\Python34\Lib\site-packages\gnome\lib\gstreamer-1.0 /y

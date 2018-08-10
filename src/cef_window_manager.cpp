@@ -184,6 +184,9 @@ void CefWindowManager::SetHidden(bool hidden)
   hidden_ = hidden;
   CefRefPtr<CefBrowserHost> host = browser_->GetHost();
   host->WasHidden(hidden);
+  if (!hidden) {
+    host->Invalidate(PET_VIEW);
+  }
 }
 
 void CefWindowManager::ExecuteJS(CefString js)

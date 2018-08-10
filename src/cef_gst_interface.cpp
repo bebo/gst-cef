@@ -298,6 +298,33 @@ bool doClose(gpointer args)
   return false;
 }
 
+void stop_rendering(gpointer *cef)
+{
+  if (app)
+  { 
+    app.get()->SetHidden(cef, TRUE);
+  }
+  else
+  {
+    GST_ERROR("ERROR: no app");
+  }
+  return;
+}
+
+void start_rendering(gpointer *cef)
+{
+  if (app)
+  {
+    app.get()->SetHidden(cef, FALSE);
+  }
+  else
+  {
+    GST_ERROR("ERROR: no app");
+  }
+  return;
+}
+
+
 void close_browser(gpointer args)
 {
   g_idle_add((GSourceFunc)doClose, args);

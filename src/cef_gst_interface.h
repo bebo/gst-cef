@@ -47,6 +47,8 @@ void set_hidden(void *args);
 void execute_js(void *args);
 void set_initialization_js(void *args);
 void close_browser(gpointer args);
+void stop_rendering(gpointer *cef);
+void start_rendering(gpointer *cef);
 void shutdown_browser();
 
 #ifdef __cplusplus
