@@ -54,7 +54,7 @@ if(NOT PYTHON_EXECUTABLE)
   unset(PYTHON_EXECUTABLE)
 
   # Find the python interpreter.
-  find_package(PythonInterp)
+  find_package(PythonInterp, 2)
 
   if(NOT ${PYTHONINTERP_FOUND})
     message(FATAL_ERROR "A Python installation is required. Set the "
