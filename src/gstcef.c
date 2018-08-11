@@ -223,17 +223,17 @@ static GstFlowReturn gst_cef_fill(GstPushSrc *src, GstBuffer *buf)
   cef->current_buffer = buf;
   g_cond_signal(&cef->buffer_cond);
   GST_DEBUG("Popping Cef Frame");
+  GstFlowReturn flow_return = GST_FLOW_FLUSHING;
   void *frame = pop_frame(cef);
-  if (!frame)
-  {
+  if (frame != NULL) {
+    GST_DEBUG("Successfully popped frame.");
+    flow_return = GST_FLOW_OK;
+  } else {
     GST_DEBUG("No frame returned");
-    g_mutex_unlock(&cef->frame_mutex);
-    return GST_FLOW_FLUSHING;
   }
-  GST_DEBUG("Successfully popped frame.");
   cef->current_buffer = NULL;
   g_mutex_unlock(&cef->frame_mutex);
-  return GST_FLOW_OK;
+  return flow_return;
 }
 
 void new_browser(GstCef *cef)

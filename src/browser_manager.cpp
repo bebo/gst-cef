@@ -101,6 +101,7 @@ void Browser::SetSize(void *gst_cef, int width, int height)
   if (!CefCurrentlyOn(TID_UI)) {
     GST_INFO("Need to call Browser::SetSize on the UI thread. Adding to message loop");
     CefPostTask(TID_UI, base::Bind(&Browser::SetSize, this, gst_cef, width, height));
+    return;
   }
   GST_INFO("Browser::SetSize");
   CefRefPtr<CefWindowManager> wm = GetClient(gst_cef);
@@ -116,6 +117,7 @@ void Browser::SetHidden(void *gst_cef, bool hidden)
   if (!CefCurrentlyOn(TID_UI)) {
     GST_INFO("Need to call Browser::SetHidden on the UI thread. Adding to message loop");
     CefPostTask(TID_UI, base::Bind(&Browser::SetHidden, this, gst_cef, hidden));
+    return;
   }
   GST_INFO("Browser::SetHidden %d", hidden);
   CefRefPtr<CefWindowManager> wm = GetClient(gst_cef);
