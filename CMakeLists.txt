@@ -14,7 +14,7 @@ project(gst-cef)
 
 # Use folders in the resulting project files.
 set_property(GLOBAL PROPERTY OS_FOLDERS ON)
-set(GST_INSTALL_BASE "${CMAKE_SOURCE_DIR}/third_party/gstreamer" CACHE INTERNAL "Path to the GStreamer install base")
+set(GST_INSTALL_BASE "${CMAKE_SOURCE_DIR}/third_party" CACHE INTERNAL "Path to the GStreamer install base")
 
 #
 # CEF configuration.
@@ -32,7 +32,7 @@ DownloadCEF("windows64" "${CEF_VERSION}" "${CMAKE_SOURCE_DIR}/third_party/cef")
 
 # Download Gstreamer
 include(DownloadDependency)
-DownloadDependency("https://s3-us-west-1.amazonaws.com/bebo-app/repo/gstreamer-base/gstreamer.tar.bz2" "gstreamer")
+DownloadDependency("https://s3-us-west-1.amazonaws.com/bebo-app/repo/gst-bebo/gst-bebo_bebo_build-20180811012020_dev.zip" "gstreamer")
 
 # Add the CEF binary distribution's cmake/ directory to the module path.
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CEF_ROOT}/cmake")
