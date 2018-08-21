@@ -170,14 +170,16 @@ gst_cef_class_init(GstCefClass *klass)
 
 static void push_frame(void *gstCef, const void *buffer, int width, int height)
 {
-  GST_DEBUG("Pushing Frame");
+  //GST_LOG("Pushing Frame");
   GstCef *cef = (GstCef *)gstCef;
 
   g_mutex_lock(&cef->frame_mutex);
   int size = width * height * 4;
   if (size != (cef->width * cef->height * 4))
   {
-    GST_ERROR("push_frame size mismatch");
+    GST_ERROR("push_frame size mismatch %d != %d * %d * 4", size, cef->width, cef->height);
+    g_mutex_unlock(&cef->frame_mutex);
+	return;
   }
 
   while (!cef->current_buffer && g_atomic_int_get(&cef->unlocked) == 0)
@@ -192,11 +194,11 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height)
   }
   else
   {
-    GST_INFO("Cef push_frame does not have buffer");
+    //GST_INFO("Cef push_frame does not have buffer");
   }
 
   g_mutex_unlock(&cef->frame_mutex);
-  GST_DEBUG("DONE PUSHING FRAME");
+  //GST_DEBUG("DONE PUSHING FRAME");
 }
 
 void *pop_frame(GstCef *cef)
@@ -205,7 +207,6 @@ void *pop_frame(GstCef *cef)
   {
     g_cond_wait(&cef->frame_cond, &cef->frame_mutex);
   }
-  GST_INFO("POP_FRAME WAITING IS FINISHED");
   if (g_atomic_int_get(&cef->unlocked) == 0)
   { // 0 - not in cleanup state
     g_atomic_int_set(&cef->has_new_frame, 0);
@@ -222,14 +223,14 @@ static GstFlowReturn gst_cef_fill(GstPushSrc *src, GstBuffer *buf)
   gsize my_size = cef->width * cef->height * 4;
   cef->current_buffer = buf;
   g_cond_signal(&cef->buffer_cond);
-  GST_DEBUG("Popping Cef Frame");
+  //GST_LOG("Popping Cef Frame");
   GstFlowReturn flow_return = GST_FLOW_FLUSHING;
   void *frame = pop_frame(cef);
   if (frame != NULL) {
-    GST_DEBUG("Successfully popped frame.");
+    //GST_LOG("Successfully popped frame.");
     flow_return = GST_FLOW_OK;
   } else {
-    GST_DEBUG("No frame returned");
+    //GST_LOG("No frame returned");
   }
   cef->current_buffer = NULL;
   g_mutex_unlock(&cef->frame_mutex);

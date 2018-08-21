@@ -37,7 +37,7 @@ CefWindowManager::~CefWindowManager() {}
 
 bool CefWindowManager::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect)
 {
-  GST_DEBUG("GetViewRect: %uX%u", width_, height_);
+  //GST_LOG("GetViewRect: %uX%u", width_, height_);
   rect.Set(0, 0, width_, height_);
   return true;
 }
@@ -46,10 +46,10 @@ void CefWindowManager::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType p
                             const void *buffer, int width, int height)
 {
   // The rects are just a single rectangle as of October 2015.
-  GST_DEBUG("OnPaint %d, %d", width, height);
+  //GST_LOG("OnPaint %d, %d", width, height);
   if (!ready_)
   {
-    GST_DEBUG("Not ready for OnPaint yet");
+    GST_LOG("Not ready for OnPaint yet");
     return;
   }
   push_frame(gst_cef_, buffer, width, height);
