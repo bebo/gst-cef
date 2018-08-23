@@ -172,14 +172,18 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height)
 {
   //GST_LOG("Pushing Frame");
   GstCef *cef = (GstCef *)gstCef;
-
   g_mutex_lock(&cef->frame_mutex);
   int size = width * height * 4;
   if (size != (cef->width * cef->height * 4))
   {
     GST_ERROR("push_frame size mismatch %d != %d * %d * 4", size, cef->width, cef->height);
-    g_mutex_unlock(&cef->frame_mutex);
-	return;
+    if (&cef->frame_mutex != NULL) {
+      g_mutex_unlock(&cef->frame_mutex);
+    }
+    else {
+      GST_DEBUG("push_frame tried to unlock frame_mutex but doesnt exist");
+    }
+	  return;
   }
 
   while (!cef->current_buffer && g_atomic_int_get(&cef->unlocked) == 0)
@@ -606,7 +610,6 @@ gst_cef_start(GstBaseSrc *src)
 static gboolean gst_cef_stop(GstBaseSrc *src)
 {
   GstCef *cef = GST_CEF(src);
-  GST_INFO_OBJECT(cef, "TEST22222");
   GST_INFO_OBJECT(cef, "stop");
   g_atomic_int_set(&cef->unlocked, 1);
 

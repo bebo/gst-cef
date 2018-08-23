@@ -30,6 +30,7 @@ width_(width),
 height_(height),
 initialization_js_(initialization_js),
 gst_cef_(gst_cef) {
+  g_object_ref(gst_cef_);
   this->push_frame = (void (*)(void *gst_cef, const void *buffer, int width, int height)) push_frame;
 }
 
@@ -43,16 +44,21 @@ bool CefWindowManager::GetViewRect(CefRefPtr<CefBrowser> browser, CefRect &rect)
 }
 
 void CefWindowManager::OnPaint(CefRefPtr<CefBrowser> browser, PaintElementType paintType, const RectList &rects,
-                            const void *buffer, int width, int height)
+  const void *buffer, int width, int height)
 {
-  // The rects are just a single rectangle as of October 2015.
-  //GST_LOG("OnPaint %d, %d", width, height);
-  if (!ready_)
-  {
+  if (!ready_) {
     GST_LOG("Not ready for OnPaint yet");
     return;
   }
+  if (!gst_cef_) {
+    GST_LOG("No gst cef instance for OnPaint %d, %d", width, height);
+    return;
+  } 
+
+  // The rects are just a single rectangle as of October 2015.
+  GST_DEBUG_OBJECT(gst_cef_, "OnPaint %d, %d", width, height);
   push_frame(gst_cef_, buffer, width, height);
+  
 }
 
 void CefWindowManager::OnAfterCreated(CefRefPtr<CefBrowser> browser)
@@ -66,7 +72,12 @@ void CefWindowManager::OnBeforeClose(CefRefPtr<CefBrowser> browser)
 {
   // Called after DoClose.
   is_closing_ = true;
-  browser_ = nullptr; 
+  // don't we have a reference to this???
+  GST_DEBUG_OBJECT(gst_cef_, "OnBeforeClose");
+  g_object_unref(gst_cef_);
+  gst_cef_ = nullptr;
+  browser_ = nullptr;
+  ready_ = false;
   GST_DEBUG("Cef OnBeforeClose");
 }
 
@@ -168,6 +179,7 @@ void* CefWindowManager::GetGstCef() {
 void CefWindowManager::CloseBrowser(bool force_close)
 {
   GST_DEBUG("CloseBrowser. force_close: %d", force_close);
+  ready_ = false;
   browser_->GetHost()->CloseBrowser(force_close);
 }
 

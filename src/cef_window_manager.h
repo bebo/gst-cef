@@ -8,6 +8,7 @@
 #include "include/cef_client.h"
 #include <list>
 #include <map>
+#include <atomic>
 
 class CefWindowManager : public CefClient,
                       public CefDisplayHandler,
@@ -73,7 +74,7 @@ private:
   void (* push_frame)(void *gst_cef, const void *buffer, int width, int height);
   void *gst_cef_;
 
-  bool ready_;
+  std::atomic_bool ready_;
   bool hidden_;
   int width_;
   int height_;
