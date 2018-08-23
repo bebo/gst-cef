@@ -14,9 +14,13 @@ if errorlevel 1 (
   exit /b %errorlevel%
 )
 
+xcopy x64\src\Release\*.pdb dist\
+
 set FILENAME=gst-cef_%TAG%.zip
 set RELEASE_NAME=gst-cef_%ENV%.zip
 "C:\Program Files\7-Zip\7z.exe" a -r ..\%FILENAME% -w .\dist\* -mem=AES256
+
+
 
 if errorlevel 1 (
   exit /b %errorlevel%
