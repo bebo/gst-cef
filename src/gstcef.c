@@ -40,8 +40,6 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <ctype.h>
-#include <gst/gst.h>
-#include <gst/base/gstpushsrc.h>
 
 #include "gstcef.h"
 #include "cef_gst_interface.h"
@@ -65,6 +63,8 @@ static gboolean gst_cef_unlock_stop(GstBaseSrc *src);
 static GstFlowReturn gst_cef_fill(GstPushSrc *src, GstBuffer *buf);
 static gboolean gst_cef_start(GstBaseSrc *src);
 static gboolean gst_cef_stop(GstBaseSrc *src);
+static GstStateChangeReturn gst_cefsrc_change_state(GstElement * element,
+	GstStateChange transition);
 // https://bebo.com is way too heavy to use as the default.
 #define DEFAULT_URL "https://google.com"
 #define DEFAULT_HEIGHT 720
@@ -73,6 +73,7 @@ static gboolean gst_cef_stop(GstBaseSrc *src);
 #define DEFAULT_INITIALIZATION_JS ""
 #define DEFAULT_BEBOFILE_PATH ""
 
+//G_DEFINE_TYPE(GstCef, gst_cef, GST_TYPE_PUSH_SRC)
 enum
 {
   PROP_0,
@@ -116,6 +117,7 @@ gst_cef_class_init(GstCefClass *klass)
   GstPushSrcClass *push_src_class = GST_PUSH_SRC_CLASS(klass);
   GstElementClass *element_class = GST_ELEMENT_CLASS(klass);
   parent_element_class = element_class;
+  parent_element_class->change_state = GST_DEBUG_FUNCPTR(gst_cefsrc_change_state);
 
   gst_element_class_add_static_pad_template(GST_ELEMENT_CLASS(klass),
                                             &gst_cef_src_template);
@@ -123,7 +125,7 @@ gst_cef_class_init(GstCefClass *klass)
   gst_element_class_set_static_metadata(GST_ELEMENT_CLASS(klass),
                                         "Gstreamer chromium embedded (cef)", "Generic", "FIXME Description",
                                         "Florian P. Nierhaus <fpn@bebo.com>");
-
+  
   gobject_class->set_property = gst_cef_set_property;
   gobject_class->get_property = gst_cef_get_property;
 
@@ -628,6 +630,50 @@ plugin_init(GstPlugin *plugin)
      to be autoplugged by decodebin. */
   return gst_element_register(plugin, "cef", GST_RANK_NONE,
                               GST_TYPE_CEF);
+}
+
+static GstStateChangeReturn
+gst_cefsrc_change_state(GstElement * element, GstStateChange transition)
+{
+	GstBaseSrc *src = GST_BASE_SRC(element);
+	GstCef *cef = GST_CEF(src);
+	switch (transition) {
+	case GST_STATE_CHANGE_NULL_TO_READY:
+		break;
+	case GST_STATE_CHANGE_READY_TO_PAUSED:
+		break;
+	case GST_STATE_CHANGE_PAUSED_TO_PLAYING:
+		GST_DEBUG_OBJECT(cef, "unlock_stop");
+		gint width = cef->width;
+		gint height = cef->width;
+		const char *url = cef->url;
+		g_atomic_int_set(&cef->unlocked, 0);
+		if (!width || !height || !url)
+		{
+			GST_ERROR("no width, or height, or url");
+			return FALSE;
+		}
+		//g_mutex_lock(&cef->frame_mutex);
+		start_rendering(cef);
+		//g_mutex_unlock(&cef->frame_mutex);
+		GST_INFO_OBJECT(cef, "unlock_stop complete");
+		break;
+	case GST_STATE_CHANGE_PLAYING_TO_PAUSED:
+		GST_DEBUG_OBJECT(cef, "unlock");
+		g_atomic_int_set(&cef->unlocked, 1);
+		g_cond_signal(&cef->frame_cond);
+		g_cond_signal(&cef->buffer_cond);
+		//g_mutex_lock(&cef->frame_mutex);
+		stop_rendering(cef);
+		//g_mutex_unlock(&cef->frame_mutex);
+		break;
+	case GST_STATE_CHANGE_PAUSED_TO_READY:
+		break;
+	case GST_STATE_CHANGE_READY_TO_NULL:
+		break;
+	}	
+
+	return GST_ELEMENT_CLASS(gst_cef_parent_class)->change_state(element, transition);
 }
 
 /* FIXME: these are normally defined by the GStreamer build system.
