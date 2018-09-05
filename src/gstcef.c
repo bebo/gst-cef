@@ -187,11 +187,13 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height)
     }
 	  return;
   }
-
+  GST_DEBUG("Waiting start");
   while (!cef->current_buffer && g_atomic_int_get(&cef->unlocked) == 0)
   {
+    if (cef->current_buffer == NULL) GST_DEBUG("CURRENT BUFFER NULL");
     g_cond_wait(&cef->buffer_cond, &cef->frame_mutex);
   }
+  GST_DEBUG("Waiting end");
   if (cef->current_buffer)
   {
     gst_buffer_fill(cef->current_buffer, 0, buffer, size);
@@ -200,7 +202,7 @@ static void push_frame(void *gstCef, const void *buffer, int width, int height)
   }
   else
   {
-    //GST_INFO("Cef push_frame does not have buffer");
+    GST_INFO("Cef push_frame does not have buffer");
   }
 
   g_mutex_unlock(&cef->frame_mutex);
@@ -642,17 +644,7 @@ gst_cefsrc_change_state(GstElement * element, GstStateChange transition)
 		break;
 	case GST_STATE_CHANGE_READY_TO_PAUSED:
 		break;
-	case GST_STATE_CHANGE_PAUSED_TO_PLAYING:
-		GST_DEBUG_OBJECT(cef, "unlock_stop");
-		gint width = cef->width;
-		gint height = cef->width;
-		const char *url = cef->url;
-		g_atomic_int_set(&cef->unlocked, 0);
-		if (!width || !height || !url)
-		{
-			GST_ERROR("no width, or height, or url");
-			return FALSE;
-		}
+	case GST_STATE_CHANGE_PAUSED_TO_PLAYING:	
 		//g_mutex_lock(&cef->frame_mutex);
 		start_rendering(cef);
 		//g_mutex_unlock(&cef->frame_mutex);
@@ -660,9 +652,6 @@ gst_cefsrc_change_state(GstElement * element, GstStateChange transition)
 		break;
 	case GST_STATE_CHANGE_PLAYING_TO_PAUSED:
 		GST_DEBUG_OBJECT(cef, "unlock");
-		g_atomic_int_set(&cef->unlocked, 1);
-		g_cond_signal(&cef->frame_cond);
-		g_cond_signal(&cef->buffer_cond);
 		//g_mutex_lock(&cef->frame_mutex);
 		stop_rendering(cef);
 		//g_mutex_unlock(&cef->frame_mutex);
