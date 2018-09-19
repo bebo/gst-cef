@@ -110,13 +110,6 @@ void CefWindowManager::OnLoadingStateChange(CefRefPtr<CefBrowser> browser,
   GST_INFO("OnLoadingStateChange: %d", isLoading);
 }
 
-void CefWindowManager::Refresh(CefRefPtr<CefBrowser> browser,
-                            CefRefPtr<CefFrame> frame)
-{
-  GST_INFO("Refresh - window id: %d", browser->GetIdentifier());
-  browser->Reload();
-}
-
 void CefWindowManager::OnLoadEnd(CefRefPtr<CefBrowser> browser,
                               CefRefPtr<CefFrame> frame,
                               int httpStatusCode)
@@ -154,7 +147,7 @@ void CefWindowManager::OnLoadEnd(CefRefPtr<CefBrowser> browser,
       GST_INFO("OnLoadEnd - scheduled a refresh. window id: %d, status code: %d, url: %s - refreshing in %llums, count: %d",
                browser->GetIdentifier(), httpStatusCode, url, retry_time_ms, retry_count_);
 
-      CefPostDelayedTask(TID_UI, base::Bind(&CefWindowManager::Refresh, this, browser, frame), retry_time_ms);
+      CefPostDelayedTask(TID_UI, base::Bind(&CefWindowManager::Refresh, this), retry_time_ms);
       retry_count_++;
     }
   }
@@ -228,4 +221,14 @@ void CefWindowManager::SetSize(int width, int height)
   height_ = height;
   CefBrowserHost *host = browser_->GetHost().get();
   host->WasResized();
+}
+
+void CefWindowManager::Refresh()
+{
+  if (browser_ == nullptr && !is_closing_) {
+    GST_WARNING("Cannot refresh, browser window is null");
+    return;
+  }
+  GST_INFO("Reloading - window id: %d", browser_->GetIdentifier());
+  browser_->ReloadIgnoreCache();
 }

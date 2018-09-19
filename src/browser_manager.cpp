@@ -182,3 +182,15 @@ void Browser::OnRegisterCustomSchemes(CefRawPtr<CefSchemeRegistrar> registrar)
 {
   RegisterFileSchemeHandlerFactory(registrar);
 }
+
+void Browser::Refresh(void *gst_cef)
+{
+
+  GST_INFO("Browser::Refresh");
+  CefRefPtr<CefWindowManager> wm = GetClient(gst_cef);
+  if (wm == nullptr) {
+    GST_WARNING("Cannot refresh.  Browser not found in map.");
+    return;
+  }
+  wm->Refresh();
+}

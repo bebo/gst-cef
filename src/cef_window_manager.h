@@ -24,7 +24,7 @@ public:
   /* static CefWindowManager* GetInstance(); */
 
   // CefClient methods:
-  virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() OVERRIDE { return this; }
+  virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() OVERRIDE { return this;  }
   virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() OVERRIDE { return this; }
   virtual CefRefPtr<CefLoadHandler> GetLoadHandler() OVERRIDE { return this; }
   virtual CefRefPtr<CefRenderHandler> GetRenderHandler() OVERRIDE { return this; }
@@ -58,6 +58,7 @@ public:
   void CloseBrowser(bool force_close);
   void SetSize(int width, int height);
   void SetHidden(bool hidden);
+  void Refresh();
   void ExecuteJS(CefString js);
   void SetInitializationJS(CefString js);
   void AddBrowserGstMap(CefRefPtr<CefBrowser> browser, void *gstCef, void *push_frame, int width, int height, char *initialization_js);
@@ -71,6 +72,7 @@ public:
 private:
   CefRefPtr<CefBrowser> browser_;
   bool is_closing_;
+
   void (* push_frame)(void *gst_cef, const void *buffer, int width, int height);
   void *gst_cef_;
 
@@ -81,8 +83,6 @@ private:
   int retry_count_;
   CefString url_;
   std::string initialization_js_;
-
-  void Refresh(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame);
 
   // Include the default reference counting implementation.
   IMPLEMENT_REFCOUNTING(CefWindowManager);

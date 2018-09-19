@@ -313,6 +313,11 @@ void gst_cef_execute_js(GstCef *cef)
   execute_js(args);
 }
 
+void gst_cef_refresh_browser(GstCef *cef)
+{
+  refresh_browser(cef);
+}
+
 void gst_cef_set_initialization_js(GstCef *cef)
 {
   struct gstExecuteJSArgs *args = g_malloc(sizeof(struct gstExecuteJSArgs));
@@ -333,8 +338,10 @@ void gst_cef_set_property(GObject *object, guint property_id,
   case PROP_URL:
   {
     const gchar *url = g_value_get_string(value);
+    GST_DEBUG("SETTING NEW URL");
     g_free(cef->url);
-    cef->url = g_strdup(url);
+    cef->url = g_strdup(url);    
+    gst_cef_refresh_browser(cef);
     break;
   }
   case PROP_WIDTH:

@@ -278,6 +278,19 @@ void execute_js(void *args)
   g_idle_add((GSourceFunc)doExecuteJS, args);
 }
 
+void refresh_browser(gpointer *cef)
+{
+  if (app)
+  {
+    app.get()->Refresh(cef);
+  }
+  else
+  {
+    GST_ERROR("refresh_browser error: no app");
+  }
+  return;
+}
+
 void set_initialization_js(void *args)
 {
   GST_DEBUG("Adding doExecuteJS to work loop");

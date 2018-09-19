@@ -37,7 +37,7 @@ public:
   void ExecuteJS(void *gst_cef, CefString js);
   void SetInitializationJS(void *gst_cef, CefString initialization_js);
   void CreateCefWindow(CefRefPtr<CefWindowManager> client);
-
+  void Refresh(void *gst_cef);
 
 private:
   CefRefPtr<CefWindowManager> GetClient(void* gst_cef);

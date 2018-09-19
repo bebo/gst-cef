@@ -50,6 +50,7 @@ void close_browser(gpointer args);
 void stop_rendering(gpointer *cef);
 void start_rendering(gpointer *cef);
 void shutdown_browser();
+void refresh_browser(gpointer *cef);
 
 #ifdef __cplusplus
 }
