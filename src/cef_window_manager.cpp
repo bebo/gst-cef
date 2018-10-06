@@ -30,7 +30,6 @@ width_(width),
 height_(height),
 initialization_js_(initialization_js),
 gst_cef_(gst_cef) {
-  g_object_ref(gst_cef_);
   this->push_frame = (void (*)(void *gst_cef, const void *buffer, int width, int height)) push_frame;
 }
 

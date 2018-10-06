@@ -252,6 +252,7 @@ void new_browser(GstCef *cef)
   GST_INFO("actual new browser");
 
   cb->gstCef = cef;
+  gst_object_ref(cef);
   cb->push_frame = push_frame;
   cb->url = g_strdup(cef->url);
   cb->width = cef->width;
