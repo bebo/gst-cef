@@ -12,7 +12,7 @@ void RegisterFileSchemeHandlerFactory(CefRawPtr<CefSchemeRegistrar> registrar);
 // Implementation of the scheme handler for file:// requests.
 class FileSchemeHandler : public CefResourceHandler {
  public:
-  FileSchemeHandler(CefString bebofile_path);
+  FileSchemeHandler(CefString local_filepath);
 
   virtual void Cancel() OVERRIDE;   
   
@@ -29,7 +29,7 @@ class FileSchemeHandler : public CefResourceHandler {
       CefRefPtr<CefCallback> callback) OVERRIDE;
 
  private:
-  CefString bebofile_path_;
+  CefString local_filepath_;
   std::ifstream file_stream_;
   std::string mime_type_;
   uint64_t offset_;
@@ -43,7 +43,7 @@ class FileSchemeHandler : public CefResourceHandler {
 class FileSchemeHandlerFactory : public CefSchemeHandlerFactory
 {
 public:
-  FileSchemeHandlerFactory(CefString bebofile_path): bebofile_path_(bebofile_path) {}
+  FileSchemeHandlerFactory(CefString local_filepath): local_filepath_(local_filepath) {}
 
   virtual CefRefPtr<CefResourceHandler> Create(CefRefPtr<CefBrowser> browser,
       CefRefPtr<CefFrame> frame,
@@ -51,7 +51,7 @@ public:
       CefRefPtr<CefRequest> request) OVERRIDE;
 
 private:
-  CefString bebofile_path_;
+  CefString local_filepath_;
   IMPLEMENT_REFCOUNTING(FileSchemeHandlerFactory);
 };
 

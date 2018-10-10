@@ -42,7 +42,7 @@ struct _GstCef
   const char *url;
   const char *js;
   const char *initialization_js;
-  const char *bebofile_path;
+  const char *local_filepath;
 
   // Need the frame_mutex to touch the below properties.
   GMutex frame_mutex;

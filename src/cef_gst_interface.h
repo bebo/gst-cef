@@ -16,7 +16,7 @@ struct gstCb
   void *push_frame;
   char *url;
   char *initialization_js;
-  char *bebofile_path;
+  char *local_filepath;
   int width;
   int height;
 };

@@ -4,6 +4,7 @@
 #include <glib.h>
 #include <Windows.h>
 #include <cwchar>
+#include <string>
 
 #include <include/cef_app.h>
 #include <include/cef_client.h>
@@ -67,7 +68,10 @@ static bool doStart(gpointer data)
   path = path.append(subprocess);
   // std::wcout << L"Subprocess Path: " << path << std::endl;
   CefString(&settings.browser_subprocess_path).FromWString(path);
-  CefString(&settings.cache_path).FromASCII("C:\\ProgramData\\Bebo");
+  std::string cache_path = cb->local_filepath;
+  int len_of_cache_path = cache_path.size() - 8;
+  cache_path = cache_path.substr(0, len_of_cache_path) + "\\cef";
+  CefString(&settings.cache_path).FromString(cache_path);
   CHAR log_path[8000];
   getLogsPath(log_path);
   strcat(log_path, "bebo_cef.log");
@@ -87,21 +91,21 @@ static bool doStart(gpointer data)
 
   CefString url;
   CefString js;
-  CefString bebofile_path;
+  CefString local_filepath;
   url.FromASCII(cb->url);
   js.FromASCII(cb->initialization_js);
-  bebofile_path.FromASCII(cb->bebofile_path);
+  local_filepath.FromASCII(cb->local_filepath);
   // The window will not actually be opened until the browser finishes initializing.
   app->Open(cb->gstCef, cb->push_frame, url, cb->width, cb->height, js);
   g_free(cb->url);
   g_free(cb->initialization_js);
-  g_free(cb->bebofile_path);
+  g_free(cb->local_filepath);
   g_free(cb);
 
   GST_DEBUG("CefInitialize");
   // Initialize CEF for the browser process.  This marks the current thread as the UI thread.
   CefInitialize(main_args, settings, app.get(), NULL);
-  CefRegisterSchemeHandlerFactory(kFileSchemeProtocol, "", new FileSchemeHandlerFactory(bebofile_path));
+  CefRegisterSchemeHandlerFactory(kFileSchemeProtocol, "", new FileSchemeHandlerFactory(local_filepath));
 
   g_mutex_lock(&cef_start_mutex);
   g_cond_signal(&cef_start_cond);

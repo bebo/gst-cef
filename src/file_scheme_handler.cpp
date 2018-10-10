@@ -11,8 +11,8 @@ void RegisterFileSchemeHandlerFactory(CefRawPtr<CefSchemeRegistrar> registrar)
   registrar->AddCustomScheme(kFileSchemeProtocol, true, false, false, true, true, false);
 }
 
-FileSchemeHandler::FileSchemeHandler(CefString bebofile_path)
-  : offset_(0), length_(0), bebofile_path_(bebofile_path)
+FileSchemeHandler::FileSchemeHandler(CefString local_filepath)
+  : offset_(0), length_(0), local_filepath_(local_filepath)
 {
 }
 
@@ -36,7 +36,7 @@ bool FileSchemeHandler::ProcessRequest(CefRefPtr<CefRequest> request,
   if (url_path.back() == '/') { // remove trailing slash
     url_path.pop_back();
   }
-  std::wstring bf_path = bebofile_path_.ToWString();
+  std::wstring bf_path = local_filepath_.ToWString();
   if (bf_path.back() != '/') {
     bf_path.push_back(L'/');
   }
@@ -120,6 +120,6 @@ CefRefPtr<CefResourceHandler> FileSchemeHandlerFactory::Create(
     CefRefPtr<CefRequest> request)
 {
   CEF_REQUIRE_IO_THREAD();
-  return new FileSchemeHandler(bebofile_path_);
+  return new FileSchemeHandler(local_filepath_);
 }
 
