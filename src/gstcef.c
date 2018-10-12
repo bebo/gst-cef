@@ -294,6 +294,7 @@ void gst_cef_init(GstCef *cef)
   cef->initialization_js = g_strdup(DEFAULT_INITIALIZATION_JS);
   cef->js = g_strdup(DEFAULT_JS);
   cef->local_filepath = g_strdup(DEFAULT_LOCAL_FILEPATH);
+  cef->cache_path = g_strdup(DEFAULT_CACHE_PATH);
   cef->hidden = FALSE;
   g_mutex_init(&cef->frame_mutex);
   g_cond_init(&cef->frame_cond);
@@ -465,6 +466,9 @@ void gst_cef_get_property(GObject *object, guint property_id,
     break;
   case PROP_LOCAL_FILEPATH:
     g_value_set_string(value, cef->local_filepath);
+    break;
+  case PROP_CACHE_PATH:
+    g_value_set_string(value, cef->cache_path);
     break;
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
