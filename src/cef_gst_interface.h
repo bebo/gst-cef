@@ -17,6 +17,7 @@ struct gstCb
   char *url;
   char *initialization_js;
   char *local_filepath;
+  char *cache_path;
   int width;
   int height;
 };
