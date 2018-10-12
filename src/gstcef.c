@@ -72,6 +72,7 @@ static GstStateChangeReturn gst_cefsrc_change_state(GstElement * element,
 #define DEFAULT_JS ""
 #define DEFAULT_INITIALIZATION_JS ""
 #define DEFAULT_LOCAL_FILEPATH ""
+#define DEFAULT_CACHE_PATH ""
 
 //G_DEFINE_TYPE(GstCef, gst_cef, GST_TYPE_PUSH_SRC)
 enum
@@ -83,7 +84,8 @@ enum
   PROP_HIDDEN,
   PROP_JS,
   PROP_INIT_JS,
-  PROP_LOCAL_FILEPATH
+  PROP_LOCAL_FILEPATH,
+  PROP_CACHE_PATH
 };
 
 /* pad templates */
@@ -166,6 +168,9 @@ gst_cef_class_init(GstCefClass *klass)
   g_object_class_install_property(gobject_class, PROP_LOCAL_FILEPATH,
                                   g_param_spec_string("local-filepath", "local-filepath", "base path for local file protocol.",
                                                       DEFAULT_LOCAL_FILEPATH, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
+  g_object_class_install_property(gobject_class, PROP_CACHE_PATH,
+								  g_param_spec_string("cache-path", "cache-path", "base path for chrome cache.",
+									  DEFAULT_CACHE_PATH, G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS));
 
 
 }
@@ -259,6 +264,7 @@ void new_browser(GstCef *cef)
   cb->height = cef->height;
   cb->initialization_js = g_strdup(cef->initialization_js);
   cb->local_filepath = g_strdup(cef->local_filepath);
+  cb->cache_path = g_strdup(cef->cache_path);
   GST_INFO("set cb");
 
   if (browserLoop == 0)
@@ -405,6 +411,13 @@ void gst_cef_set_property(GObject *object, guint property_id,
     g_free(cef->local_filepath);
     cef->local_filepath = g_strdup(path);
     break;
+  }
+  case PROP_CACHE_PATH:
+  {
+	  const gchar *path = g_value_get_string(value);
+	  g_free(cef->cache_path);
+	  cef->cache_path = g_strdup(path);
+	  break;
   }
   default:
     G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
