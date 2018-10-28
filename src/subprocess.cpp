@@ -1,5 +1,7 @@
 #include <iostream>
+#ifdef _WIN32
 #include <Windows.h>
+#endif
 
 #include <include/cef_app.h>
 #include "file_scheme_handler.h"
@@ -38,6 +40,7 @@ void BrowserApp::OnRegisterCustomSchemes(
   registrar->AddCustomScheme(kFileSchemeProtocol, true, false, false, true, true, false);
 }
 
+#ifdef _WIN32
 int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                       PWSTR pCmdLine, int nCmdShow)
 {
@@ -45,3 +48,18 @@ int CALLBACK wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   CefRefPtr<BrowserApp> app(new BrowserApp());
   return CefExecuteProcess(mainArgs, app.get(), NULL);
 }
+
+#else
+
+int main(int argc, char* argv[]) {
+  // Structure for passing command-line arguments.
+  // The definition of this structure is platform-specific.
+  CefMainArgs mainArgs(argc, argv);
+
+  // Optional implementation of the CefApp interface.
+  CefRefPtr<BrowserApp> app(new BrowserApp());
+
+  // Execute the sub-process logic. This will block until the sub-process should exit.
+  return CefExecuteProcess(mainArgs, app.get(), NULL);
+}
+#endif

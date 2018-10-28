@@ -2,7 +2,9 @@
 #include <iostream>
 #include <list>
 #include <glib.h>
+#ifdef __WIN
 #include <Windows.h>
+#endif
 #include <cwchar>
 #include <string>
 
@@ -26,21 +28,22 @@ namespace
   static guint browser_loop_index = 0;
 } // namespace
 
-void getLogsPath(CHAR *filename) {
-  DWORD size = 8000;
-  memset(filename, 0, size);
+/* void getLogsPath(CHAR *filename) { */
+/*   return "." */
+/*   DWORD size = 8000; */
+/*   memset(filename, 0, size); */
 
-  RegKey registry(HKEY_CURRENT_USER, L"Software\\Bebo\\GameCapture", KEY_READ);
+/*   RegKey registry(HKEY_CURRENT_USER, L"Software\\Bebo\\GameCapture", KEY_READ); */
 
-  if (registry.HasValue(L"Logs")) {
-    std::wstring data;
-    registry.ReadValue(L"Logs", &data);
-    wsprintfA(filename, "%ls\\", data.c_str());
-  }
-  else {
-    GetTempPathA(8000, filename);
-  }
-}
+/*   if (registry.HasValue(L"Logs")) { */
+/*     std::wstring data; */
+/*     registry.ReadValue(L"Logs", &data); */
+/*     wsprintfA(filename, "%ls\\", data.c_str()); */
+/*   } */
+/*   else { */
+/*     GetTempPathA(8000, filename); */
+/*   } */
+/* } */
 
 static bool doStart(gpointer data)
 {
@@ -64,16 +67,20 @@ static bool doStart(gpointer data)
   // std::wcout << L"Resource Directory Path: " << path << std::endl;
   CefString(&settings.resources_dir_path).FromWString(path);
 
-  std::wstring subprocess = L"\\bebo_cef";
+#ifdef __WIN
+  std::wstring subprocess = L"\\" + SUBPROCESS_NAME;
+#else
+  std::wstring subprocess = L"\\" + SUBPROCESS_NAME;
+#endif
   path = path.append(subprocess);
   // std::wcout << L"Subprocess Path: " << path << std::endl;
   CefString(&settings.browser_subprocess_path).FromWString(path);
   CefString(&settings.cache_path).FromString(cb->cache_path);
-  CHAR log_path[8000];
-  getLogsPath(log_path);
-  strcat(log_path, "bebo_cef.log");
-  GST_INFO("Cef log path: %s", log_path);
-  CefString(&settings.log_file).FromASCII(log_path);
+  /* CHAR log_path[8000]; */
+  /* getLogsPath(log_path); */
+  /* strcat(log_path, "bebo_cef.log"); */
+  /* GST_INFO("Cef log path: %s", log_path); */
+  /* CefString(&settings.log_file).FromASCII(log_path); */
 
   settings.windowless_rendering_enabled = true;
   settings.no_sandbox = true;

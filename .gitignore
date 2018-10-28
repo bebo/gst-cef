@@ -16,7 +16,6 @@ stamp-*
 my-plugin-*.tar.*
 compile
 .vscode
-third_party
 
 build/
 CMakeFiles/

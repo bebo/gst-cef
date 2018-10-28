@@ -655,7 +655,7 @@ plugin_init(GstPlugin *plugin)
 
   /* FIXME Remember to set the rank if it's an element that is meant
      to be autoplugged by decodebin. */
-  return gst_element_register(plugin, "cef", GST_RANK_NONE,
+  return gst_element_register(plugin, "gstcef", GST_RANK_NONE,
                               GST_TYPE_CEF);
 }
 

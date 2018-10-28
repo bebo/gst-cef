@@ -12,6 +12,7 @@ function(DownloadCEF platform version download_dir)
   # Specify the binary distribution type and download directory.
   set(CEF_DISTRIBUTION "cef_binary_${version}_${platform}")
   set(CEF_DOWNLOAD_DIR "${download_dir}")
+  set(CEF_DOWNLOAD_BASE_URL "http://opensource.spotify.com/cefbuilds")
 
   # The location where we expect the extracted binary distribution.
   set(CEF_ROOT "${CEF_DOWNLOAD_DIR}/${CEF_DISTRIBUTION}" CACHE INTERNAL "CEF_ROOT")
@@ -20,8 +21,8 @@ function(DownloadCEF platform version download_dir)
   if(NOT IS_DIRECTORY "${CEF_ROOT}")
     set(CEF_DOWNLOAD_FILENAME "${CEF_DISTRIBUTION}.tar.bz2")
     set(CEF_DOWNLOAD_PATH "${CEF_DOWNLOAD_DIR}/${CEF_DOWNLOAD_FILENAME}")
-    if(NOT EXISTS "${CEF_DOWNLOAD_PATH}")
-      set(CEF_DOWNLOAD_URL "https://s3-us-west-2.amazonaws.com/bebo-files/darkclouds/cefbuilds/${CEF_DOWNLOAD_FILENAME}")
+    if(NOT EXISTS "xx${CEF_DOWNLOAD_PATH}")
+        set(CEF_DOWNLOAD_URL "${CEF_DOWNLOAD_BASE_URL}/${CEF_DOWNLOAD_FILENAME}")
 
       # Download the SHA1 hash for the binary distribution.
       # message(STATUS "Downloading ${CEF_DOWNLOAD_PATH}.sha1...")
