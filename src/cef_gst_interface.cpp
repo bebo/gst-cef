@@ -79,7 +79,9 @@ static bool doStart(gpointer data)
   g_assert(size > 0);
   char * dir = dirname(buff);
   std::string path(buff);
-  std::string subprocess = "/" G_STRINGIFY_ARG(SUBPROCESS_NAME);
+  const char * process_name = SUBPROCESS_NAME;
+  std::string subprocess = "/";
+  subprocess.append(process_name);
   path = path.append(subprocess);
   CefString(&settings.browser_subprocess_path).FromString(path);
 

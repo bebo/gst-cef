@@ -54,7 +54,7 @@ ADD_LIBRARY(gstcef SHARED
   file_scheme_handler.h
 )
 
-ADD_DEFINITIONS(-DSUBPROCESS_NAME=${SUBPROCESS})
+ADD_DEFINITIONS(-DSUBPROCESS_NAME="${SUBPROCESS}")
 
 
 # We probably don't need most of these libraries.

@@ -7,19 +7,19 @@
 * GStreamer 1.0 development tools
 * CMake
 
-### Requirements Linuk
+### Requirements Linux
 * GStreamer 1.0
 * GStreamer 1.0 development tools
 * CMake
 * build-essential
 
-### Building
+cmake -G "Unix Makefiles" .. -DUSE_SANDBOX=0
 
-1. Point the CMake GUI at the project source code.
-2. Uncheck the USE_SANDBOX variable, and change the GST_INSTALL_BASE to point at your gstreamer installation.
-3. Press the "Configure", "Generate", and "Open Project" buttons.
-4. In Visual Studio, change the build type to Release because Debug builds cause errors in CEF.
-5. Build the solution.
+# export LD_LIBRARY_PATH=/usr/local/cef/lib
+export DISPLAY=:0
+Xvfb :0 -screen 0 1280x720x16 &
+
+
 
 ### Testing
 
