@@ -3,6 +3,13 @@
 #include <algorithm>
 #include <iostream>
 
+#ifndef __WIN
+#include <string>
+#include <locale>
+#include <codecvt>
+#include <iomanip>
+#endif
+
 #include <include/cef_scheme.h>
 #include <include/cef_parser.h>
 
@@ -40,7 +47,13 @@ bool FileSchemeHandler::ProcessRequest(CefRefPtr<CefRequest> request,
   if (bf_path.back() != '/') {
     bf_path.push_back(L'/');
   }
+
+#ifdef __WIN
   std::wstring path = bf_path + url_path;
+#else
+  std::wstring_convert<std::codecvt_utf8<wchar_t>> conv1;
+  std::string path = conv1.to_bytes(bf_path + url_path);
+#endif
   file_stream_.open(path, std::ifstream::in | std::ifstream::binary);
 
   // std::wcout << "resolved bebofs: " << path << "\n";
@@ -55,9 +68,9 @@ bool FileSchemeHandler::ProcessRequest(CefRefPtr<CefRequest> request,
   file_stream_.seekg(0, std::ios::beg);
 
   // get mime_type by file extension
-  size_t dot_index = path.find_last_of(L".");
+  size_t dot_index = url_path.find_last_of(L".");
   if (dot_index != std::string::npos) {
-    std::wstring extension = path.substr(dot_index + 1);
+    std::wstring extension = url_path.substr(dot_index + 1);
     mime_type_ = CefGetMimeType(extension);
   }
 

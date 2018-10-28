@@ -11,7 +11,9 @@
 #include <iostream>
 #include <string>
 
+#ifdef __WIN
 #include <windows.h>
+#endif
 
 #include "include/base/cef_bind.h"
 #include "include/cef_app.h"

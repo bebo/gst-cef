@@ -1,11 +1,18 @@
 
 
 # CEF Plugin
-### Requirements
+### Requirements Windows
 * MSVC command line tools
 * GStreamer 1.0
 * GStreamer 1.0 development tools
 * CMake
+
+### Requirements Linuk
+* GStreamer 1.0
+* GStreamer 1.0 development tools
+* CMake
+* build-essential
+
 ### Building
 
 1. Point the CMake GUI at the project source code.

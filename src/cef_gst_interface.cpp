@@ -4,6 +4,9 @@
 #include <glib.h>
 #ifdef __WIN
 #include <Windows.h>
+#else
+#include <unistd.h>
+#include <libgen.h>
 #endif
 #include <cwchar>
 #include <string>
@@ -11,13 +14,11 @@
 #include <include/cef_app.h>
 #include <include/cef_client.h>
 #include <include/cef_render_handler.h>
-#include "include/cef_sandbox_win.h"
 #include <include/wrapper/cef_helpers.h>
 
 #include "browser_manager.h"
 #include "cef_gst_interface.h"
 #include "file_scheme_handler.h"
-#include "registry.h"
 
 namespace
 {
@@ -51,13 +52,14 @@ static bool doStart(gpointer data)
 
   // Provide CEF with command-line arguments.
   struct gstCb *cb = (struct gstCb *)data;
-  CefMainArgs main_args(GetModuleHandle(NULL));
+
 
 
   // Specify CEF global settings here.
   CefSettings settings;
 
-  HMODULE hModule = GetModuleHandleW(NULL);
+#ifdef __WIN
+  CefMainArgs main_args(GetModuleHandle(NULL));
   WCHAR c_path[MAX_PATH + 50];
   GetModuleFileNameW(hModule, c_path, MAX_PATH);
 
@@ -66,15 +68,23 @@ static bool doStart(gpointer data)
 
   // std::wcout << L"Resource Directory Path: " << path << std::endl;
   CefString(&settings.resources_dir_path).FromWString(path);
-
-#ifdef __WIN
   std::wstring subprocess = L"\\" + SUBPROCESS_NAME;
-#else
-  std::wstring subprocess = L"\\" + SUBPROCESS_NAME;
-#endif
   path = path.append(subprocess);
   // std::wcout << L"Subprocess Path: " << path << std::endl;
   CefString(&settings.browser_subprocess_path).FromWString(path);
+#else
+  CefMainArgs main_args(0, NULL);
+  char buff[1024];
+  ssize_t size = readlink("/proc/self/exe", buff, sizeof(buff));
+  g_assert(size > 0);
+  char * dir = dirname(buff);
+  std::string path(buff);
+  std::string subprocess = "/" G_STRINGIFY_ARG(SUBPROCESS_NAME);
+  path = path.append(subprocess);
+  CefString(&settings.browser_subprocess_path).FromString(path);
+
+#endif
+
   CefString(&settings.cache_path).FromString(cb->cache_path);
   /* CHAR log_path[8000]; */
   /* getLogsPath(log_path); */
@@ -171,7 +181,7 @@ void browser_loop(gpointer args)
   {
     // Decreasing the doWork frequency is more efficient, but it causes us to
     // lose a bunch of frames if it gets too close to our target framerate.
-    Sleep(6);
+    g_usleep(6000);
     g_idle_add((GSourceFunc)doWork, NULL);
   }
   GST_INFO("MessageLoop Ended");
@@ -356,6 +366,6 @@ void shutdown_browser()
 {
   GST_WARNING("shutdown browser");
   g_atomic_int_set(&loop_live, 0);
-  Sleep(2000);
+  g_usleep(2 * G_USEC_PER_SEC);
   g_idle_add((GSourceFunc)doShutdown, NULL);
 }
