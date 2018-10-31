@@ -1,6 +1,9 @@
 
 
 # CEF Plugin
+
+We have made the linux support work again - please see the linux branch at this point.
+
 ### Requirements
 * MSVC command line tools
 * GStreamer 1.0
